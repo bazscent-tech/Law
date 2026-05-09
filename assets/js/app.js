@@ -699,21 +699,15 @@
             }).join('');
 
             const alreadyFollowing = isFollowing(post.author);
-            const followBar = alreadyFollowing ? '' : `
-                <div class="follow-suggestion flex items-center justify-between px-5 pt-4 pb-2">
-                    <div class="flex items-center gap-2">
-                        <div class="w-7 h-7 rounded-full bg-gradient-to-br ${post.gradient} flex items-center justify-center text-white text-[10px] font-bold">${post.avatar}</div>
-                    </div>
-                    <button class="follow-btn flex items-center gap-1.5 bg-dark-800 hover:bg-dark-700 text-brand-400 text-xs font-semibold px-3 py-1.5 rounded-full border border-brand-500/30 transition-all active:scale-95" data-author="${post.author}" onclick="toggleFollow(this)">
-                        <span class="iconify text-sm" data-icon="lucide:user-plus"></span>
-                        <span>متابعة</span>
-                    </button>
-                </div>
+            const followBtn = alreadyFollowing ? '' : `
+                                <button class="follow-btn flex items-center gap-1.5 bg-dark-800 hover:bg-dark-700 text-brand-400 text-xs font-semibold px-3 py-1.5 rounded-full border border-brand-500/30 transition-all active:scale-95 shrink-0" data-author="${post.author}" onclick="toggleFollow(this)">
+                                    <span class="iconify text-sm" data-icon="lucide:user-plus"></span>
+                                    <span>متابعة</span>
+                                </button>
             `;
 
             return `
                 <article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up overflow-hidden" style="animation-delay:${index * 80}ms">
-                    ${followBar}
                     <div class="p-5 pb-0">
                         <div class="flex items-start justify-between mb-3">
                             <div class="flex items-center gap-3 cursor-pointer" onclick="showToast('عرض الملف الشخصي')">
@@ -726,6 +720,7 @@
                                     <p class="text-dark-400 text-xs">${post.role} • ${post.time}</p>
                                 </div>
                             </div>
+                            ${followBtn}
                         </div>
                         <div class="mb-3">
                             ${titleHTML}
