@@ -523,6 +523,207 @@
             if (saved) applyProfile(JSON.parse(saved));
         }
 
+        // ===== Facebook-Style Notification System =====
+        const notifData = [
+            { id: 1, type: 'like', user: 'سارة المنصوري', avatar: 'seed/sara-legal', gradient: 'from-pink-500 to-yellow-500', text: 'أعجبت بمنشورك', target: 'التحكيم التجاري', time: 'منذ 5 دقائق', unread: true, category: 'all' },
+            { id: 2, type: 'comment', user: 'خالد العمري', avatar: 'seed/khalid-jordan', gradient: 'from-cyan-500 to-purple-500', text: 'علّق على مقالك:', comment: 'هل يمكنك التوسع في جزء التحكيم التجاري؟', target: 'محكمة التحكيم الدولية', time: 'منذ 15 دقيقة', unread: true, category: 'replies' },
+            { id: 3, type: 'follow', user: 'نورة القحطاني', avatar: 'seed/nora-lawyer', gradient: 'from-purple-500 to-red-500', text: 'بدأت بمتابعتك', time: 'منذ ساعة', unread: true, hasAction: true, category: 'all' },
+            { id: 4, type: 'mention', user: 'فاطمة الحربي', avatar: 'seed/fatima-fintech', gradient: 'from-green-500 to-cyan-500', text: 'ذكرتك في تعليق', target: 'العملات الرقمية', time: 'منذ ساعتين', unread: true, category: 'mentions' },
+            { id: 5, type: 'like', user: 'عمر الحسيني', avatar: 'seed/omar-judge', gradient: 'from-yellow-500 to-green-500', text: 'أعجب بتعليقك على', target: 'قانون حقوق النشر', time: 'منذ 3 ساعات', unread: false, category: 'all' },
+            { id: 6, type: 'share', user: 'يوسف الشريف', avatar: 'seed/youssef-ip', gradient: 'from-red-500 to-purple-500', text: 'شارك منشورك', target: 'الملكية الفكرية', time: 'منذ 5 ساعات', unread: false, category: 'all' },
+            { id: 7, type: 'comment', user: 'ليلى بنت خليفة', avatar: 'seed/layla-mediator', gradient: 'from-teal-500 to-blue-500', text: 'ردّت على تعليقك:', comment: 'ممتاز! شكراً على المشاركة', target: 'الوساطة القانونية', time: 'منذ 8 ساعات', unread: false, category: 'replies' },
+            { id: 8, type: 'event', user: 'نظام', avatar: null, gradient: 'from-brand-500 to-brand-700', text: 'تذكير: مؤتمر التحكيم الدولي غداً', time: 'منذ 10 ساعات', unread: false, category: 'all', isSystem: true },
+            { id: 9, type: 'like', user: 'طارق الراشد', avatar: null, gradient: 'from-emerald-500 to-teal-600', text: 'أعجب بمنشورك عن', target: 'الضريبة الجديدة', time: 'أمس', unread: false, category: 'all' },
+            { id: 10, type: 'badge', user: 'نظام', avatar: null, gradient: 'from-yellow-500 to-orange-500', text: '🎉 مبروك! وصلت 200 إعجاب على مقالك', time: 'أمس', unread: false, category: 'all', isSystem: true },
+        ];
+
+        function getNotifIcon(type) {
+            const icons = {
+                like: { icon: 'lucide:heart', color: 'text-red-400', bg: 'bg-red-500/15' },
+                comment: { icon: 'lucide:message-circle', color: 'text-blue-400', bg: 'bg-blue-500/15' },
+                follow: { icon: 'lucide:user-plus', color: 'text-green-400', bg: 'bg-green-500/15' },
+                mention: { icon: 'lucide:at-sign', color: 'text-purple-400', bg: 'bg-purple-500/15' },
+                share: { icon: 'lucide:share-2', color: 'text-cyan-400', bg: 'bg-cyan-500/15' },
+                event: { icon: 'lucide:calendar', color: 'text-brand-400', bg: 'bg-brand-500/15' },
+                badge: { icon: 'lucide:trophy', color: 'text-yellow-400', bg: 'bg-yellow-500/15' }
+            };
+            return icons[type] || icons.like;
+        }
+
+        function getNotifTargetPage(type) {
+            const pages = {
+                like: 'feed',
+                comment: 'feed',
+                follow: 'connections',
+                mention: 'feed',
+                share: 'feed',
+                event: 'events',
+                badge: 'certificates'
+            };
+            return pages[type] || 'feed';
+        }
+
+        function renderNotifs(filter) {
+            const container = document.getElementById('notifList');
+            let items = notifData;
+            if (filter === 'unread') items = items.filter(n => n.unread);
+            else if (filter === 'mentions') items = items.filter(n => n.type === 'mention');
+            else if (filter === 'replies') items = items.filter(n => n.type === 'comment');
+
+            if (items.length === 0) {
+                container.innerHTML = '<div class="notif-empty"><span class="iconify" data-icon="lucide:bell-off"></span><p>لا توجد إشعارات</p></div>';
+                return;
+            }
+
+            container.innerHTML = items.map(n => {
+                const iconInfo = getNotifIcon(n.type);
+                const avatarHTML = n.isSystem
+                    ? `<div class="notif-icon-wrap ${iconInfo.bg}"><span class="iconify ${iconInfo.color} text-lg" data-icon="${iconInfo.icon}"></span></div>`
+                    : `<div class="notif-icon-wrap ${iconInfo.bg}"><span class="iconify ${iconInfo.color} text-lg" data-icon="${iconInfo.icon}"></span><div class="notif-avatar-letter bg-gradient-to-br ${n.gradient}">${n.user.charAt(0)}</div></div>`;
+
+                const targetHTML = n.target ? `<span class="notif-highlight">${n.target}</span>` : '';
+                const commentHTML = n.comment ? `<br><span class="text-dark-400 text-xs">"${n.comment}"</span>` : '';
+
+                const actionBtn = n.hasAction
+                    ? `<div class="flex gap-2 mt-2"><button class="notif-action-btn accept" onclick="event.stopPropagation();acceptFollow(${n.id})">متابعة</button><button class="notif-action-btn decline" onclick="event.stopPropagation();declineFollow(${n.id})">حذف</button></div>`
+                    : '';
+
+                return `
+                    <div class="notif-item-row ${n.unread ? 'unread' : ''}" onclick="clickNotif(${n.id})">
+                        ${avatarHTML}
+                        <div class="notif-content">
+                            <div class="notif-text"><strong>${n.user}</strong> ${n.text} ${targetHTML}${commentHTML}</div>
+                            <div class="notif-time">${n.unread ? '<span class="notif-new-dot"></span>' : ''}${n.time}</div>
+                            ${actionBtn}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleNotifDropdown(e) {
+            e.stopPropagation();
+            const dropdown = document.getElementById('notifDropdown');
+            const isOpen = dropdown.classList.contains('open');
+            if (isOpen) {
+                closeNotifDropdown();
+            } else {
+                dropdown.classList.add('open');
+                renderNotifs('all');
+                // Reset filter tabs
+                document.querySelectorAll('.notif-tab').forEach(t => {
+                    t.classList.remove('active');
+                });
+                document.querySelector('.notif-tab')?.classList.add('active');
+            }
+        }
+
+        function closeNotifDropdown() {
+            document.getElementById('notifDropdown').classList.remove('open');
+        }
+
+        function filterNotifs(btn, filter) {
+            document.querySelectorAll('.notif-tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            renderNotifs(filter);
+        }
+
+        function markAllRead() {
+            notifData.forEach(n => n.unread = false);
+            renderNotifs('all');
+            updateNotifDots();
+            showToast('تم تحديد الكل كمقروء ✓');
+        }
+
+        function clickNotif(id) {
+            const notif = notifData.find(n => n.id === id);
+            if (!notif) return;
+            notif.unread = false;
+            updateNotifDots();
+            closeNotifDropdown();
+            showPage(getNotifTargetPage(notif.type));
+        }
+
+        function acceptFollow(id) {
+            const notif = notifData.find(n => n.id === id);
+            if (notif) {
+                notif.hasAction = false;
+                notif.text = 'يتابعك الآن ✓';
+                notif.unread = false;
+            }
+            renderNotifs('all');
+            updateNotifDots();
+            showToast('تم قبول المتابعة ✓');
+        }
+
+        function declineFollow(id) {
+            const idx = notifData.findIndex(n => n.id === id);
+            if (idx > -1) notifData.splice(idx, 1);
+            renderNotifs('all');
+            updateNotifDots();
+            showToast('تم حذف الطلب');
+        }
+
+        function updateNotifDots() {
+            const hasUnread = notifData.some(n => n.unread);
+            const mobileDot = document.getElementById('notifDotMobile');
+            const desktopDot = document.getElementById('notifDotDesktop');
+            if (mobileDot) mobileDot.style.display = hasUnread ? '' : 'none';
+            if (desktopDot) desktopDot.style.display = hasUnread ? '' : 'none';
+        }
+
+        // Close notification dropdown on outside click
+        document.addEventListener('click', (e) => {
+            const mobileWrap = document.getElementById('notifDropdownWrapMobile');
+            const desktopWrap = document.getElementById('notifDropdownWrap');
+            const dropdown = document.getElementById('notifDropdown');
+            if (dropdown && !dropdown.contains(e.target) &&
+                (!mobileWrap || !mobileWrap.contains(e.target)) &&
+                (!desktopWrap || !desktopWrap.contains(e.target))) {
+                closeNotifDropdown();
+            }
+        });
+
+        // Simulate new notification every 30s
+        let notifCounter = notifData.length;
+        function simulateNewNotif() {
+            const users = [
+                { name: 'أحمد المنصور', avatar: null, gradient: 'from-indigo-500 to-purple-600' },
+                { name: 'رنا السعيد', avatar: null, gradient: 'from-rose-500 to-orange-500' },
+                { name: 'هدى النعيمي', avatar: null, gradient: 'from-sky-500 to-blue-600' },
+            ];
+            const types = [
+                { type: 'like', text: 'أعجبت بمنشورك الجديد' },
+                { type: 'comment', text: 'علّق على مقالك:', comment: 'محتوى رائع!' },
+                { type: 'mention', text: 'ذكرتك في منشور' },
+            ];
+            const user = users[Math.floor(Math.random() * users.length)];
+            const action = types[Math.floor(Math.random() * types.length)];
+            notifCounter++;
+            notifData.unshift({
+                id: notifCounter,
+                type: action.type,
+                user: user.name,
+                avatar: null,
+                gradient: user.gradient,
+                text: action.text,
+                comment: action.comment || null,
+                target: null,
+                time: 'الآن',
+                unread: true,
+                category: action.type === 'mention' ? 'mentions' : action.type === 'comment' ? 'replies' : 'all',
+                isSystem: false
+            });
+            updateNotifDots();
+            // If dropdown is open, re-render
+            const dropdown = document.getElementById('notifDropdown');
+            if (dropdown && dropdown.classList.contains('open')) {
+                renderNotifs('all');
+                document.querySelector('.notif-tab')?.classList.add('active');
+            }
+        }
+        setInterval(simulateNewNotif, 30000);
+
         // ===== Poll Voting =====
         function votePoll(btn, pct) {
             const parent = btn.closest('[id^="poll-"]');
@@ -1004,6 +1205,7 @@
             renderTrendingList('all');
             renderFollowingPosts();
             renderSpaces('live');
+            updateNotifDots();
             // Remove static posts and render dynamic feed
             hideStaticPosts();
             renderFeedPosts();

@@ -58,10 +58,10 @@
             </div>
 
             <!-- Mobile: Notification Bell (right) -->
-            <div class="lg:hidden flex items-center">
-                <button class="relative p-2 rounded-xl hover:bg-dark-800 transition-colors" onclick="showPage('notifications')">
+            <div class="lg:hidden flex items-center relative" id="notifDropdownWrapMobile">
+                <button class="relative p-2 rounded-xl hover:bg-dark-800 transition-colors" onclick="toggleNotifDropdown(event)">
                     <span class="iconify text-dark-300 text-xl" data-icon="lucide:bell"></span>
-                    <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-500 rounded-full pulse-dot"></span>
+                    <span id="notifDotMobile" class="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-500 rounded-full pulse-dot"></span>
                 </button>
             </div>
 
@@ -102,10 +102,12 @@
                     </div>
                 </div>
 
-                <button class="relative p-2.5 rounded-xl hover:bg-dark-800 transition-colors group" onclick="showPage('notifications')">
-                    <span class="iconify text-dark-300 group-hover:text-white text-xl transition-colors" data-icon="lucide:bell"></span>
-                    <span class="absolute top-2 right-2 w-2 h-2 bg-brand-500 rounded-full pulse-dot"></span>
-                </button>
+                <div class="relative" id="notifDropdownWrap">
+                    <button class="relative p-2.5 rounded-xl hover:bg-dark-800 transition-colors group" onclick="toggleNotifDropdown(event)">
+                        <span class="iconify text-dark-300 group-hover:text-white text-xl transition-colors" data-icon="lucide:bell"></span>
+                        <span id="notifDotDesktop" class="absolute top-2 right-2 w-2 h-2 bg-brand-500 rounded-full pulse-dot"></span>
+                    </button>
+                </div>
                 <button class="p-2.5 rounded-xl hover:bg-dark-800 transition-colors group" onclick="showPage('audio-spaces')">
                     <span class="iconify text-dark-300 group-hover:text-white text-xl transition-colors" data-icon="lucide:mic"></span>
                 </button>
@@ -119,6 +121,28 @@
             </div>
         </div>
     </nav>
+
+    <!-- ============ NOTIFICATION DROPDOWN (Facebook-style) ============ -->
+    <div id="notifDropdown" class="notif-dropdown">
+        <div class="notif-header">
+            <h3>الإشعارات</h3>
+            <button onclick="markAllRead()" class="notif-mark-all">تحديد الكل كمقروء</button>
+        </div>
+        <!-- Filter Tabs -->
+        <div class="notif-tabs">
+            <button class="notif-tab active" onclick="filterNotifs(this,'all')">الكل</button>
+            <button class="notif-tab" onclick="filterNotifs(this,'unread')">غير مقروء</button>
+            <button class="notif-tab" onclick="filterNotifs(this,'mentions')">إشارات</button>
+            <button class="notif-tab" onclick="filterNotifs(this,'replies')">ردود</button>
+        </div>
+        <!-- Notification List -->
+        <div class="notif-list" id="notifList">
+            <!-- Injected by JS -->
+        </div>
+        <div class="notif-footer">
+            <button onclick="showPage('notifications');closeNotifDropdown()">عرض كل الإشعارات</button>
+        </div>
+    </div>
 
     <!-- Mobile Menu Drawer (X-style from left) -->
     <div id="mobileMenuOverlay" class="mobile-drawer-overlay" onclick="closeMobileMenu()">
