@@ -260,35 +260,50 @@
             { rank: 15, tag: '#Cybersecurity_قانوني', category: 'tech', catLabel: 'تقنية', catColor: 'cyan', posts: '290', change: '+85', bar: 12, desc: 'الإطار القانوني للأمن السيبراني وحماية البيانات الشخصية' },
         ];
 
-        // ===== Trending Dropdown =====
-        function toggleTrendingDropdown(e) {
-            e.stopPropagation();
-            const dropdown = document.getElementById('trendingDropdown');
-            const arrow = document.getElementById('trendingArrow');
-            const isOpen = dropdown.classList.contains('open');
-            if (isOpen) {
-                closeTrendingDropdown();
-            } else {
-                dropdown.classList.add('open');
-                arrow.style.transform = 'rotate(180deg)';
-                renderTrendingList('all');
-                document.getElementById('trendingSearchInput').value = '';
-                document.getElementById('trendingSearchInput').focus();
-            }
+        // ===== Trending Drawer =====
+        function openTrendingDrawer() {
+            document.getElementById('trendingDrawerOverlay').classList.add('open');
+            document.body.style.overflow = 'hidden';
+            renderTrendingList('all');
+            setTimeout(() => document.getElementById('trendingDrawerSearchInput')?.focus(), 350);
         }
 
-        function closeTrendingDropdown() {
-            document.getElementById('trendingDropdown').classList.remove('open');
-            document.getElementById('trendingArrow').style.transform = '';
+        function closeTrendingDrawer() {
+            document.getElementById('trendingDrawerOverlay').classList.remove('open');
+            document.body.style.overflow = '';
         }
 
-        // Close on outside click
-        document.addEventListener('click', (e) => {
-            const wrap = document.getElementById('trendingDropdownWrap');
-            if (wrap && !wrap.contains(e.target)) {
-                closeTrendingDropdown();
-            }
-        });
+        // Smart swipe from right edge to open drawer (mobile)
+        (function() {
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let isEdgeSwipe = false;
+            const EDGE_THRESHOLD = 30; // px from right edge
+            const SWIPE_THRESHOLD = 50; // min swipe distance
+
+            document.addEventListener('touchstart', function(e) {
+                const touch = e.touches[0];
+                touchStartX = touch.clientX;
+                touchStartY = touch.clientY;
+                // Only trigger if touch starts near right edge and drawer is closed
+                isEdgeSwipe = (
+                    touchStartX > window.innerWidth - EDGE_THRESHOLD &&
+                    !document.getElementById('trendingDrawerOverlay').classList.contains('open')
+                );
+            }, { passive: true });
+
+            document.addEventListener('touchend', function(e) {
+                if (!isEdgeSwipe) return;
+                const touch = e.changedTouches[0];
+                const deltaX = touchStartX - touch.clientX; // negative = swipe left (RTL: opens from right)
+                const deltaY = Math.abs(touchStartY - touch.clientY);
+                // Swipe left (from right edge) = open drawer, with some vertical tolerance
+                if (deltaX > SWIPE_THRESHOLD && deltaY < 100) {
+                    openTrendingDrawer();
+                }
+                isEdgeSwipe = false;
+            }, { passive: true });
+        })();
 
         function renderTrendingList(filter) {
             const container = document.getElementById('trendingList');
@@ -300,7 +315,7 @@
                 const rankClass = item.rank <= 3 ? 'hot' : item.rank <= 7 ? 'warm' : 'normal';
                 const barColor = item.catColor === 'brand' ? '#f97316' : item.catColor === 'cyan' ? '#06b6d4' : '#a855f7';
                 return `
-                    <div class="trending-item" onclick="showToast('عرض: ${item.tag}');closeTrendingDropdown()">
+                    <div class="trending-item" onclick="showToast('عرض: ${item.tag}');closeTrendingDrawer()">
                         <div class="rank ${rankClass}">${item.rank}</div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 mb-0.5">
