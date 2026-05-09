@@ -69,9 +69,13 @@
 
         // Swipe gestures: left edge → open, swipe left → close
         (function() {
-            let startX = 0, startY = 0, currentX = 0;
+            let startX = 0, startY = 0, currentX = 0, currentY = 0;
             let isDragging = false, dragType = null;
-            const EDGE = 30;
+            let moved = false;
+            const EDGE = 50; // wider edge zone
+            const OPEN_THRESHOLD = 40; // px to trigger open
+            const CLOSE_THRESHOLD = 50; // px to trigger close
+            const DEADZONE = 15; // ignore small vertical movement
 
             const overlay = () => document.getElementById('mobileMenuOverlay');
             const drawer = () => document.getElementById('mobileDrawer');
@@ -83,12 +87,18 @@
                 const t = e.touches[0];
                 startX = t.clientX;
                 startY = t.clientY;
+                currentX = startX;
+                currentY = startY;
+                moved = false;
 
+                // Swipe from left edge → OPEN
                 if (!isOpen() && startX < EDGE) {
                     isDragging = true;
                     dragType = 'open';
                     drawer().style.transition = 'none';
-                } else if (isOpen()) {
+                }
+                // Swipe anywhere on drawer → CLOSE
+                else if (isOpen()) {
                     isDragging = true;
                     dragType = 'close';
                     drawer().style.transition = 'none';
@@ -98,58 +108,65 @@
             document.addEventListener('touchmove', function(e) {
                 if (!isDragging || !isMobile()) return;
                 const t = e.touches[0];
-                const dx = t.clientX - startX;
-                const dy = Math.abs(t.clientY - startY);
+                currentX = t.clientX;
+                currentY = t.clientY;
+                moved = true;
 
-                if (dragType === 'open') {
+                const dx = currentX - startX;
+                const dy = Math.abs(currentY - startY);
+
+                // Cancel if vertical scroll wins (only for open)
+                if (dragType === 'open' && dy > Math.abs(dx) && dy > DEADZONE) {
+                    isDragging = false;
+                    drawer().style.transition = '';
+                    overlay().style.opacity = '';
+                    overlay().style.visibility = '';
+                    return;
+                }
+
+                if (dragType === 'open' && dx > 0) {
                     const dWidth = drawer().offsetWidth || 280;
-                    const translate = Math.max(-dWidth, -dWidth + dx);
+                    const translate = Math.min(0, -dWidth + dx);
                     drawer().style.transform = `translateX(${translate}px)`;
-                    const progress = Math.min(1, Math.abs(translate + dWidth) / dWidth);
+                    const progress = Math.min(1, dx / dWidth);
                     overlay().style.opacity = String(progress * 0.5);
-                    if (progress > 0.05) overlay().style.visibility = 'visible';
+                    if (progress > 0.02) overlay().style.visibility = 'visible';
                 } else if (dragType === 'close' && dx < 0) {
                     const dWidth = drawer().offsetWidth || 280;
-                    const translate = Math.min(0, dx);
-                    drawer().style.transform = `translateX(${translate}px)`;
-                    const progress = Math.min(1, Math.abs(translate) / dWidth);
+                    drawer().style.transform = `translateX(${dx}px)`;
+                    const progress = Math.min(1, Math.abs(dx) / dWidth);
                     overlay().style.opacity = String(0.5 - progress * 0.5);
                 }
             }, { passive: true });
 
             document.addEventListener('touchend', function() {
                 if (!isDragging || !isMobile()) return;
-                const dx = currentX || 0;
 
                 drawer().style.transition = '';
                 overlay().style.opacity = '';
                 overlay().style.visibility = '';
 
+                const dx = currentX - startX;
+
                 if (dragType === 'open') {
-                    const dWidth = drawer().offsetWidth || 280;
-                    const moved = (currentX - startX);
-                    if (moved > dWidth * 0.3) {
+                    if (moved && dx > OPEN_THRESHOLD) {
                         openMobileMenu();
                     } else {
-                        closeMobileMenu();
+                        // Not enough → reset
+                        drawer().style.transform = '';
+                        overlay().style.visibility = 'hidden';
                     }
                 } else if (dragType === 'close') {
-                    const moved = startX - currentX;
-                    if (moved > 60) {
+                    if (moved && dx < -CLOSE_THRESHOLD) {
                         closeMobileMenu();
                     } else {
+                        // Not enough → snap back
                         openMobileMenu();
                     }
                 }
 
                 isDragging = false;
                 dragType = null;
-                currentX = 0;
-            }, { passive: true });
-
-            // Track currentX in touchmove
-            document.addEventListener('touchmove', function(e) {
-                if (isDragging) currentX = e.touches[0].clientX;
             }, { passive: true });
         })();
 
