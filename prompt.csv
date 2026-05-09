@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lawbook - المنصة القانونية الاجتماعية</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50:'#fff7ed',100:'#ffedd5',200:'#fed7aa',300:'#fdba74',400:'#fb923c',500:'#f97316',600:'#ea580c',700:'#c2410c',800:'#9a3412',900:'#7c2d12' },
+                        dark: { 50:'#fafafa',100:'#f5f5f5',200:'#e5e5e5',300:'#d4d4d4',400:'#a3a3a3',500:'#737373',600:'#525252',700:'#404040',800:'#262626',850:'#1a1a1a',900:'#171717',950:'#0a0a0a' }
+                    },
+                    fontFamily: {
+                        sans: ['Noto Kufi Arabic', 'Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #171717; }
+        ::-webkit-scrollbar-thumb { background: #404040; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #525252; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        .delay-100 { animation-delay: 100ms; }
+        .delay-200 { animation-delay: 200ms; }
+        .delay-300 { animation-delay: 300ms; }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .pulse-dot { animation: pulse-dot 2s infinite; }
+
+        .post-card:hover { border-color: rgba(249,115,22,0.3); }
+        .sidebar-link:hover { background: rgba(249,115,22,0.1); color: #f97316; }
+        .sidebar-link.active { background: rgba(249,115,22,0.15); color: #f97316; border-right: 3px solid #f97316; }
+
+        .bottom-nav-item.active { color: #f97316; }
+        .bottom-nav-item.active::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24px;
+            height: 3px;
+            background: #f97316;
+            border-radius: 0 0 3px 3px;
+        }
+
+        .hashtag:hover { background: rgba(249,115,22,0.2); color: #fb923c; }
+
+        .like-btn.liked { color: #ef4444; }
+        .like-btn.liked .iconify { color: #ef4444; }
+        .bookmark-btn.saved { color: #f97316; }
+
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #262626;
+            border: 1px solid #404040;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            z-index: 9999;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+            font-size: 14px;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+
+        @media (max-width: 1023px) {
+            .desktop-sidebar { display: none; }
+        }
+    </style>
+</head>
+<body class="bg-dark-950 text-white font-sans min-h-screen">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- ============ HEADER / NAVBAR ============ -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-dark-950/90 backdrop-blur-md border-b border-dark-800/50">
+        <div class="max-w-7xl mx-auto px-4 lg:px-6 h-16 flex items-center justify-between gap-4">
+            <!-- Logo -->
+            <div class="flex items-center gap-2 shrink-0">
+                <div class="w-9 h-9 bg-gradient-to-br from-brand-500 to-brand-700 rounded-xl flex items-center justify-center">
+                    <span class="iconify text-white text-lg" data-icon="lucide:scale"></span>
+                </div>
+                <span class="text-xl font-bold tracking-tight hidden sm:block">Law<span class="text-brand-500">book</span></span>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="flex-1 max-w-xl">
+                <div class="relative">
+                    <span class="iconify absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 text-lg" data-icon="lucide:search"></span>
+                    <input type="text" placeholder="ابحث عن مقالات، محامين، مواضيع..." 
+                        class="w-full bg-dark-900 border border-dark-700/50 rounded-xl pr-10 pl-4 py-2.5 text-sm text-white placeholder-dark-400 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 transition-all">
+                </div>
+            </div>
+
+            <!-- Desktop Nav Actions -->
+            <div class="hidden lg:flex items-center gap-2">
+                <button class="relative p-2.5 rounded-xl hover:bg-dark-800 transition-colors group" onclick="showToast('لا توجد إشعارات جديدة')">
+                    <span class="iconify text-dark-300 group-hover:text-white text-xl transition-colors" data-icon="lucide:bell"></span>
+                    <span class="absolute top-2 right-2 w-2 h-2 bg-brand-500 rounded-full pulse-dot"></span>
+                </button>
+                <button class="p-2.5 rounded-xl hover:bg-dark-800 transition-colors group" onclick="showToast('الرسائل')">
+                    <span class="iconify text-dark-300 group-hover:text-white text-xl transition-colors" data-icon="lucide:message-circle"></span>
+                </button>
+                <button class="flex items-center gap-2 bg-dark-800 hover:bg-dark-700 rounded-xl pr-2 pl-3 py-1.5 transition-colors" onclick="showToast('الملف الشخصي')">
+                    <img src="https://picsum.photos/seed/lawyer-me/40/40.jpg" class="w-8 h-8 rounded-lg object-cover" alt="الصورة الشخصية">
+                    <span class="text-sm font-medium hidden xl:block">د. أحمد</span>
+                </button>
+            </div>
+
+            <!-- Mobile Menu Button -->
+            <button class="lg:hidden p-2 rounded-xl hover:bg-dark-800 transition-colors" onclick="toggleMobileMenu()">
+                <span class="iconify text-xl" data-icon="lucide:menu"></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobileMenu" class="fixed inset-0 z-40 bg-dark-950/95 backdrop-blur-md hidden flex-col pt-20 px-6 pb-6">
+        <div class="flex flex-col gap-2">
+            <a href="#" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all">
+                <span class="iconify text-xl" data-icon="lucide:home"></span>الرئيسية
+            </a>
+            <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-dark-300 transition-all">
+                <span class="iconify text-xl" data-icon="lucide:user"></span>ملفي الشخصي
+            </a>
+            <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-dark-300 transition-all">
+                <span class="iconify text-xl" data-icon="lucide:users"></span>الروابط
+            </a>
+            <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-dark-300 transition-all">
+                <span class="iconify text-xl" data-icon="lucide:bookmark"></span>المحفوظات
+            </a>
+            <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-dark-300 transition-all">
+                <span class="iconify text-xl" data-icon="lucide:file-text"></span>مقالاتي
+            </a>
+            <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-dark-300 transition-all">
+                <span class="iconify text-xl" data-icon="lucide:bell"></span>الإشعارات
+            </a>
+            <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-dark-300 transition-all">
+                <span class="iconify text-xl" data-icon="lucide:message-circle"></span>الرسائل
+            </a>
+            <div class="border-t border-dark-800 my-2"></div>
+            <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-dark-300 transition-all">
+                <span class="iconify text-xl" data-icon="lucide:settings"></span>الإعدادات
+            </a>
+        </div>
+    </div>
+
+    <!-- ============ MAIN LAYOUT ============ -->
+    <div class="max-w-7xl mx-auto pt-20 pb-24 lg:pb-8 px-4 lg:px-6">
+        <div class="flex gap-6">
+
+            <!-- ======== LEFT SIDEBAR (Desktop) ======== -->
+            <aside class="desktop-sidebar w-64 shrink-0 sticky top-20 self-start">
+                <!-- Profile Card -->
+                <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-5 mb-4">
+                    <div class="flex items-center gap-3 mb-4">
+                        <img src="https://picsum.photos/seed/lawyer-me/80/80.jpg" class="w-12 h-12 rounded-xl object-cover border border-dark-700" alt="الصورة">
+                        <div>
+                            <h3 class="font-semibold text-sm">د. أحمد الخالدي</h3>
+                            <p class="text-dark-400 text-xs">محامي دولي • الإمارات</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-between text-center border-t border-dark-800 pt-3">
+                        <div>
+                            <p class="font-bold text-sm">1,247</p>
+                            <p class="text-dark-500 text-[10px]">متابع</p>
+                        </div>
+                        <div>
+                            <p class="font-bold text-sm">856</p>
+                            <p class="text-dark-500 text-[10px]">يتابع</p>
+                        </div>
+                        <div>
+                            <p class="font-bold text-sm">34</p>
+                            <p class="text-dark-500 text-[10px]">مقالة</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Links -->
+                <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-3 mb-4">
+                    <nav class="flex flex-col gap-1">
+                        <a href="#" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all">
+                            <span class="iconify text-lg" data-icon="lucide:home"></span>الرئيسية
+                        </a>
+                        <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-300 transition-all">
+                            <span class="iconify text-lg" data-icon="lucide:user"></span>ملفي الشخصي
+                        </a>
+                        <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-300 transition-all">
+                            <span class="iconify text-lg" data-icon="lucide:users"></span>الروابط
+                            <span class="mr-auto bg-brand-500/20 text-brand-400 text-[10px] font-bold px-2 py-0.5 rounded-full">12</span>
+                        </a>
+                        <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-300 transition-all">
+                            <span class="iconify text-lg" data-icon="lucide:bookmark"></span>المحفوظات
+                        </a>
+                        <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-300 transition-all">
+                            <span class="iconify text-lg" data-icon="lucide:file-text"></span>مقالاتي
+                        </a>
+                        <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-300 transition-all">
+                            <span class="iconify text-lg" data-icon="lucide:calendar"></span>الفعاليات
+                        </a>
+                        <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-300 transition-all">
+                            <span class="iconify text-lg" data-icon="lucide:award"></span>الشهادات
+                        </a>
+                    </nav>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-5">
+                    <h4 class="text-xs font-semibold text-dark-400 mb-3">إحصائيات هذا الأسبوع</h4>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-dark-300 text-xs">مشاهدات الملف</span>
+                            <span class="text-brand-400 text-xs font-bold">+24%</span>
+                        </div>
+                        <div class="w-full bg-dark-800 rounded-full h-1.5">
+                            <div class="bg-brand-500 h-1.5 rounded-full" style="width: 72%"></div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-dark-300 text-xs">تفاعل المقالات</span>
+                            <span class="text-green-400 text-xs font-bold">+18%</span>
+                        </div>
+                        <div class="w-full bg-dark-800 rounded-full h-1.5">
+                            <div class="bg-green-500 h-1.5 rounded-full" style="width: 58%"></div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- ======== MAIN FEED ======== -->
+            <main class="flex-1 min-w-0">
+                <!-- Create Post -->
+                <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-5 mb-6 animate-fade-in-up">
+                    <div class="flex items-start gap-3">
+                        <img src="https://picsum.photos/seed/lawyer-me/80/80.jpg" class="w-10 h-10 rounded-xl object-cover shrink-0" alt="">
+                        <div class="flex-1">
+                            <div id="postInput" contenteditable="true" 
+                                class="w-full bg-dark-850 border border-dark-700/50 rounded-xl px-4 py-3 text-sm text-dark-300 min-h-[48px] focus:outline-none focus:border-brand-500/50 focus:text-white transition-all cursor-text"
+                                data-placeholder="شارك أفكارك القانونية..." 
+                                onfocus="this.dataset.touched='true'"
+                                oninput="handlePostInput(this)"></div>
+                            <div class="flex items-center justify-between mt-3">
+                                <div class="flex items-center gap-1">
+                                    <button class="p-2 rounded-lg hover:bg-dark-800 transition-colors group" title="صورة" onclick="showToast('إضافة صورة')">
+                                        <span class="iconify text-dark-400 group-hover:text-brand-400 text-lg transition-colors" data-icon="lucide:image"></span>
+                                    </button>
+                                    <button class="p-2 rounded-lg hover:bg-dark-800 transition-colors group" title="رابط" onclick="showToast('إضافة رابط')">
+                                        <span class="iconify text-dark-400 group-hover:text-blue-400 text-lg transition-colors" data-icon="lucide:link"></span>
+                                    </button>
+                                    <button class="p-2 rounded-lg hover:bg-dark-800 transition-colors group" title="استطلاع" onclick="showToast('إنشاء استطلاع')">
+                                        <span class="iconify text-dark-400 group-hover:text-purple-400 text-lg transition-colors" data-icon="lucide:bar-chart-3"></span>
+                                    </button>
+                                    <button class="p-2 rounded-lg hover:bg-dark-800 transition-colors group" title="مقال" onclick="showToast('كتابة مقال')">
+                                        <span class="iconify text-dark-400 group-hover:text-green-400 text-lg transition-colors" data-icon="lucide:file-plus"></span>
+                                    </button>
+                                </div>
+                                <button onclick="publishPost()" class="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-all active:scale-95">
+                                    نشر
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feed Tabs -->
+                <div class="flex items-center gap-1 mb-5 bg-dark-900/50 rounded-xl p-1 border border-dark-800/30">
+                    <button class="feed-tab active flex-1 text-sm font-medium py-2 rounded-lg transition-all" data-tab="latest" onclick="switchTab(this)">
+                        الأحدث
+                    </button>
+                    <button class="feed-tab flex-1 text-sm font-medium py-2 rounded-lg transition-all text-dark-400 hover:text-dark-200" data-tab="trending" onclick="switchTab(this)">
+                        الأكثر رواجاً
+                    </button>
+                    <button class="feed-tab flex-1 text-sm font-medium py-2 rounded-lg transition-all text-dark-400 hover:text-dark-200" data-tab="following" onclick="switchTab(this)">
+                        المتابعون
+                    </button>
+                </div>
+
+                <!-- Post 1 -->
+                <article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up overflow-hidden">
+                    <!-- Post Header -->
+                    <div class="p-5 pb-0">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <img src="https://picsum.photos/seed/mohammed-ali/80/80.jpg" class="w-11 h-11 rounded-xl object-cover border border-dark-700" alt="">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="font-semibold text-sm">د. محمد علي الشعيبي</h3>
+                                        <span class="iconify text-brand-500 text-sm" data-icon="lucide:badge-check"></span>
+                                    </div>
+                                    <p class="text-dark-400 text-xs">محامي تحكيم دولي • 23 نوفمبر 2023</p>
+                                </div>
+                            </div>
+                            <button class="p-1.5 rounded-lg hover:bg-dark-800 transition-colors" onclick="showPostMenu(this)">
+                                <span class="iconify text-dark-400 text-lg" data-icon="lucide:more-horizontal"></span>
+                            </button>
+                        </div>
+
+                        <!-- Post Content -->
+                        <div class="mb-3">
+                            <h2 class="font-bold text-base mb-2 leading-relaxed">نظرة عامة على محكمة التحكيم الدولية لسنة 2023</h2>
+                            <p class="text-dark-300 text-sm leading-relaxed">تناولت محكمة التحكيم الدولية في دورتها الأخيرة العديد من القضايا الجوهرية المتعلقة بالتحكيم التجاري الدولي. في هذا المقال، نستعرض أبرز التطورات والتغييرات التي شهدتها المحكمة خلال العام المنصرم وتأثيرها على الممارسات القانونية...</p>
+                        </div>
+
+                        <!-- Hashtags -->
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="hashtag bg-brand-500/10 text-brand-400 text-xs font-medium px-3 py-1 rounded-full cursor-pointer transition-all">#التحكيم_الدولي</span>
+                            <span class="hashtag bg-brand-500/10 text-brand-400 text-xs font-medium px-3 py-1 rounded-full cursor-pointer transition-all">#القضاء_2023</span>
+                            <span class="hashtag bg-brand-500/10 text-brand-400 text-xs font-medium px-3 py-1 rounded-full cursor-pointer transition-all">#القانون_التجاري</span>
+                        </div>
+                    </div>
+
+                    <!-- Article Preview -->
+                    <div class="mx-5 mb-4 rounded-xl overflow-hidden border border-dark-700/50 cursor-pointer group" onclick="showToast('فتح المقال')">
+                        <div class="relative h-48 overflow-hidden">
+                            <img src="https://picsum.photos/seed/court-building-2023/800/400.jpg" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="معاينة المقال">
+                            <div class="absolute inset-0 bg-gradient-to-t from-dark-950/80 to-transparent"></div>
+                            <div class="absolute bottom-3 right-4 left-4">
+                                <span class="bg-brand-500/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-md">ARTICLE PREVIEW</span>
+                            </div>
+                        </div>
+                        <div class="bg-dark-850 p-4">
+                            <h4 class="font-semibold text-sm mb-1 group-hover:text-brand-400 transition-colors">محكمة التحكيم الدولية: التطورات الأخيرة والتوجهات المستقبلية</h4>
+                            <p class="text-dark-400 text-xs">lawbook.com/articles/international-arbitration-2023</p>
+                        </div>
+                    </div>
+
+                    <!-- Engagement Stats -->
+                    <div class="px-5 pb-2">
+                        <div class="flex items-center justify-between text-dark-400 text-xs mb-2">
+                            <span>215 إعجاب</span>
+                            <span>48 تعليق • 32 مشاركة</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="border-t border-dark-800/50 px-2 py-1">
+                        <div class="flex items-center justify-around">
+                            <button class="like-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleLike(this, 215)">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-red-400 transition-colors" data-icon="lucide:heart"></span>
+                                <span class="text-sm text-dark-400 group-hover:text-red-400 transition-colors like-count">215</span>
+                            </button>
+                            <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showToast('التعليقات')">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-blue-400 transition-colors" data-icon="lucide:message-circle"></span>
+                                <span class="text-sm text-dark-400 group-hover:text-blue-400 transition-colors">48</span>
+                            </button>
+                            <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showToast('تم نسخ رابط المشاركة')">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-green-400 transition-colors" data-icon="lucide:share-2"></span>
+                                <span class="text-sm text-dark-400 group-hover:text-green-400 transition-colors">32</span>
+                            </button>
+                            <button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleBookmark(this)">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-brand-400 transition-colors" data-icon="lucide:bookmark"></span>
+                            </button>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Post 2 -->
+                <article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up delay-100 overflow-hidden">
+                    <div class="p-5 pb-0">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <img src="https://picsum.photos/seed/sara-legal/80/80.jpg" class="w-11 h-11 rounded-xl object-cover border border-dark-700" alt="">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="font-semibold text-sm">سارة المنصوري</h3>
+                                    </div>
+                                    <p class="text-dark-400 text-xs">مستشارة قانونية • منذ ساعتين</p>
+                                </div>
+                            </div>
+                            <button class="p-1.5 rounded-lg hover:bg-dark-800 transition-colors" onclick="showPostMenu(this)">
+                                <span class="iconify text-dark-400 text-lg" data-icon="lucide:more-horizontal"></span>
+                            </button>
+                        </div>
+
+                        <div class="mb-3">
+                            <p class="text-dark-200 text-sm leading-relaxed">صدور قانون التحكيم الجديد في الإمارات العربية المتحدة يُعد نقلة نوعية في بيئة الأعمال. القانون يتضمن تحديثات جوهرية تتوافق مع أفضل الممارسات الدولية في مجال التحكيم التجاري. 🇦🇪⚖️</p>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="hashtag bg-brand-500/10 text-brand-400 text-xs font-medium px-3 py-1 rounded-full cursor-pointer transition-all">#قانون_التحكيم_الإماراتي</span>
+                            <span class="hashtag bg-blue-500/10 text-blue-400 text-xs font-medium px-3 py-1 rounded-full cursor-pointer transition-all">#الإمارات</span>
+                            <span class="hashtag bg-purple-500/10 text-purple-400 text-xs font-medium px-3 py-1 rounded-full cursor-pointer transition-all">#الأعمال_القانونية</span>
+                        </div>
+                    </div>
+
+                    <!-- Image Post -->
+                    <div class="mx-5 mb-4 rounded-xl overflow-hidden border border-dark-700/50">
+                        <img src="https://picsum.photos/seed/uae-arbitration/800/350.jpg" class="w-full h-52 object-cover" alt="قانون التحكيم الإماراتي">
+                    </div>
+
+                    <div class="px-5 pb-2">
+                        <div class="flex items-center justify-between text-dark-400 text-xs mb-2">
+                            <span>89 إعجاب</span>
+                            <span>14 تعليق • 7 مشاركة</span>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-dark-800/50 px-2 py-1">
+                        <div class="flex items-center justify-around">
+                            <button class="like-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleLike(this, 89)">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-red-400 transition-colors" data-icon="lucide:heart"></span>
+                                <span class="text-sm text-dark-400 group-hover:text-red-400 transition-colors like-count">89</span>
+                            </button>
+                            <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showToast('التعليقات')">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-blue-400 transition-colors" data-icon="lucide:message-circle"></span>
+                                <span class="text-sm text-dark-400 group-hover:text-blue-400 transition-colors">14</span>
+                            </button>
+                            <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showToast('تم نسخ رابط المشاركة')">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-green-400 transition-colors" data-icon="lucide:share-2"></span>
+                                <span class="text-sm text-dark-400 group-hover:text-green-400 transition-colors">7</span>
+                            </button>
+                            <button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleBookmark(this)">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-brand-400 transition-colors" data-icon="lucide:bookmark"></span>
+                            </button>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Post 3 -->
+                <article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up delay-200 overflow-hidden">
+                    <div class="p-5 pb-0">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <img src="https://picsum.photos/seed/khalid-jordan/80/80.jpg" class="w-11 h-11 rounded-xl object-cover border border-dark-700" alt="">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="font-semibold text-sm">خالد العمري</h3>
+                                        <span class="iconify text-brand-500 text-sm" data-icon="lucide:badge-check"></span>
+                                    </div>
+                                    <p class="text-dark-400 text-xs">أستاذ القانون الدولي • منذ 5 ساعات</p>
+                                </div>
+                            </div>
+                            <button class="p-1.5 rounded-lg hover:bg-dark-800 transition-colors" onclick="showPostMenu(this)">
+                                <span class="iconify text-dark-400 text-lg" data-icon="lucide:more-horizontal"></span>
+                            </button>
+                        </div>
+
+                        <div class="mb-3">
+                            <h2 class="font-bold text-base mb-2">قانون حقوق النشر في الأردن: تحديثات 2023</h2>
+                            <p class="text-dark-300 text-sm leading-relaxed">شهد قانون حقوق النشر الأردني تعديلات جوهرية تهدف إلى حماية الملكية الفكرية في العصر الرقمي. التعديلات تتضمن أحكاماً جديدة تتعلق بالمحتوى الرقمي والمنصات الإلكترونية...</p>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="hashtag bg-brand-500/10 text-brand-400 text-xs font-medium px-3 py-1 rounded-full cursor-pointer transition-all">#حقوق_النشر</span>
+                            <span class="hashtag bg-green-500/10 text-green-400 text-xs font-medium px-3 py-1 rounded-full cursor-pointer transition-all">#الأردن</span>
+                            <span class="hashtag bg-yellow-500/10 text-yellow-400 text-xs font-medium px-3 py-1 rounded-full cursor-pointer transition-all">#الملكية_الفكرية</span>
+                        </div>
+                    </div>
+
+                    <!-- Article Preview -->
+                    <div class="mx-5 mb-4 rounded-xl overflow-hidden border border-dark-700/50 cursor-pointer group" onclick="showToast('فتح المقال')">
+                        <div class="relative h-44 overflow-hidden">
+                            <img src="https://picsum.photos/seed/copyright-jordan/800/350.jpg" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="">
+                            <div class="absolute inset-0 bg-gradient-to-t from-dark-950/80 to-transparent"></div>
+                            <div class="absolute bottom-3 right-4">
+                                <span class="bg-brand-500/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-md">ARTICLE PREVIEW</span>
+                            </div>
+                        </div>
+                        <div class="bg-dark-850 p-4">
+                            <h4 class="font-semibold text-sm mb-1 group-hover:text-brand-400 transition-colors">التعديلات الجديدة على قانون حقوق النشر الأردني</h4>
+                            <p class="text-dark-400 text-xs">lawbook.com/articles/jordan-copyright-2023</p>
+                        </div>
+                    </div>
+
+                    <div class="px-5 pb-2">
+                        <div class="flex items-center justify-between text-dark-400 text-xs mb-2">
+                            <span>142 إعجاب</span>
+                            <span>31 تعليق • 19 مشاركة</span>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-dark-800/50 px-2 py-1">
+                        <div class="flex items-center justify-around">
+                            <button class="like-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleLike(this, 142)">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-red-400 transition-colors" data-icon="lucide:heart"></span>
+                                <span class="text-sm text-dark-400 group-hover:text-red-400 transition-colors like-count">142</span>
+                            </button>
+                            <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showToast('التعليقات')">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-blue-400 transition-colors" data-icon="lucide:message-circle"></span>
+                                <span class="text-sm text-dark-400 group-hover:text-blue-400 transition-colors">31</span>
+                            </button>
+                            <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showToast('تم نسخ رابط المشاركة')">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-green-400 transition-colors" data-icon="lucide:share-2"></span>
+                                <span class="text-sm text-dark-400 group-hover:text-green-400 transition-colors">19</span>
+                            </button>
+                            <button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleBookmark(this)">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-brand-400 transition-colors" data-icon="lucide:bookmark"></span>
+                            </button>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Post 4 - Short text post -->
+                <article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up delay-300 overflow-hidden">
+                    <div class="p-5">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <img src="https://picsum.photos/seed/fatima-fintech/80/80.jpg" class="w-11 h-11 rounded-xl object-cover border border-dark-700" alt="">
+                                <div>
+                                    <h3 class="font-semibold text-sm">فاطمة الحربي</h3>
+                                    <p class="text-dark-400 text-xs">خبيرة تقنية مالية • منذ 8 ساعات</p>
+                                </div>
+                            </div>
+                            <button class="p-1.5 rounded-lg hover:bg-dark-800 transition-colors" onclick="showPostMenu(this)">
+                                <span class="iconify text-dark-400 text-lg" data-icon="lucide:more-horizontal"></span>
+                            </button>
+                        </div>
+
+                        <div class="mb-3">
+                            <p class="text-dark-200 text-sm leading-relaxed">التنظيم العالمي للتقنية المالية (Fintech) يتسارع بشكل غير مسبوق. السعودية والإمارات تتصدران منطقة الشرق الأوسط في إطار تنظيمي يواكب التطور. سؤالي للمجتمع: ما التحديات الأبرز التي تواجه تنظيم العملات الرقمية في منطقتنا؟ 💡📉</p>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="hashtag bg-brand-500/10 text-brand-400 text-xs font-medium px-3 py-1 rounded-full cursor-pointer transition-all">#Fintech</span>
+                            <span class="hashtag bg-cyan-500/10 text-cyan-400 text-xs font-medium px-3 py-1 rounded-full cursor-pointer transition-all">#العملات_الرقمية</span>
+                            <span class="hashtag bg-pink-500/10 text-pink-400 text-xs font-medium px-3 py-1 rounded-full cursor-pointer transition-all">#التنظيم_المالي</span>
+                        </div>
+
+                        <!-- Poll -->
+                        <div class="bg-dark-850 rounded-xl p-4 border border-dark-700/30 mb-4">
+                            <p class="text-xs font-semibold text-dark-300 mb-3">📊 ما التحدي الأبرز؟</p>
+                            <div class="space-y-2">
+                                <button class="poll-option w-full text-right px-4 py-2.5 rounded-lg bg-dark-800/80 hover:bg-dark-700 border border-dark-700/50 text-sm text-dark-200 transition-all" onclick="votePoll(this, 45)">
+                                    <span class="float-left text-dark-400 text-xs poll-pct">45%</span>
+                                    غياب إطار تشريعي واضح
+                                </button>
+                                <button class="poll-option w-full text-right px-4 py-2.5 rounded-lg bg-dark-800/80 hover:bg-dark-700 border border-dark-700/50 text-sm text-dark-200 transition-all" onclick="votePoll(this, 30)">
+                                    <span class="float-left text-dark-400 text-xs poll-pct">30%</span>
+                                    مخاطر غسيل الأموال
+                                </button>
+                                <button class="poll-option w-full text-right px-4 py-2.5 rounded-lg bg-dark-800/80 hover:bg-dark-700 border border-dark-700/50 text-sm text-dark-200 transition-all" onclick="votePoll(this, 25)">
+                                    <span class="float-left text-dark-400 text-xs poll-pct">25%</span>
+                                    حماية المستهلك
+                                </button>
+                            </div>
+                            <p class="text-dark-500 text-[10px] mt-2">120 صوت</p>
+                        </div>
+
+                        <div class="flex items-center justify-between text-dark-400 text-xs mb-3">
+                            <span>67 إعجاب</span>
+                            <span>23 تعليق • 5 مشاركة</span>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-dark-800/50 px-2 py-1">
+                        <div class="flex items-center justify-around">
+                            <button class="like-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleLike(this, 67)">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-red-400 transition-colors" data-icon="lucide:heart"></span>
+                                <span class="text-sm text-dark-400 group-hover:text-red-400 transition-colors like-count">67</span>
+                            </button>
+                            <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showToast('التعليقات')">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-blue-400 transition-colors" data-icon="lucide:message-circle"></span>
+                                <span class="text-sm text-dark-400 group-hover:text-blue-400 transition-colors">23</span>
+                            </button>
+                            <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showToast('تم نسخ رابط المشاركة')">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-green-400 transition-colors" data-icon="lucide:share-2"></span>
+                                <span class="text-sm text-dark-400 group-hover:text-green-400 transition-colors">5</span>
+                            </button>
+                            <button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleBookmark(this)">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-brand-400 transition-colors" data-icon="lucide:bookmark"></span>
+                            </button>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Load More -->
+                <div class="text-center py-4">
+                    <button onclick="showToast('جاري تحميل المزيد...')" class="text-brand-400 hover:text-brand-300 text-sm font-medium transition-colors">
+                        تحميل المزيد من المنشورات...
+                    </button>
+                </div>
+            </main>
+
+            <!-- ======== RIGHT SIDEBAR (Desktop) ======== -->
+            <aside class="desktop-sidebar w-72 shrink-0 sticky top-20 self-start space-y-5">
+
+                <!-- Trending Legal Topics -->
+                <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-sm">المواضيع الرائجة</h3>
+                        <span class="iconify text-brand-500" data-icon="lucide:trending-up"></span>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="group cursor-pointer">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-dark-200 group-hover:text-brand-400 transition-colors">#التحكيم_الدولي</span>
+                                <span class="text-[10px] text-dark-500">1.2K منشور</span>
+                            </div>
+                            <div class="w-full bg-dark-800 rounded-full h-1 mt-1">
+                                <div class="bg-brand-500/60 h-1 rounded-full" style="width: 85%"></div>
+                            </div>
+                        </div>
+                        <div class="group cursor-pointer">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-dark-200 group-hover:text-brand-400 transition-colors">#حقوق_الملكية_الفكرية</span>
+                                <span class="text-[10px] text-dark-500">890 منشور</span>
+                            </div>
+                            <div class="w-full bg-dark-800 rounded-full h-1 mt-1">
+                                <div class="bg-blue-500/60 h-1 rounded-full" style="width: 65%"></div>
+                            </div>
+                        </div>
+                        <div class="group cursor-pointer">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-dark-200 group-hover:text-brand-400 transition-colors">#قانون_الشركات</span>
+                                <span class="text-[10px] text-dark-500">756 منشور</span>
+                            </div>
+                            <div class="w-full bg-dark-800 rounded-full h-1 mt-1">
+                                <div class="bg-purple-500/60 h-1 rounded-full" style="width: 55%"></div>
+                            </div>
+                        </div>
+                        <div class="group cursor-pointer">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-dark-200 group-hover:text-brand-400 transition-colors">#Fintech_التنظيمي</span>
+                                <span class="text-[10px] text-dark-500">634 منشور</span>
+                            </div>
+                            <div class="w-full bg-dark-800 rounded-full h-1 mt-1">
+                                <div class="bg-green-500/60 h-1 rounded-full" style="width: 45%"></div>
+                            </div>
+                        </div>
+                        <div class="group cursor-pointer">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-dark-200 group-hover:text-brand-400 transition-colors">#القانون_الجنائي</span>
+                                <span class="text-[10px] text-dark-500">512 منشور</span>
+                            </div>
+                            <div class="w-full bg-dark-800 rounded-full h-1 mt-1">
+                                <div class="bg-cyan-500/60 h-1 rounded-full" style="width: 38%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="showToast('عرض كل المواضيع')" class="w-full mt-4 text-brand-400 hover:text-brand-300 text-xs font-medium py-2 rounded-lg hover:bg-dark-800 transition-all">
+                        عرض كل المواضيع
+                    </button>
+                </div>
+
+                <!-- Recommended Connections -->
+                <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-sm">مقترحات الربط</h3>
+                        <span class="iconify text-brand-500" data-icon="lucide:user-plus"></span>
+                    </div>
+                    <div class="space-y-4">
+                        <!-- User 1 -->
+                        <div class="flex items-center gap-3">
+                            <img src="https://picsum.photos/seed/nora-lawyer/60/60.jpg" class="w-10 h-10 rounded-xl object-cover border border-dark-700 shrink-0" alt="">
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-medium text-sm truncate">نورة القحطاني</h4>
+                                <p class="text-dark-400 text-[11px] truncate">محامية عقود • السعودية</p>
+                            </div>
+                            <button class="connect-btn shrink-0 text-[11px] font-semibold text-brand-400 border border-brand-500/30 px-3 py-1 rounded-lg hover:bg-brand-500/10 transition-all" onclick="toggleConnect(this)">
+                                ربط
+                            </button>
+                        </div>
+                        <!-- User 2 -->
+                        <div class="flex items-center gap-3">
+                            <img src="https://picsum.photos/seed/omar-judge/60/60.jpg" class="w-10 h-10 rounded-xl object-cover border border-dark-700 shrink-0" alt="">
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-medium text-sm truncate">عمر الحسيني</h4>
+                                <p class="text-dark-400 text-[11px] truncate">قاضي متقاعد • العراق</p>
+                            </div>
+                            <button class="connect-btn shrink-0 text-[11px] font-semibold text-brand-400 border border-brand-500/30 px-3 py-1 rounded-lg hover:bg-brand-500/10 transition-all" onclick="toggleConnect(this)">
+                                ربط
+                            </button>
+                        </div>
+                        <!-- User 3 -->
+                        <div class="flex items-center gap-3">
+                            <img src="https://picsum.photos/seed/layla-mediator/60/60.jpg" class="w-10 h-10 rounded-xl object-cover border border-dark-700 shrink-0" alt="">
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-medium text-sm truncate">ليلى بنت خليفة</h4>
+                                <p class="text-dark-400 text-[11px] truncate">وسيطة قانونية • عُمان</p>
+                            </div>
+                            <button class="connect-btn shrink-0 text-[11px] font-semibold text-brand-400 border border-brand-500/30 px-3 py-1 rounded-lg hover:bg-brand-500/10 transition-all" onclick="toggleConnect(this)">
+                                ربط
+                            </button>
+                        </div>
+                        <!-- User 4 -->
+                        <div class="flex items-center gap-3">
+                            <img src="https://picsum.photos/seed/youssef-ip/60/60.jpg" class="w-10 h-10 rounded-xl object-cover border border-dark-700 shrink-0" alt="">
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-medium text-sm truncate">يوسف الشريف</h4>
+                                <p class="text-dark-400 text-[11px] truncate">خبير ملكية فكرية • مصر</p>
+                            </div>
+                            <button class="connect-btn shrink-0 text-[11px] font-semibold text-brand-400 border border-brand-500/30 px-3 py-1 rounded-lg hover:bg-brand-500/10 transition-all" onclick="toggleConnect(this)">
+                                ربط
+                            </button>
+                        </div>
+                    </div>
+                    <button onclick="showToast('عرض كل المقترحات')" class="w-full mt-4 text-brand-400 hover:text-brand-300 text-xs font-medium py-2 rounded-lg hover:bg-dark-800 transition-all">
+                        عرض الكل
+                    </button>
+                </div>
+
+                <!-- Upcoming Events -->
+                <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-sm">الفعاليات القادمة</h3>
+                        <span class="iconify text-brand-500" data-icon="lucide:calendar"></span>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="group cursor-pointer bg-dark-850 rounded-xl p-3 border border-dark-700/30 hover:border-brand-500/30 transition-all" onclick="showToast('تفاصيل الفعالية')">
+                            <div class="flex items-center gap-3">
+                                <div class="w-11 h-11 bg-brand-500/10 rounded-xl flex flex-col items-center justify-center shrink-0">
+                                    <span class="text-brand-400 text-[10px] font-bold">ديسمبر</span>
+                                    <span class="text-brand-300 text-sm font-bold leading-none">15</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-semibold group-hover:text-brand-400 transition-colors">مؤتمر التحكيم الدولي</h4>
+                                    <p class="text-dark-500 text-[10px]">دبي • حضورياً وعن بُعد</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="group cursor-pointer bg-dark-850 rounded-xl p-3 border border-dark-700/30 hover:border-brand-500/30 transition-all" onclick="showToast('تفاصيل الفعالية')">
+                            <div class="flex items-center gap-3">
+                                <div class="w-11 h-11 bg-blue-500/10 rounded-xl flex flex-col items-center justify-center shrink-0">
+                                    <span class="text-blue-400 text-[10px] font-bold">يناير</span>
+                                    <span class="text-blue-300 text-sm font-bold leading-none">08</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-semibold group-hover:text-blue-400 transition-colors">ورشة الملكية الفكرية</h4>
+                                    <p class="text-dark-500 text-[10px]">عمان • عن بُعد</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Links -->
+                <div class="px-2">
+                    <div class="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-dark-500">
+                        <a href="#" class="hover:text-dark-300 transition-colors">عن Lawbook</a>
+                        <a href="#" class="hover:text-dark-300 transition-colors">الخصوصية</a>
+                        <a href="#" class="hover:text-dark-300 transition-colors">الشروط</a>
+                        <a href="#" class="hover:text-dark-300 transition-colors">المساعدة</a>
+                        <a href="#" class="hover:text-dark-300 transition-colors">الوظائف</a>
+                    </div>
+                    <p class="text-[10px] text-dark-600 mt-2">© 2024 Lawbook. جميع الحقوق محفوظة.</p>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- ============ MOBILE BOTTOM NAVIGATION ============ -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-dark-950/95 backdrop-blur-md border-t border-dark-800/50">
+        <div class="flex items-center justify-around h-16 max-w-lg mx-auto">
+            <button class="bottom-nav-item active relative flex flex-col items-center gap-0.5 py-2 px-4 transition-colors" onclick="switchBottomNav(this)">
+                <span class="iconify text-xl" data-icon="lucide:home"></span>
+                <span class="text-[10px] font-medium">الرئيسية</span>
+            </button>
+            <button class="bottom-nav-item relative flex flex-col items-center gap-0.5 py-2 px-4 text-dark-400 transition-colors" onclick="switchBottomNav(this)">
+                <span class="iconify text-xl" data-icon="lucide:search"></span>
+                <span class="text-[10px] font-medium">بحث</span>
+            </button>
+            <button class="relative flex flex-col items-center gap-0.5 py-2 px-4 transition-colors" onclick="showPostModal()">
+                <div class="w-11 h-11 bg-brand-500 rounded-xl flex items-center justify-center -mt-5 shadow-lg shadow-brand-500/30">
+                    <span class="iconify text-white text-2xl" data-icon="lucide:plus"></span>
+                </div>
+            </button>
+            <button class="bottom-nav-item relative flex flex-col items-center gap-0.5 py-2 px-4 text-dark-400 transition-colors" onclick="switchBottomNav(this)">
+                <span class="iconify text-xl" data-icon="lucide:bell"></span>
+                <span class="text-[10px] font-medium">إشعارات</span>
+                <span class="absolute top-1 left-3 w-2 h-2 bg-brand-500 rounded-full pulse-dot"></span>
+            </button>
+            <button class="bottom-nav-item relative flex flex-col items-center gap-0.5 py-2 px-4 text-dark-400 transition-colors" onclick="switchBottomNav(this)">
+                <span class="iconify text-xl" data-icon="lucide:user"></span>
+                <span class="text-[10px] font-medium">ملفي</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ MOBILE POST MODAL ============ -->
+    <div id="postModal" class="modal-overlay" onclick="closePostModal(event)">
+        <div class="bg-dark-900 border border-dark-700/50 rounded-2xl w-[95%] max-w-lg mx-4 p-5" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-base">منشور جديد</h3>
+                <button onclick="closePostModal()" class="p-1.5 rounded-lg hover:bg-dark-800 transition-colors">
+                    <span class="iconify text-dark-400 text-xl" data-icon="lucide:x"></span>
+                </button>
+            </div>
+            <div class="flex items-start gap-3">
+                <img src="https://picsum.photos/seed/lawyer-me/80/80.jpg" class="w-10 h-10 rounded-xl object-cover shrink-0" alt="">
+                <div class="flex-1">
+                    <textarea id="modalPostText" rows="4" placeholder="شارك أفكارك القانونية..." 
+                        class="w-full bg-dark-850 border border-dark-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder-dark-400 focus:outline-none focus:border-brand-500/50 resize-none transition-all"></textarea>
+                    <div class="flex items-center justify-between mt-3">
+                        <div class="flex items-center gap-1">
+                            <button class="p-2 rounded-lg hover:bg-dark-800 transition-colors group" onclick="showToast('إضافة صورة')">
+                                <span class="iconify text-dark-400 group-hover:text-brand-400 text-lg transition-colors" data-icon="lucide:image"></span>
+                            </button>
+                            <button class="p-2 rounded-lg hover:bg-dark-800 transition-colors group" onclick="showToast('إضافة رابط')">
+                                <span class="iconify text-dark-400 group-hover:text-blue-400 text-lg transition-colors" data-icon="lucide:link"></span>
+                            </button>
+                            <button class="p-2 rounded-lg hover:bg-dark-800 transition-colors group" onclick="showToast('إضافة وسم')">
+                                <span class="iconify text-dark-400 group-hover:text-purple-400 text-lg transition-colors" data-icon="lucide:hash"></span>
+                            </button>
+                        </div>
+                        <button onclick="publishModalPost()" class="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-all active:scale-95">
+                            نشر
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ MOBILE: Recommended Authors (shown below feed on mobile) ============ -->
+    <div class="lg:hidden max-w-7xl mx-auto px-4 pb-4">
+        <!-- Recommended Authors - Mobile -->
+        <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-5 mb-5">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-sm">كُتّاب مقترحون</h3>
+                <span class="iconify text-brand-500" data-icon="lucide:user-plus"></span>
+            </div>
+            <div class="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
+                <div class="snap-center shrink-0 w-36 bg-dark-850 rounded-xl p-4 border border-dark-700/30 text-center">
+                    <img src="https://picsum.photos/seed/nora-lawyer/60/60.jpg" class="w-14 h-14 rounded-xl object-cover mx-auto mb-2 border border-dark-700" alt="">
+                    <h4 class="font-medium text-xs truncate">نورة القحطاني</h4>
+                    <p class="text-dark-400 text-[10px] mb-3">محامية عقود</p>
+                    <button class="connect-btn w-full text-[10px] font-semibold text-brand-400 border border-brand-500/30 px-3 py-1.5 rounded-lg hover:bg-brand-500/10 transition-all" onclick="toggleConnect(this)">ربط</button>
+                </div>
+                <div class="snap-center shrink-0 w-36 bg-dark-850 rounded-xl p-4 border border-dark-700/30 text-center">
+                    <img src="https://picsum.photos/seed/omar-judge/60/60.jpg" class="w-14 h-14 rounded-xl object-cover mx-auto mb-2 border border-dark-700" alt="">
+                    <h4 class="font-medium text-xs truncate">عمر الحسيني</h4>
+                    <p class="text-dark-400 text-[10px] mb-3">قاضي متقاعد</p>
+                    <button class="connect-btn w-full text-[10px] font-semibold text-brand-400 border border-brand-500/30 px-3 py-1.5 rounded-lg hover:bg-brand-500/10 transition-all" onclick="toggleConnect(this)">ربط</button>
+                </div>
+                <div class="snap-center shrink-0 w-36 bg-dark-850 rounded-xl p-4 border border-dark-700/30 text-center">
+                    <img src="https://picsum.photos/seed/layla-mediator/60/60.jpg" class="w-14 h-14 rounded-xl object-cover mx-auto mb-2 border border-dark-700" alt="">
+                    <h4 class="font-medium text-xs truncate">ليلى بنت خليفة</h4>
+                    <p class="text-dark-400 text-[10px] mb-3">وسيطة قانونية</p>
+                    <button class="connect-btn w-full text-[10px] font-semibold text-brand-400 border border-brand-500/30 px-3 py-1.5 rounded-lg hover:bg-brand-500/10 transition-all" onclick="toggleConnect(this)">ربط</button>
+                </div>
+                <div class="snap-center shrink-0 w-36 bg-dark-850 rounded-xl p-4 border border-dark-700/30 text-center">
+                    <img src="https://picsum.photos/seed/youssef-ip/60/60.jpg" class="w-14 h-14 rounded-xl object-cover mx-auto mb-2 border border-dark-700" alt="">
+                    <h4 class="font-medium text-xs truncate">يوسف الشريف</h4>
+                    <p class="text-dark-400 text-[10px] mb-3">خبير ملكية فكرية</p>
+                    <button class="connect-btn w-full text-[10px] font-semibold text-brand-400 border border-brand-500/30 px-3 py-1.5 rounded-lg hover:bg-brand-500/10 transition-all" onclick="toggleConnect(this)">ربط</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trending Topics - Mobile -->
+        <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-sm">المواضيع الرائجة</h3>
+                <span class="iconify text-brand-500" data-icon="lucide:trending-up"></span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <span class="hashtag bg-brand-500/10 text-brand-400 text-xs font-medium px-3 py-1.5 rounded-full cursor-pointer transition-all">#التحكيم_الدولي</span>
+                <span class="hashtag bg-blue-500/10 text-blue-400 text-xs font-medium px-3 py-1.5 rounded-full cursor-pointer transition-all">#حقوق_الملكية_الفكرية</span>
+                <span class="hashtag bg-purple-500/10 text-purple-400 text-xs font-medium px-3 py-1.5 rounded-full cursor-pointer transition-all">#قانون_الشركات</span>
+                <span class="hashtag bg-green-500/10 text-green-400 text-xs font-medium px-3 py-1.5 rounded-full cursor-pointer transition-all">#Fintech_التنظيمي</span>
+                <span class="hashtag bg-cyan-500/10 text-cyan-400 text-xs font-medium px-3 py-1.5 rounded-full cursor-pointer transition-all">#القانون_الجنائي</span>
+                <span class="hashtag bg-yellow-500/10 text-yellow-400 text-xs font-medium px-3 py-1.5 rounded-full cursor-pointer transition-all">#القانون_الدولي</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== Toast Notification =====
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        // ===== Mobile Menu =====
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('hidden');
+            menu.classList.toggle('flex');
+        }
+
+        // ===== Post Input Placeholder =====
+        function handlePostInput(el) {
+            if (el.textContent.trim() === '') {
+                el.style.color = '';
+            } else {
+                el.style.color = '#fff';
+            }
+        }
+
+        // Style the contenteditable placeholder
+        const postInput = document.getElementById('postInput');
+        if (postInput) {
+            const placeholder = postInput.dataset.placeholder;
+            if (postInput.textContent.trim() === '') {
+                postInput.textContent = '';
+            }
+            postInput.addEventListener('focus', function() {
+                if (this.textContent.trim() === '') {
+                    this.style.color = '#fff';
+                }
+            });
+            postInput.addEventListener('blur', function() {
+                if (this.textContent.trim() === '') {
+                    this.style.color = '';
+                }
+            });
+            // CSS for placeholder
+            const style = document.createElement('style');
+            style.textContent = `
+                #postInput:empty::before {
+                    content: attr(data-placeholder);
+                    color: #525252;
+                    pointer-events: none;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // ===== Publish Post =====
+        function publishPost() {
+            const input = document.getElementById('postInput');
+            if (input.textContent.trim() === '') {
+                showToast('اكتب شيئاً قبل النشر');
+                return;
+            }
+            showToast('تم نشر المنشور بنجاح ✓');
+            input.textContent = '';
+            input.style.color = '';
+        }
+
+        // ===== Like Toggle =====
+        function toggleLike(btn, count) {
+            const isLiked = btn.classList.toggle('liked');
+            const countEl = btn.querySelector('.like-count');
+            const icon = btn.querySelector('.iconify');
+            if (isLiked) {
+                countEl.textContent = count + 1;
+                icon.setAttribute('data-icon', 'lucide:heart');
+                icon.style.color = '#ef4444';
+                countEl.style.color = '#ef4444';
+                // Add a little bounce
+                btn.style.transform = 'scale(1.15)';
+                setTimeout(() => btn.style.transform = '', 200);
+            } else {
+                countEl.textContent = count;
+                icon.style.color = '';
+                countEl.style.color = '';
+            }
+        }
+
+        // ===== Bookmark Toggle =====
+        function toggleBookmark(btn) {
+            const isSaved = btn.classList.toggle('saved');
+            const icon = btn.querySelector('.iconify');
+            if (isSaved) {
+                icon.setAttribute('data-icon', 'lucide:bookmark-check');
+                icon.style.color = '#f97316';
+                showToast('تم الحفظ ✓');
+            } else {
+                icon.setAttribute('data-icon', 'lucide:bookmark');
+                icon.style.color = '';
+                showToast('تم إلغاء الحفظ');
+            }
+        }
+
+        // ===== Connect Toggle =====
+        function toggleConnect(btn) {
+            const isConnected = btn.dataset.connected === 'true';
+            if (isConnected) {
+                btn.textContent = 'ربط';
+                btn.classList.remove('bg-brand-500/20', 'text-brand-300', 'border-brand-400/50');
+                btn.classList.add('text-brand-400', 'border-brand-500/30');
+                btn.dataset.connected = 'false';
+                showToast('تم إلغاء الربط');
+            } else {
+                btn.textContent = 'مرتبط ✓';
+                btn.classList.add('bg-brand-500/20', 'text-brand-300', 'border-brand-400/50');
+                btn.classList.remove('text-brand-400', 'border-brand-500/30');
+                btn.dataset.connected = 'true';
+                showToast('تم الربط بنجاح ✓');
+            }
+        }
+
+        // ===== Feed Tab Switch =====
+        function switchTab(btn) {
+            document.querySelectorAll('.feed-tab').forEach(t => {
+                t.classList.remove('active', 'bg-dark-800', 'text-white');
+                t.classList.add('text-dark-400');
+            });
+            btn.classList.add('active', 'bg-dark-800', 'text-white');
+            btn.classList.remove('text-dark-400');
+            showToast('عرض: ' + btn.textContent.trim());
+        }
+        // Initialize active tab styling
+        document.querySelector('.feed-tab.active')?.classList.add('bg-dark-800', 'text-white');
+
+        // ===== Bottom Nav Switch =====
+        function switchBottomNav(btn) {
+            document.querySelectorAll('.bottom-nav-item').forEach(b => {
+                b.classList.remove('active');
+                b.classList.add('text-dark-400');
+            });
+            btn.classList.add('active');
+            btn.classList.remove('text-dark-400');
+        }
+
+        // ===== Post Modal =====
+        function showPostModal() {
+            document.getElementById('postModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => document.getElementById('modalPostText')?.focus(), 300);
+        }
+        function closePostModal(e) {
+            if (e && e.target !== e.currentTarget) return;
+            document.getElementById('postModal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        function publishModalPost() {
+            const text = document.getElementById('modalPostText').value.trim();
+            if (!text) {
+                showToast('اكتب شيئاً قبل النشر');
+                return;
+            }
+            showToast('تم نشر المنشور بنجاح ✓');
+            document.getElementById('modalPostText').value = '';
+            closePostModal();
+        }
+
+        // ===== Poll Voting =====
+        function votePoll(btn, pct) {
+            const parent = btn.closest('.bg-dark-850');
+            parent.querySelectorAll('.poll-option').forEach(opt => {
+                opt.style.pointerEvents = 'none';
+                const p = opt.querySelector('.poll-pct').textContent;
+                const pVal = parseInt(p);
+                opt.style.background = `linear-gradient(to left, rgba(249,115,22,0.15) ${pVal}%, rgba(38,38,38,0.8) ${pVal}%)`;
+                opt.style.opacity = opt === btn ? '1' : '0.6';
+            });
+            btn.style.borderColor = 'rgba(249,115,22,0.5)';
+            showToast('تم التصويت ✓');
+        }
+
+        // ===== Post Menu =====
+        function showPostMenu(btn) {
+            showToast('خيارات المنشور');
+        }
+    </script>
+</body>
+</html>
