@@ -6,6 +6,41 @@
             setTimeout(() => toast.classList.remove('show'), 2500);
         }
 
+        // ===== Following State (localStorage) =====
+        let followingUsers = JSON.parse(localStorage.getItem('followingUsers') || '[]');
+
+        function saveFollowing() {
+            localStorage.setItem('followingUsers', JSON.stringify(followingUsers));
+        }
+
+        function isFollowing(author) {
+            return followingUsers.includes(author);
+        }
+
+        // ===== Toggle Follow =====
+        function toggleFollow(btn) {
+            const author = btn.dataset.author;
+            if (!author) return;
+
+            if (isFollowing(author)) {
+                // Unfollow
+                followingUsers = followingUsers.filter(a => a !== author);
+                saveFollowing();
+                showToast('تم إلغاء المتابعة');
+            } else {
+                // Follow
+                followingUsers.push(author);
+                saveFollowing();
+                btn.style.transform = 'scale(1.1)';
+                setTimeout(() => btn.style.transform = '', 200);
+                showToast('تمت المتابعة ✓');
+            }
+
+            // Re-render both pages
+            renderFeedPosts();
+            renderFollowingPosts();
+        }
+
         // ===== Page Navigation =====
         function showPage(page) {
             document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
@@ -235,26 +270,6 @@
                 icon.setAttribute('data-icon', 'lucide:bookmark');
                 icon.style.color = '';
                 showToast('تم إلغاء الحفظ');
-            }
-        }
-
-        // ===== Follow Toggle =====
-        function toggleFollow(btn) {
-            const isFollowing = btn.dataset.following === 'true';
-            if (isFollowing) {
-                btn.innerHTML = '<span class="iconify text-sm" data-icon="lucide:user-plus"></span><span>متابعة</span>';
-                btn.classList.remove('bg-blue-500/20', 'text-blue-400', 'border-blue-500/50');
-                btn.classList.add('bg-dark-800', 'text-brand-400', 'border-brand-500/30');
-                btn.dataset.following = 'false';
-                showToast('تم إلغاء المتابعة');
-            } else {
-                btn.innerHTML = '<span class="iconify text-sm" data-icon="lucide:check"></span><span>متابَع</span>';
-                btn.classList.remove('bg-dark-800', 'text-brand-400', 'border-brand-500/30');
-                btn.classList.add('bg-blue-500/20', 'text-blue-400', 'border-blue-500/50');
-                btn.dataset.following = 'true';
-                btn.style.transform = 'scale(1.1)';
-                setTimeout(() => btn.style.transform = '', 200);
-                showToast('تمت المتابعة ✓');
             }
         }
 
@@ -560,11 +575,54 @@
         let isLoadingFeed = false;
         let feedExhausted = false;
 
+        // Hide static posts once dynamic posts load
+        function hideStaticPosts() {
+            const feedPage2 = document.getElementById('page-feed');
+            if (!feedPage2) return;
+            const staticArticles = feedPage2.querySelectorAll(':scope > article.post-card');
+            staticArticles.forEach(a => a.remove());
+        }
+
+        function getFeedPosts() {
+            // Show posts from non-followed users only
+            return allPosts.filter(p => !isFollowing(p.author));
+        }
+
         function getRelevantPosts(page, perPage) {
-            const sorted = [...allPosts].sort((a, b) => b.relevance - a.relevance);
+            const sorted = [...getFeedPosts()].sort((a, b) => b.relevance - a.relevance);
             const start = page * perPage;
             const end = start + perPage;
             return sorted.slice(start, end);
+        }
+
+        function renderFeedPosts() {
+            const container = document.getElementById('page-feed');
+            if (!container) return;
+
+            // Remove old dynamic posts and static posts
+            container.querySelectorAll('.post-card, .dynamic-post').forEach(el => el.remove());
+
+            const posts = getFeedPosts().sort((a, b) => b.relevance - a.relevance);
+            const loader = document.getElementById('infiniteLoader');
+
+            if (posts.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'dynamic-post text-center py-12 text-dark-400';
+                empty.innerHTML = '<span class="iconify text-4xl mb-3 block" data-icon="lucide:users"></span><p class="text-sm">تابعت كل المقترحات! 🎉</p><p class="text-xs text-dark-500 mt-1">ستظهر منشورات المتابَعين في "أتابع"</p>';
+                container.insertBefore(empty, loader);
+                document.getElementById('infiniteLoader').style.display = 'none';
+                return;
+            }
+
+            posts.forEach((post, i) => {
+                const div = document.createElement('div');
+                div.className = 'dynamic-post';
+                div.innerHTML = createPostHTML(post, i);
+                container.insertBefore(div.firstElementChild, loader);
+            });
+
+            document.getElementById('infiniteLoader').style.display = 'none';
+            document.getElementById('feedEnd').style.display = 'none';
         }
 
         function createPostHTML(post, index) {
@@ -576,18 +634,23 @@
                 return `<span class="hashtag bg-${color}-500/10 text-${color}-400 text-xs font-medium px-3 py-1 rounded-full cursor-pointer transition-all" onclick="showToast('تصفية: ${t}')">${t}</span>`;
             }).join('');
 
+            const alreadyFollowing = isFollowing(post.author);
+            const followBar = alreadyFollowing ? '' : `
+                <div class="follow-suggestion flex items-center justify-between px-5 pt-4 pb-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-full bg-gradient-to-br ${post.gradient} flex items-center justify-center text-white text-[10px] font-bold">${post.avatar}</div>
+                        <span class="text-xs text-dark-400">مقترح لك</span>
+                    </div>
+                    <button class="follow-btn flex items-center gap-1.5 bg-dark-800 hover:bg-dark-700 text-brand-400 text-xs font-semibold px-3 py-1.5 rounded-full border border-brand-500/30 transition-all active:scale-95" data-author="${post.author}" onclick="toggleFollow(this)">
+                        <span class="iconify text-sm" data-icon="lucide:user-plus"></span>
+                        <span>متابعة</span>
+                    </button>
+                </div>
+            `;
+
             return `
                 <article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up overflow-hidden" style="animation-delay:${index * 80}ms">
-                    <div class="follow-suggestion flex items-center justify-between px-5 pt-4 pb-2">
-                        <div class="flex items-center gap-2">
-                            <div class="w-7 h-7 rounded-full bg-gradient-to-br ${post.gradient} flex items-center justify-center text-white text-[10px] font-bold">${post.avatar}</div>
-                            <span class="text-xs text-dark-400">مقترح لك</span>
-                        </div>
-                        <button class="follow-btn flex items-center gap-1.5 bg-dark-800 hover:bg-dark-700 text-brand-400 text-xs font-semibold px-3 py-1.5 rounded-full border border-brand-500/30 transition-all active:scale-95" onclick="toggleFollow(this)">
-                            <span class="iconify text-sm" data-icon="lucide:user-plus"></span>
-                            <span>متابعة</span>
-                        </button>
-                    </div>
+                    ${followBar}
                     <div class="p-5 pb-0">
                         <div class="flex items-start justify-between mb-3">
                             <div class="flex items-center gap-3 cursor-pointer" onclick="showToast('عرض الملف الشخصي')">
@@ -639,54 +702,22 @@
             `;
         }
 
-        function loadMoreFeedPosts() {
-            if (isLoadingFeed || feedExhausted) return;
-            isLoadingFeed = true;
-            document.getElementById('infiniteLoader').style.display = 'flex';
+        // ===== Infinite scroll (disabled - all posts render at once) =====
+        function loadMoreFeedPosts() { /* handled by renderFeedPosts */ }
 
-            setTimeout(() => {
-                const posts = getRelevantPosts(feedPage, postsPerPage);
-                if (posts.length === 0) {
-                    feedExhausted = true;
-                    document.getElementById('infiniteLoader').style.display = 'none';
-                    document.getElementById('feedEnd').style.display = 'block';
-                    isLoadingFeed = false;
-                    return;
-                }
-                const container = document.getElementById('page-feed');
-                const loader = document.getElementById('infiniteLoader');
-                posts.forEach((post, i) => {
-                    const div = document.createElement('div');
-                    div.innerHTML = createPostHTML(post, feedPage * postsPerPage + i);
-                    container.insertBefore(div.firstElementChild, loader);
-                });
-                feedPage++;
-                document.getElementById('infiniteLoader').style.display = 'none';
-                isLoadingFeed = false;
-            }, 800);
-        }
-
-        // Intersection Observer for infinite scroll
-        function setupInfiniteScroll() {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const feedPage2 = document.getElementById('page-feed');
-                        if (feedPage2 && !feedPage2.classList.contains('hidden')) {
-                            loadMoreFeedPosts();
-                        }
-                    }
-                });
-            }, { rootMargin: '200px' });
-            const loader = document.getElementById('infiniteLoader');
-            if (loader) observer.observe(loader);
-        }
+        function setupInfiniteScroll() { /* no-op */ }
 
         // ===== Following Page =====
         function renderFollowingPosts() {
             const container = document.getElementById('followingPosts');
-            const followingAuthors = ['سارة المنصوري', 'د. محمد علي الشعيبي', 'خالد العمري', 'فاطمة الحربي', 'نورة القحطاني'];
-            const posts = allPosts.filter(p => followingAuthors.includes(p.author));
+            if (!container) return;
+            const posts = allPosts.filter(p => isFollowing(p.author));
+
+            if (posts.length === 0) {
+                container.innerHTML = '<div class="text-center py-12 text-dark-400"><span class="iconify text-4xl mb-3 block" data-icon="lucide:user-plus"></span><p class="text-sm">لم تتابع أحداً بعد</p><p class="text-xs text-dark-500 mt-1">تابعاً أشخاصاً من الرئيسية لترى منشوراتهم هنا</p></div>';
+                return;
+            }
+
             container.innerHTML = posts.map((post, i) => createPostHTML(post, i)).join('');
         }
 
@@ -833,8 +864,7 @@
             renderTrendingList('all');
             renderFollowingPosts();
             renderSpaces('live');
-            setupInfiniteScroll();
-            // Show initial loader
-            document.getElementById('infiniteLoader').style.display = 'flex';
-            setTimeout(() => loadMoreFeedPosts(), 500);
+            // Remove static posts and render dynamic feed
+            hideStaticPosts();
+            renderFeedPosts();
         });
