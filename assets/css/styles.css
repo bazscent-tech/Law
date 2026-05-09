@@ -45,6 +45,11 @@
         .like-btn.liked .iconify { color: #ef4444; }
         .bookmark-btn.saved { color: #f97316; }
 
+        /* Repost button */
+        .repost-btn.reposted { color: #22c55e; }
+        .repost-btn.reposted .iconify { color: #22c55e; }
+        .repost-btn.reposted span:last-child { color: #22c55e; }
+
         .toast {
             position: fixed;
             bottom: 100px;
