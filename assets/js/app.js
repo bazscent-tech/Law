@@ -743,6 +743,40 @@
             renderSpaces(filter);
         }
 
+        // ===== Auto-hide header + bottom nav on scroll =====
+        (function() {
+            let lastScroll = 0;
+            const header = () => document.getElementById('mainHeader');
+            const bottomNav = () => document.querySelector('.mobile-bottom-nav');
+            const THRESHOLD = 10;
+            const isMobile = () => window.innerWidth < 1024;
+
+            window.addEventListener('scroll', function() {
+                if (!isMobile()) return;
+                const current = window.scrollY;
+
+                // Don't trigger at very top
+                if (current < 50) {
+                    header()?.classList.remove('hide-on-scroll');
+                    bottomNav()?.classList.remove('hide-on-scroll');
+                    lastScroll = current;
+                    return;
+                }
+
+                if (current - lastScroll > THRESHOLD) {
+                    // Scrolling DOWN → hide
+                    header()?.classList.add('hide-on-scroll');
+                    bottomNav()?.classList.add('hide-on-scroll');
+                } else if (lastScroll - current > THRESHOLD) {
+                    // Scrolling UP → show
+                    header()?.classList.remove('hide-on-scroll');
+                    bottomNav()?.classList.remove('hide-on-scroll');
+                }
+
+                lastScroll = current;
+            }, { passive: true });
+        })();
+
         // ===== Initialize =====
         document.addEventListener('DOMContentLoaded', () => {
             renderTrendingList('all');

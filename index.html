@@ -30,7 +30,7 @@
     <div id="toast" class="toast"></div>
 
     <!-- ============ HEADER / NAVBAR ============ -->
-    <nav class="fixed top-0 left-0 right-0 z-50 bg-dark-950/90 backdrop-blur-md border-b border-dark-800/50">
+    <nav id="mainHeader" class="fixed top-0 left-0 right-0 z-50 bg-dark-950/90 backdrop-blur-md border-b border-dark-800/50">
         <div class="max-w-7xl mx-auto px-4 lg:px-6 h-16 flex items-center justify-between gap-4">
             <!-- Logo -->
             <div class="flex items-center gap-2 shrink-0 cursor-pointer" onclick="showPage('feed')">
@@ -1473,7 +1473,7 @@
     </div>
 
     <!-- ============ MOBILE BOTTOM NAVIGATION ============ -->
-    <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-dark-950/95 backdrop-blur-md border-t border-dark-800/50">
+    <nav class="mobile-bottom-nav lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-dark-950/95 backdrop-blur-md border-t border-dark-800/50">
         <div class="flex items-center justify-around h-16 max-w-lg mx-auto">
             <button class="bottom-nav-item active relative flex flex-col items-center gap-0.5 py-2 px-4 transition-colors" onclick="switchBottomNav(this);showPage('feed')">
                 <span class="iconify text-xl" data-icon="lucide:home"></span>

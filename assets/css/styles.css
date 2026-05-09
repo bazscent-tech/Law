@@ -73,6 +73,22 @@
         }
         .modal-overlay.active { display: flex; }
 
+        /* Auto-hide header + bottom nav on scroll (mobile) */
+        @media (max-width: 1023px) {
+            #mainHeader {
+                transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+            #mainHeader.hide-on-scroll {
+                transform: translateY(-100%);
+            }
+            .mobile-bottom-nav {
+                transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+            .mobile-bottom-nav.hide-on-scroll {
+                transform: translateY(100%);
+            }
+        }
+
         /* Mobile Drawer (X-style: slides from left, 80% width) */
         .mobile-drawer-overlay {
             position: fixed;
