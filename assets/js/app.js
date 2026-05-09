@@ -1193,6 +1193,430 @@
         // ===== Auto-hide on scroll =====
         (function(){let last=0;const h=()=>document.getElementById('mainHeader'),b=()=>document.querySelector('.mobile-bottom-nav');window.addEventListener('scroll',function(){if(window.innerWidth>=1024)return;const c=window.scrollY;if(c<50){h()?.classList.remove('hide-on-scroll');b()?.classList.remove('hide-on-scroll');last=c;return}if(c-last>10){h()?.classList.add('hide-on-scroll');b()?.classList.add('hide-on-scroll')}else if(last-c>10){h()?.classList.remove('hide-on-scroll');b()?.classList.remove('hide-on-scroll')}last=c},{passive:true})})();
 
+        // ============================================================
+        // ===== STORIES SYSTEM ======================================
+        // ============================================================
+
+        let storiesData = JSON.parse(localStorage.getItem('storiesData') || 'null');
+        let viewedStories = JSON.parse(localStorage.getItem('viewedStories') || '[]');
+        let currentStoryUserIndex = 0;
+        let currentStoryIndex = 0;
+        let storyTimer = null;
+        let storyPaused = false;
+        let storyProgressStart = 0;
+        let storyProgressRAF = null;
+
+        function getDefaultStories() {
+            return [
+                { id: 'user-me', name: 'أنت', avatar: 'https://picsum.photos/seed/lawyer-me/80/80.jpg', isOwn: true, stories: [] },
+                { id: 'user-sara', name: 'سارة المنصوري', avatar: 'https://picsum.photos/seed/sara-legal/80/80.jpg', stories: [
+                    { id: 's1', type: 'image', src: 'https://picsum.photos/seed/sara-story1/400/700.jpg', time: 'منذ ساعتين', duration: 5000 },
+                    { id: 's2', type: 'text', text: 'قانون جديد صدر اليوم! 📋⚖️', bg: 'linear-gradient(135deg,#8b5cf6,#6d28d9)', time: 'منذ 3 ساعات', duration: 5000 }
+                ]},
+                { id: 'user-khalid', name: 'خالد العمري', avatar: 'https://picsum.photos/seed/khalid-jordan/80/80.jpg', stories: [
+                    { id: 'k1', type: 'image', src: 'https://picsum.photos/seed/khalid-story1/400/700.jpg', time: 'منذ 4 ساعات', duration: 5000 },
+                    { id: 'k2', type: 'image', src: 'https://picsum.photos/seed/khalid-story2/400/700.jpg', time: 'منذ 5 ساعات', duration: 5000 },
+                    { id: 'k3', type: 'text', text: 'المحكمة أصدرت حكماً تاريخياً ⚖️', bg: 'linear-gradient(135deg,#06b6d4,#0891b2)', time: 'منذ 6 ساعات', duration: 5000 }
+                ]},
+                { id: 'user-fatima', name: 'فاطمة الحربي', avatar: 'https://picsum.photos/seed/fatima-fintech/80/80.jpg', stories: [
+                    { id: 'f1', type: 'text', text: 'Fintech is the future! 💡🚀', bg: 'linear-gradient(135deg,#10b981,#059669)', time: 'منذ ساعة', duration: 5000 }
+                ]},
+                { id: 'user-nora', name: 'نورة القحطاني', avatar: 'https://picsum.photos/seed/nora-lawyer/80/80.jpg', stories: [
+                    { id: 'n1', type: 'image', src: 'https://picsum.photos/seed/nora-story1/400/700.jpg', time: 'منذ 8 ساعات', duration: 5000 },
+                    { id: 'n2', type: 'text', text: 'ورشة عمل غداً عن العقود الدولية 📝', bg: 'linear-gradient(135deg,#ec4899,#be185d)', time: 'منذ 10 ساعات', duration: 5000 }
+                ]},
+                { id: 'user-omar', name: 'عمر الحسيني', avatar: 'https://picsum.photos/seed/omar-judge/80/80.jpg', stories: [
+                    { id: 'o1', type: 'image', src: 'https://picsum.photos/seed/omar-story1/400/700.jpg', time: 'منذ يوم', duration: 5000 }
+                ]}
+            ];
+        }
+
+        function initStories() {
+            if (!storiesData) {
+                storiesData = getDefaultStories();
+                localStorage.setItem('storiesData', JSON.stringify(storiesData));
+            }
+            renderStoriesBar();
+        }
+
+        function saveStories() { localStorage.setItem('storiesData', JSON.stringify(storiesData)); }
+        function saveViewedStories() { localStorage.setItem('viewedStories', JSON.stringify(viewedStories)); }
+
+        function renderStoriesBar() {
+            const bar = document.getElementById('storiesBar');
+            if (!bar) return;
+            const profile = getProfile();
+
+            // Update "add story" avatar
+            const addCard = bar.querySelector('.add-story');
+            if (addCard) {
+                const savedAvatar = localStorage.getItem('profileAvatar');
+                if (savedAvatar) addCard.querySelector('.story-card-bg').src = savedAvatar;
+            }
+
+            // Remove old story cards (keep add-story)
+            bar.querySelectorAll('.story-card:not(.add-story)').forEach(c => c.remove());
+
+            // Render other users' stories
+            storiesData.filter(u => !u.isOwn && u.stories.length > 0).forEach(user => {
+                const isViewed = user.stories.every(s => viewedStories.includes(s.id));
+                const firstStory = user.stories[0];
+
+                if (firstStory.type === 'text') {
+                    const card = document.createElement('div');
+                    card.className = 'story-card text-story';
+                    card.style.background = firstStory.bg || 'linear-gradient(135deg,#f97316,#ea580c)';
+                    card.onclick = () => openStoryViewer(user.id);
+                    card.innerHTML = `
+                        <img src="${user.avatar}" class="story-card-avatar${isViewed ? ' viewed' : ''}" alt="">
+                        <span class="story-card-text">${firstStory.text.substring(0, 60)}</span>
+                        <span class="story-card-name">${user.name}</span>
+                    `;
+                    bar.appendChild(card);
+                } else {
+                    const card = document.createElement('div');
+                    card.className = 'story-card';
+                    card.onclick = () => openStoryViewer(user.id);
+                    card.innerHTML = `
+                        <img src="${firstStory.src || firstStory.data || user.avatar}" class="story-card-bg" alt="" loading="lazy">
+                        <div class="story-card-overlay"></div>
+                        <img src="${user.avatar}" class="story-card-avatar${isViewed ? ' viewed' : ''}" alt="">
+                        <span class="story-card-name">${user.name}</span>
+                    `;
+                    bar.appendChild(card);
+                }
+            });
+
+            // Update own story card
+            const myStories = storiesData.find(u => u.isOwn);
+            if (myStories && myStories.stories.length > 0) {
+                addCard.onclick = () => openStoryViewer('user-me');
+                const label = addCard.querySelector('.story-card-label');
+                if (label) label.textContent = 'حالاتي';
+            }
+        }
+
+        // ===== CREATE STORY =====
+        function openCreateStory() {
+            const myStories = storiesData.find(u => u.isOwn);
+            if (myStories && myStories.stories.length > 0) {
+                openStoryViewer('user-me');
+                return;
+            }
+            document.getElementById('createStoryModal').classList.add('active');
+        }
+        function closeCreateStory(e) { if(e&&e.target!==e.currentTarget)return; document.getElementById('createStoryModal').classList.remove('active'); }
+
+        let textStoryColor = 'linear-gradient(135deg,#f97316,#ea580c)';
+
+        function startTextStory() {
+            document.getElementById('createStoryModal').classList.remove('active');
+            document.getElementById('textStoryEditor').style.display = 'flex';
+            document.getElementById('textStoryEditor').classList.add('active');
+            document.getElementById('textStoryInput').value = '';
+            document.getElementById('textStoryPreview').style.background = textStoryColor;
+            setTimeout(() => document.getElementById('textStoryInput').focus(), 300);
+        }
+
+        function closeTextStoryEditor() {
+            document.getElementById('textStoryEditor').style.display = 'none';
+            document.getElementById('textStoryEditor').classList.remove('active');
+        }
+
+        function setTextStoryColor(btn, color) {
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            textStoryColor = color;
+            document.getElementById('textStoryPreview').style.background = color;
+        }
+
+        function updateTextStoryPreview() {
+            // Just live update — no extra logic needed
+        }
+
+        function publishTextStory() {
+            const text = document.getElementById('textStoryInput').value.trim();
+            if (!text) { showToast('اكتب شيئاً أولاً'); return; }
+
+            let myUser = storiesData.find(u => u.isOwn);
+            if (!myUser) {
+                myUser = { id: 'user-me', name: getProfile().name, avatar: localStorage.getItem('profileAvatar') || 'https://picsum.photos/seed/lawyer-me/80/80.jpg', isOwn: true, stories: [] };
+                storiesData.unshift(myUser);
+            }
+
+            myUser.stories.push({
+                id: 'story-' + Date.now(),
+                type: 'text',
+                text: text,
+                bg: textStoryColor,
+                time: 'الآن',
+                duration: 5000,
+                data: null
+            });
+            saveStories();
+            closeTextStoryEditor();
+            renderStoriesBar();
+            showToast('تم نشر الحالة ✓');
+        }
+
+        function handleStoryImageUpload(input) {
+            const file = input.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                let myUser = storiesData.find(u => u.isOwn);
+                if (!myUser) {
+                    myUser = { id: 'user-me', name: getProfile().name, avatar: localStorage.getItem('profileAvatar') || 'https://picsum.photos/seed/lawyer-me/80/80.jpg', isOwn: true, stories: [] };
+                    storiesData.unshift(myUser);
+                }
+                myUser.stories.push({
+                    id: 'story-' + Date.now(),
+                    type: 'image',
+                    src: e.target.result,
+                    data: e.target.result,
+                    time: 'الآن',
+                    duration: 5000
+                });
+                saveStories();
+                document.getElementById('createStoryModal').classList.remove('active');
+                renderStoriesBar();
+                showToast('تم نشر الحالة ✓');
+            };
+            reader.readAsDataURL(file);
+            input.value = '';
+        }
+
+        function handleStoryVideoUpload(input) {
+            const file = input.files[0]; if (!file) return;
+            if (file.size > 50 * 1024 * 1024) { showToast('الفيديو كبير جداً (max 50MB)'); return; }
+            showStoryUploadProgress();
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                let myUser = storiesData.find(u => u.isOwn);
+                if (!myUser) {
+                    myUser = { id: 'user-me', name: getProfile().name, avatar: localStorage.getItem('profileAvatar') || 'https://picsum.photos/seed/lawyer-me/80/80.jpg', isOwn: true, stories: [] };
+                    storiesData.unshift(myUser);
+                }
+                myUser.stories.push({
+                    id: 'story-' + Date.now(),
+                    type: 'video',
+                    src: e.target.result,
+                    data: e.target.result,
+                    time: 'الآن',
+                    duration: 15000
+                });
+                saveStories();
+                document.getElementById('createStoryModal').classList.remove('active');
+                renderStoriesBar();
+                hideStoryUploadProgress();
+                showToast('تم نشر الحالة ✓');
+            };
+            reader.readAsDataURL(file);
+            input.value = '';
+        }
+
+        function showStoryUploadProgress() {
+            const div = document.createElement('div');
+            div.className = 'story-upload-progress';
+            div.id = 'storyUploadProgress';
+            div.innerHTML = '<div class="spinner"></div><span>جاري رفع الحالة...</span>';
+            document.body.appendChild(div);
+        }
+        function hideStoryUploadProgress() {
+            const el = document.getElementById('storyUploadProgress');
+            if (el) el.remove();
+        }
+
+        // ===== STORY VIEWER =====
+        function openStoryViewer(userId) {
+            const userIndex = storiesData.findIndex(u => u.id === userId);
+            if (userIndex === -1) return;
+            const user = storiesData[userIndex];
+            if (!user.stories || user.stories.length === 0) return;
+
+            currentStoryUserIndex = userIndex;
+            currentStoryIndex = 0;
+
+            document.getElementById('storyViewer').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            renderStoryContent();
+        }
+
+        function closeStoryViewer() {
+            document.getElementById('storyViewer').classList.remove('active');
+            document.body.style.overflow = '';
+            clearStoryTimer();
+            cancelAnimationFrame(storyProgressRAF);
+        }
+
+        function renderStoryContent() {
+            const user = storiesData[currentStoryUserIndex];
+            if (!user) { closeStoryViewer(); return; }
+            const story = user.stories[currentStoryIndex];
+            if (!story) { nextUser(); return; }
+
+            // Mark as viewed
+            if (!viewedStories.includes(story.id)) {
+                viewedStories.push(story.id);
+                saveViewedStories();
+            }
+
+            // Header
+            document.getElementById('storyHeaderAvatar').innerHTML = `<img src="${user.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
+            document.getElementById('storyHeaderName').textContent = user.name;
+            document.getElementById('storyHeaderTime').textContent = story.time || '';
+
+            // Progress bars
+            const progressBar = document.getElementById('storyProgressBar');
+            progressBar.innerHTML = user.stories.map((s, i) => {
+                let cls = 'story-progress-segment';
+                if (i < currentStoryIndex) cls += ' completed';
+                else if (i === currentStoryIndex) cls += ' active';
+                return `<div class="${cls}"><div class="story-progress-fill"></div></div>`;
+            }).join('');
+
+            // Content
+            const content = document.getElementById('storyContent');
+            if (story.type === 'text') {
+                content.innerHTML = `<div class="text-story-view" style="background:${story.bg || 'linear-gradient(135deg,#f97316,#ea580c)'}"><p>${story.text.replace(/</g,'&lt;')}</p></div>`;
+            } else if (story.type === 'video') {
+                content.innerHTML = `<video src="${story.src || story.data}" autoplay muted playsinline style="width:100%;height:100%;object-fit:cover" onended="storyNext()"></video>`;
+            } else {
+                content.innerHTML = `<img src="${story.src || story.data}" alt="" style="width:100%;height:100%;object-fit:cover">`;
+            }
+
+            // Start progress
+            startStoryProgress(story.duration || 5000);
+        }
+
+        function startStoryProgress(duration) {
+            clearStoryTimer();
+            cancelAnimationFrame(storyProgressRAF);
+            storyPaused = false;
+            storyProgressStart = Date.now();
+
+            const fill = document.querySelector('.story-progress-segment.active .story-progress-fill');
+            if (!fill) return;
+
+            function animate() {
+                if (storyPaused) {
+                    storyProgressRAF = requestAnimationFrame(animate);
+                    return;
+                }
+                const elapsed = Date.now() - storyProgressStart;
+                const pct = Math.min((elapsed / duration) * 100, 100);
+                fill.style.width = pct + '%';
+                if (pct >= 100) {
+                    storyNext();
+                    return;
+                }
+                storyProgressRAF = requestAnimationFrame(animate);
+            }
+            storyProgressRAF = requestAnimationFrame(animate);
+        }
+
+        function clearStoryTimer() {
+            if (storyTimer) { clearTimeout(storyTimer); storyTimer = null; }
+        }
+
+        function storyNext(e) {
+            if (e) e.stopPropagation();
+            cancelAnimationFrame(storyProgressRAF);
+            const user = storiesData[currentStoryUserIndex];
+            if (!user) return;
+
+            if (currentStoryIndex < user.stories.length - 1) {
+                currentStoryIndex++;
+                renderStoryContent();
+            } else {
+                nextUser();
+            }
+        }
+
+        function storyPrev(e) {
+            if (e) e.stopPropagation();
+            cancelAnimationFrame(storyProgressRAF);
+            if (currentStoryIndex > 0) {
+                currentStoryIndex--;
+                renderStoryContent();
+            } else {
+                prevUser();
+            }
+        }
+
+        function nextUser() {
+            cancelAnimationFrame(storyProgressRAF);
+            // Find next user with stories
+            let nextIdx = currentStoryUserIndex + 1;
+            while (nextIdx < storiesData.length && (!storiesData[nextIdx].stories || storiesData[nextIdx].stories.length === 0)) {
+                nextIdx++;
+            }
+            if (nextIdx < storiesData.length) {
+                currentStoryUserIndex = nextIdx;
+                currentStoryIndex = 0;
+                renderStoryContent();
+            } else {
+                closeStoryViewer();
+                showToast('انتهت الحالات');
+            }
+        }
+
+        function prevUser() {
+            cancelAnimationFrame(storyProgressRAF);
+            let prevIdx = currentStoryUserIndex - 1;
+            while (prevIdx >= 0 && (!storiesData[prevIdx].stories || storiesData[prevIdx].stories.length === 0)) {
+                prevIdx--;
+            }
+            if (prevIdx >= 0) {
+                currentStoryUserIndex = prevIdx;
+                currentStoryIndex = storiesData[prevIdx].stories.length - 1;
+                renderStoryContent();
+            }
+        }
+
+        function storyViewerClick(e) {
+            // Long press detection for pause
+            // Simple: left half = prev, right half = next (handled by nav divs)
+        }
+
+        // Touch hold to pause
+        (function() {
+            let holdTimer = null;
+            const viewer = document.getElementById('storyViewer');
+            if (!viewer) return;
+
+            viewer.addEventListener('touchstart', (e) => {
+                holdTimer = setTimeout(() => {
+                    storyPaused = true;
+                    // Pause video if playing
+                    const video = viewer.querySelector('video');
+                    if (video) video.pause();
+                }, 300);
+            }, { passive: true });
+
+            viewer.addEventListener('touchend', () => {
+                clearTimeout(holdTimer);
+                if (storyPaused) {
+                    storyPaused = false;
+                    storyProgressStart = Date.now() - (parseFloat(document.querySelector('.story-progress-segment.active .story-progress-fill')?.style.width || '0') / 100) * 5000;
+                    const video = viewer.querySelector('video');
+                    if (video) video.play();
+                }
+            }, { passive: true });
+        })();
+
+        function sendStoryReply() {
+            const input = document.getElementById('storyReplyInput');
+            const text = input.value.trim();
+            if (!text) return;
+            const user = storiesData[currentStoryUserIndex];
+            if (user) showToast(`تم إرسال رد إلى ${user.name} ✓`);
+            input.value = '';
+        }
+
+        // ============================================================
+        // ===== END STORIES ==========================================
+        // ============================================================
+
         // ===== Init =====
         document.addEventListener('DOMContentLoaded',()=>{
             loadSavedImages();loadProfile();renderTrendingList('all');renderFollowingPosts();renderSpaces('live');updateNotifDots();renderProfilePosts();hideStaticPosts();renderFeedPosts();
@@ -1201,6 +1625,7 @@
             Router.init();
             PullToRefresh.init();
             NotifPTR.init();
+            initStories();
 
             // Restore state (if returning from refresh)
             const restored = AppState.restore();

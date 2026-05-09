@@ -340,6 +340,20 @@
 
                 <!-- ========== FEED PAGE ========== -->
                 <div id="page-feed" class="page-content">
+                    <!-- Stories Bar -->
+                    <div class="stories-bar-container mb-6 animate-fade-in-up">
+                        <div class="stories-bar" id="storiesBar">
+                            <!-- Add Story -->
+                            <div class="story-card add-story" onclick="openCreateStory()">
+                                <img src="https://picsum.photos/seed/lawyer-me/120/120.jpg" class="story-card-bg" alt="">
+                                <div class="story-card-overlay"></div>
+                                <div class="add-story-icon"><span class="iconify text-white text-xl" data-icon="lucide:plus"></span></div>
+                                <span class="story-card-label">إضافة حالة</span>
+                            </div>
+                            <!-- Stories injected by JS -->
+                        </div>
+                    </div>
+
                     <!-- Create Post -->
                     <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-5 mb-6 animate-fade-in-up">
                         <div class="flex items-start gap-3">
@@ -1782,6 +1796,105 @@
         </div>
     </div>
 
-    <script src="assets/js/app.js?v=4"></script>
+    <!-- ============ STORY VIEWER (Full Screen) ============ -->
+    <div id="storyViewer" class="story-viewer" onclick="storyViewerClick(event)">
+        <div class="story-viewer-inner" id="storyViewerInner">
+            <!-- Progress Bars -->
+            <div class="story-progress-bar" id="storyProgressBar"></div>
+            <!-- Header -->
+            <div class="story-header">
+                <div class="story-header-info">
+                    <div class="story-header-avatar" id="storyHeaderAvatar"></div>
+                    <div>
+                        <span class="story-header-name" id="storyHeaderName"></span>
+                        <span class="story-header-time" id="storyHeaderTime"></span>
+                    </div>
+                </div>
+                <button class="story-close-btn" onclick="closeStoryViewer()">
+                    <span class="iconify text-white text-xl" data-icon="lucide:x"></span>
+                </button>
+            </div>
+            <!-- Content -->
+            <div class="story-content" id="storyContent"></div>
+            <!-- Navigation Hints -->
+            <div class="story-nav-prev" onclick="storyPrev(event)"></div>
+            <div class="story-nav-next" onclick="storyNext(event)"></div>
+            <!-- Reply Bar -->
+            <div class="story-reply-bar">
+                <input type="text" id="storyReplyInput" placeholder="أرسل رسالة..." class="story-reply-input" onkeydown="if(event.key==='Enter')sendStoryReply()">
+                <button onclick="sendStoryReply()" class="story-reply-send"><span class="iconify text-white" data-icon="lucide:send"></span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ CREATE STORY MODAL ============ -->
+    <div id="createStoryModal" class="modal-overlay" onclick="closeCreateStory(event)">
+        <div class="create-story-modal" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between p-5 border-b border-dark-800/50">
+                <h3 class="font-bold text-base">إنشاء حالة</h3>
+                <button onclick="closeCreateStory()" class="p-1.5 rounded-lg hover:bg-dark-800 transition-colors">
+                    <span class="iconify text-dark-400 text-xl" data-icon="lucide:x"></span>
+                </button>
+            </div>
+            <div class="p-5 space-y-4">
+                <!-- Text Story -->
+                <div class="create-story-option" onclick="startTextStory()">
+                    <div class="w-12 h-12 bg-brand-500/10 rounded-xl flex items-center justify-center">
+                        <span class="iconify text-brand-400 text-2xl" data-icon="lucide:type"></span>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-sm">حالة نصية</h4>
+                        <p class="text-dark-400 text-xs">اكتب نص على خلفية ملونة</p>
+                    </div>
+                </div>
+                <!-- Image Story -->
+                <div class="create-story-option" onclick="document.getElementById('storyImageInput').click()">
+                    <div class="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
+                        <span class="iconify text-blue-400 text-2xl" data-icon="lucide:image"></span>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-sm">صورة</h4>
+                        <p class="text-dark-400 text-xs">ارفع صورة من استوديو</p>
+                    </div>
+                </div>
+                <input type="file" id="storyImageInput" accept="image/*" class="hidden" onchange="handleStoryImageUpload(this)">
+                <!-- Video Story -->
+                <div class="create-story-option" onclick="document.getElementById('storyVideoInput').click()">
+                    <div class="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center">
+                        <span class="iconify text-purple-400 text-2xl" data-icon="lucide:video"></span>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-sm">فيديو</h4>
+                        <p class="text-dark-400 text-xs">ارفع فيديو من جهازك</p>
+                    </div>
+                </div>
+                <input type="file" id="storyVideoInput" accept="video/*" class="hidden" onchange="handleStoryVideoUpload(this)">
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ TEXT STORY EDITOR ============ -->
+    <div id="textStoryEditor" class="story-viewer" style="display:none">
+        <div class="text-story-editor-inner">
+            <div class="text-story-preview" id="textStoryPreview">
+                <textarea id="textStoryInput" placeholder="اكتب حالتك..." oninput="updateTextStoryPreview()"></textarea>
+            </div>
+            <!-- Color Picker -->
+            <div class="text-story-colors" id="textStoryColors">
+                <button class="color-btn active" style="background:linear-gradient(135deg,#f97316,#ea580c)" onclick="setTextStoryColor(this,'linear-gradient(135deg,#f97316,#ea580c)')"></button>
+                <button class="color-btn" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9)" onclick="setTextStoryColor(this,'linear-gradient(135deg,#8b5cf6,#6d28d9)')"></button>
+                <button class="color-btn" style="background:linear-gradient(135deg,#06b6d4,#0891b2)" onclick="setTextStoryColor(this,'linear-gradient(135deg,#06b6d4,#0891b2)')"></button>
+                <button class="color-btn" style="background:linear-gradient(135deg,#ec4899,#be185d)" onclick="setTextStoryColor(this,'linear-gradient(135deg,#ec4899,#be185d)')"></button>
+                <button class="color-btn" style="background:linear-gradient(135deg,#10b981,#059669)" onclick="setTextStoryColor(this,'linear-gradient(135deg,#10b981,#059669)')"></button>
+                <button class="color-btn" style="background:linear-gradient(135deg,#171717,#404040)" onclick="setTextStoryColor(this,'linear-gradient(135deg,#171717,#404040)')"></button>
+            </div>
+            <div class="text-story-actions">
+                <button onclick="closeTextStoryEditor()" class="bg-dark-800 text-sm px-5 py-2.5 rounded-xl border border-dark-700">إلغاء</button>
+                <button onclick="publishTextStory()" class="bg-brand-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl">نشر الحالة</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/app.js?v=5"></script>
 </body>
 </html>
