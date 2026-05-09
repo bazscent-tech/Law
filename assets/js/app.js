@@ -50,12 +50,47 @@
             if (q) showToast('بحث عن: ' + q);
         }
 
-        // ===== Mobile Menu =====
-        function toggleMobileMenu() {
-            const menu = document.getElementById('mobileMenu');
-            menu.classList.toggle('hidden');
-            menu.classList.toggle('flex');
+        // ===== Mobile Menu (X-style drawer) =====
+        function openMobileMenu() {
+            document.getElementById('mobileMenuOverlay').classList.add('open');
+            document.body.style.overflow = 'hidden';
         }
+
+        function closeMobileMenu() {
+            document.getElementById('mobileMenuOverlay').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        // Swipe from left edge to open mobile menu
+        (function() {
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let isEdgeSwipe = false;
+            const EDGE = 25;
+            const SWIPE_MIN = 50;
+
+            document.addEventListener('touchstart', function(e) {
+                const t = e.touches[0];
+                touchStartX = t.clientX;
+                touchStartY = t.clientY;
+                isEdgeSwipe = (
+                    touchStartX < EDGE &&
+                    !document.getElementById('mobileMenuOverlay').classList.contains('open') &&
+                    window.innerWidth < 1024
+                );
+            }, { passive: true });
+
+            document.addEventListener('touchend', function(e) {
+                if (!isEdgeSwipe) return;
+                const t = e.changedTouches[0];
+                const dx = t.clientX - touchStartX;
+                const dy = Math.abs(t.clientY - touchStartY);
+                if (dx > SWIPE_MIN && dy < 100) {
+                    openMobileMenu();
+                }
+                isEdgeSwipe = false;
+            }, { passive: true });
+        })();
 
         // ===== Post Input Placeholder =====
         function handlePostInput(el) {

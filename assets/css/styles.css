@@ -73,6 +73,60 @@
         }
         .modal-overlay.active { display: flex; }
 
+        /* Mobile Drawer (X-style from left) */
+        .mobile-drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .mobile-drawer-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        .mobile-drawer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 300px;
+            max-width: 85vw;
+            background: #0a0a0a;
+            border-right: 1px solid #262626;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .mobile-drawer-overlay.open .mobile-drawer {
+            transform: translateX(0);
+        }
+        .mobile-drawer-link {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            color: #d4d4d4;
+            transition: all 0.15s;
+            text-decoration: none;
+        }
+        .mobile-drawer-link:hover,
+        .mobile-drawer-link:active {
+            background: rgba(249,115,22,0.08);
+            color: #f97316;
+        }
+        .mobile-drawer-link.active {
+            color: #f97316;
+            font-weight: 600;
+        }
+
         /* Trending Dropdown */
         .trending-dropdown {
             position: absolute;
