@@ -443,6 +443,86 @@
             closePostModal();
         }
 
+        // ===== Edit Profile =====
+        const defaultProfile = {
+            name: 'د. أحمد الخالدي',
+            username: '@ahmed_alkhalidi',
+            title: 'محامي دولي',
+            bio: 'محامي دولي متخصص في التحكيم التجاري وقانون الشركات. خبرة +15 عاماً في القضايا المعقدة عابرة الحدود. أشارك المعرفة القانونية مع المجتمع.',
+            location: 'دبي، الإمارات',
+            website: 'ahmed-law.com'
+        };
+
+        function getProfile() {
+            const saved = localStorage.getItem('userProfile');
+            return saved ? JSON.parse(saved) : { ...defaultProfile };
+        }
+
+        function openEditProfile() {
+            const profile = getProfile();
+            document.getElementById('editName').value = profile.name;
+            document.getElementById('editUsername').value = profile.username;
+            document.getElementById('editTitle').value = profile.title;
+            document.getElementById('editBio').value = profile.bio;
+            document.getElementById('editLocation').value = profile.location;
+            document.getElementById('editWebsite').value = profile.website;
+            document.getElementById('editProfileModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeEditProfile(e) {
+            if (e && e.target !== e.currentTarget) return;
+            document.getElementById('editProfileModal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function saveProfile() {
+            const profile = {
+                name: document.getElementById('editName').value.trim() || defaultProfile.name,
+                username: document.getElementById('editUsername').value.trim() || defaultProfile.username,
+                title: document.getElementById('editTitle').value.trim() || defaultProfile.title,
+                bio: document.getElementById('editBio').value.trim() || defaultProfile.bio,
+                location: document.getElementById('editLocation').value.trim() || defaultProfile.location,
+                website: document.getElementById('editWebsite').value.trim() || defaultProfile.website
+            };
+            localStorage.setItem('userProfile', JSON.stringify(profile));
+            applyProfile(profile);
+            closeEditProfile();
+            showToast('تم حفظ الملف الشخصي ✓');
+        }
+
+        function applyProfile(profile) {
+            // Update profile page
+            const profileName = document.querySelector('#page-profile .text-xl.font-bold');
+            if (profileName) profileName.textContent = profile.name;
+
+            const profileSub = document.querySelector('#page-profile .text-dark-400.text-sm.mb-3');
+            if (profileSub) profileSub.textContent = profile.username + ' • ' + profile.title + ' • الإمارات 🇦🇪';
+
+            const profileBio = document.querySelector('#page-profile .text-dark-300.text-sm.mb-4');
+            if (profileBio) profileBio.textContent = profile.bio;
+
+            const profileLocation = document.querySelector('#page-profile .flex.flex-wrap.gap-4 span:first-child');
+            if (profileLocation) profileLocation.innerHTML = '<span class="iconify" data-icon="lucide:map-pin" style="font-size:14px"></span>' + profile.location;
+
+            const profileWebsite = document.querySelector('#page-profile .text-brand-400.cursor-pointer');
+            if (profileWebsite) profileWebsite.textContent = profile.website;
+
+            // Update sidebar
+            const sidebarName = document.querySelector('.desktop-sidebar .font-semibold.text-sm');
+            if (sidebarName) sidebarName.textContent = profile.name;
+
+            // Update mobile drawer
+            const drawerName = document.querySelector('#mobileDrawer h3');
+            if (drawerName) drawerName.textContent = profile.name;
+        }
+
+        // Load profile on startup
+        function loadProfile() {
+            const saved = localStorage.getItem('userProfile');
+            if (saved) applyProfile(JSON.parse(saved));
+        }
+
         // ===== Poll Voting =====
         function votePoll(btn, pct) {
             const parent = btn.closest('[id^="poll-"]');
@@ -920,6 +1000,7 @@
         // ===== Initialize =====
         document.addEventListener('DOMContentLoaded', () => {
             loadSavedImages();
+            loadProfile();
             renderTrendingList('all');
             renderFollowingPosts();
             renderSpaces('live');
