@@ -52,43 +52,105 @@
 
         // ===== Mobile Menu (X-style drawer) =====
         function openMobileMenu() {
-            document.getElementById('mobileMenuOverlay').classList.add('open');
+            const overlay = document.getElementById('mobileMenuOverlay');
+            const drawer = document.getElementById('mobileDrawer');
+            overlay.classList.add('open');
+            drawer.style.transform = '';
             document.body.style.overflow = 'hidden';
         }
 
         function closeMobileMenu() {
-            document.getElementById('mobileMenuOverlay').classList.remove('open');
+            const overlay = document.getElementById('mobileMenuOverlay');
+            const drawer = document.getElementById('mobileDrawer');
+            overlay.classList.remove('open');
+            drawer.style.transform = '';
             document.body.style.overflow = '';
         }
 
-        // Swipe from left edge to open mobile menu
+        // Full swipe gesture handler for mobile menu
         (function() {
-            let touchStartX = 0;
-            let touchStartY = 0;
-            let isEdgeSwipe = false;
-            const EDGE = 25;
-            const SWIPE_MIN = 50;
+            let startX = 0, startY = 0, currentX = 0;
+            let isDragging = false;
+            let drawerWidth = 300;
+            const EDGE = 30;
+            const SWIPE_OPEN = 50;
+            const SWIPE_CLOSE = 80;
+
+            const overlay = () => document.getElementById('mobileMenuOverlay');
+            const drawer = () => document.getElementById('mobileDrawer');
+            const isOpen = () => overlay()?.classList.contains('open');
+            const isMobile = () => window.innerWidth < 1024;
 
             document.addEventListener('touchstart', function(e) {
+                if (!isMobile()) return;
                 const t = e.touches[0];
-                touchStartX = t.clientX;
-                touchStartY = t.clientY;
-                isEdgeSwipe = (
-                    touchStartX < EDGE &&
-                    !document.getElementById('mobileMenuOverlay').classList.contains('open') &&
-                    window.innerWidth < 1024
-                );
+                startX = t.clientX;
+                startY = t.clientY;
+                drawerWidth = drawer()?.offsetWidth || 300;
+
+                // Detect edge swipe to OPEN (left edge, drawer closed)
+                if (!isOpen() && startX < EDGE) {
+                    isDragging = true;
+                    drawer().style.transition = 'none';
+                }
+                // Detect swipe to CLOSE (anywhere on drawer, drawer open)
+                else if (isOpen() && startX < drawerWidth) {
+                    isDragging = true;
+                    drawer().style.transition = 'none';
+                }
             }, { passive: true });
 
-            document.addEventListener('touchend', function(e) {
-                if (!isEdgeSwipe) return;
-                const t = e.changedTouches[0];
-                const dx = t.clientX - touchStartX;
-                const dy = Math.abs(t.clientY - touchStartY);
-                if (dx > SWIPE_MIN && dy < 100) {
-                    openMobileMenu();
+            document.addEventListener('touchmove', function(e) {
+                if (!isDragging || !isMobile()) return;
+                const t = e.touches[0];
+                currentX = t.clientX;
+                const dx = currentX - startX;
+                const dy = Math.abs(t.clientY - startY);
+
+                // Cancel if vertical scroll
+                if (dy > 30 && !isOpen()) { isDragging = false; return; }
+
+                if (!isOpen()) {
+                    // Opening: drawer follows finger from left
+                    const translate = Math.max(-drawerWidth, Math.min(0, -drawerWidth + dx));
+                    drawer().style.transform = `translateX(${translate}px)`;
+                    overlay().style.opacity = Math.min(1, (dx / drawerWidth));
+                    overlay().style.visibility = 'visible';
+                } else {
+                    // Closing: drawer follows finger to the left
+                    const translate = Math.min(0, dx);
+                    drawer().style.transform = `translateX(${translate}px)`;
+                    overlay().style.opacity = Math.max(0, 1 - (Math.abs(dx) / drawerWidth));
                 }
-                isEdgeSwipe = false;
+            }, { passive: true });
+
+            document.addEventListener('touchend', function() {
+                if (!isDragging || !isMobile()) return;
+                isDragging = false;
+                const dx = currentX - startX;
+
+                drawer().style.transition = '';
+                overlay().style.opacity = '';
+                overlay().style.visibility = '';
+
+                if (!isOpen()) {
+                    // Opened enough? → open fully
+                    if (dx > SWIPE_OPEN) {
+                        openMobileMenu();
+                    } else {
+                        drawer().style.transform = '';
+                        overlay().style.opacity = '';
+                    }
+                } else {
+                    // Closed enough? → close fully
+                    if (dx < -SWIPE_CLOSE) {
+                        closeMobileMenu();
+                    } else {
+                        // Snap back open
+                        openMobileMenu();
+                    }
+                }
+                currentX = 0;
             }, { passive: true });
         })();
 

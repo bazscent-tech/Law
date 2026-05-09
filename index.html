@@ -116,9 +116,16 @@
         </div>
     </nav>
 
+    <!-- Swipe Edge Indicator (left side hint) -->
+    <div id="swipeEdgeHint" class="swipe-edge-hint lg:hidden"></div>
+
     <!-- Mobile Menu Drawer (X-style from left) -->
     <div id="mobileMenuOverlay" class="mobile-drawer-overlay" onclick="closeMobileMenu()">
         <div id="mobileDrawer" class="mobile-drawer" onclick="event.stopPropagation()">
+            <!-- Drag Handle -->
+            <div class="flex justify-center pt-3 pb-1">
+                <div class="w-10 h-1 bg-dark-600 rounded-full"></div>
+            </div>
             <!-- Profile Header -->
             <div class="p-5 border-b border-dark-800/50">
                 <div class="flex items-center gap-3 mb-4 cursor-pointer" onclick="showPage('profile');closeMobileMenu()">

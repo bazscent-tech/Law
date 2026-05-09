@@ -73,6 +73,26 @@
         }
         .modal-overlay.active { display: flex; }
 
+        /* Swipe Edge Indicator */
+        .swipe-edge-hint {
+            position: fixed;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 40px;
+            background: rgba(249,115,22,0.4);
+            border-radius: 0 4px 4px 0;
+            z-index: 999;
+            opacity: 0;
+            animation: edgeHintPulse 3s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes edgeHintPulse {
+            0%, 70%, 100% { opacity: 0; }
+            80%, 90% { opacity: 0.6; }
+        }
+
         /* Mobile Drawer (X-style from left) */
         .mobile-drawer-overlay {
             position: fixed;
@@ -81,7 +101,7 @@
             z-index: 1000;
             opacity: 0;
             visibility: hidden;
-            transition: all 0.3s ease;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
         .mobile-drawer-overlay.open {
             opacity: 1;
@@ -101,6 +121,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            will-change: transform;
         }
         .mobile-drawer-overlay.open .mobile-drawer {
             transform: translateX(0);
