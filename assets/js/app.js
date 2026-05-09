@@ -1,3 +1,67 @@
+        // ===== Image Upload Handlers =====
+        function handleProfilePhotoUpload(input, ...imgIds) {
+            const file = input.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                showToast('يرجى اختيار صورة فقط');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imgIds.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.src = e.target.result;
+                });
+                // Save to localStorage
+                localStorage.setItem('profileAvatar', e.target.result);
+                showToast('تم تحديث الصورة الشخصية ✓');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleCoverUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                showToast('يرجى اختيار صورة فقط');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.getElementById('coverPhoto');
+                const gradient = img.previousElementSibling?.previousElementSibling || img.parentElement;
+                if (img) {
+                    img.src = e.target.result;
+                    img.classList.remove('hidden');
+                    // Hide gradient background
+                    img.parentElement.style.background = 'none';
+                }
+                localStorage.setItem('coverPhoto', e.target.result);
+                showToast('تم تحديث صورة الغلاف ✓');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Load saved images on startup
+        function loadSavedImages() {
+            const savedAvatar = localStorage.getItem('profileAvatar');
+            if (savedAvatar) {
+                ['mobileAvatar', 'sidebarAvatar', 'desktopAvatar'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.src = savedAvatar;
+                });
+            }
+            const savedCover = localStorage.getItem('coverPhoto');
+            if (savedCover) {
+                const img = document.getElementById('coverPhoto');
+                if (img) {
+                    img.src = savedCover;
+                    img.classList.remove('hidden');
+                    img.parentElement.style.background = 'none';
+                }
+            }
+        }
+
         // ===== Toast Notification =====
         function showToast(message) {
             const toast = document.getElementById('toast');
@@ -861,6 +925,7 @@
 
         // ===== Initialize =====
         document.addEventListener('DOMContentLoaded', () => {
+            loadSavedImages();
             renderTrendingList('all');
             renderFollowingPosts();
             renderSpaces('live');
