@@ -703,7 +703,6 @@
                 <div class="follow-suggestion flex items-center justify-between px-5 pt-4 pb-2">
                     <div class="flex items-center gap-2">
                         <div class="w-7 h-7 rounded-full bg-gradient-to-br ${post.gradient} flex items-center justify-center text-white text-[10px] font-bold">${post.avatar}</div>
-                        <span class="text-xs text-dark-400">مقترح لك</span>
                     </div>
                     <button class="follow-btn flex items-center gap-1.5 bg-dark-800 hover:bg-dark-700 text-brand-400 text-xs font-semibold px-3 py-1.5 rounded-full border border-brand-500/30 transition-all active:scale-95" data-author="${post.author}" onclick="toggleFollow(this)">
                         <span class="iconify text-sm" data-icon="lucide:user-plus"></span>
