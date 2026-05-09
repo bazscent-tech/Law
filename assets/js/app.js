@@ -50,12 +50,13 @@
             if (q) showToast('بحث عن: ' + q);
         }
 
-        // ===== Mobile Menu (X-style drawer) =====
+        // ===== Mobile Menu (X-style centered drawer) =====
         function openMobileMenu() {
             const overlay = document.getElementById('mobileMenuOverlay');
             const drawer = document.getElementById('mobileDrawer');
             overlay.classList.add('open');
             drawer.style.transform = '';
+            drawer.style.opacity = '';
             document.body.style.overflow = 'hidden';
         }
 
@@ -64,17 +65,15 @@
             const drawer = document.getElementById('mobileDrawer');
             overlay.classList.remove('open');
             drawer.style.transform = '';
+            drawer.style.opacity = '';
             document.body.style.overflow = '';
         }
 
-        // Full swipe gesture handler for mobile menu
+        // Swipe gestures for mobile menu
         (function() {
-            let startX = 0, startY = 0, currentX = 0;
-            let isDragging = false;
-            let drawerWidth = 300;
+            let startX = 0, startY = 0, isDragging = false;
+            let dragType = null; // 'open' or 'close'
             const EDGE = 30;
-            const SWIPE_OPEN = 50;
-            const SWIPE_CLOSE = 80;
 
             const overlay = () => document.getElementById('mobileMenuOverlay');
             const drawer = () => document.getElementById('mobileDrawer');
@@ -86,71 +85,63 @@
                 const t = e.touches[0];
                 startX = t.clientX;
                 startY = t.clientY;
-                drawerWidth = drawer()?.offsetWidth || 300;
 
-                // Detect edge swipe to OPEN (left edge, drawer closed)
+                // Swipe from left edge → OPEN
                 if (!isOpen() && startX < EDGE) {
                     isDragging = true;
-                    drawer().style.transition = 'none';
+                    dragType = 'open';
                 }
-                // Detect swipe to CLOSE (anywhere on drawer, drawer open)
-                else if (isOpen() && startX < drawerWidth) {
+                // Swipe down on drawer → CLOSE
+                else if (isOpen() && startY > 60) {
                     isDragging = true;
-                    drawer().style.transition = 'none';
+                    dragType = 'close';
                 }
             }, { passive: true });
 
             document.addEventListener('touchmove', function(e) {
                 if (!isDragging || !isMobile()) return;
                 const t = e.touches[0];
-                currentX = t.clientX;
-                const dx = currentX - startX;
-                const dy = Math.abs(t.clientY - startY);
+                const dx = t.clientX - startX;
+                const dy = t.clientY - startY;
 
-                // Cancel if vertical scroll
-                if (dy > 30 && !isOpen()) { isDragging = false; return; }
-
-                if (!isOpen()) {
-                    // Opening: drawer follows finger from left
-                    const translate = Math.max(-drawerWidth, Math.min(0, -drawerWidth + dx));
-                    drawer().style.transform = `translateX(${translate}px)`;
-                    overlay().style.opacity = Math.min(1, (dx / drawerWidth));
-                    overlay().style.visibility = 'visible';
-                } else {
-                    // Closing: drawer follows finger to the left
-                    const translate = Math.min(0, dx);
-                    drawer().style.transform = `translateX(${translate}px)`;
-                    overlay().style.opacity = Math.max(0, 1 - (Math.abs(dx) / drawerWidth));
+                if (dragType === 'open') {
+                    // Show visual feedback while swiping from edge
+                    const progress = Math.min(1, dx / 150);
+                    if (progress > 0.1) {
+                        overlay().style.visibility = 'visible';
+                        overlay().style.opacity = String(progress * 0.6);
+                    }
+                } else if (dragType === 'close' && dy > 0) {
+                    // Drag down to dismiss
+                    const progress = Math.min(1, dy / 200);
+                    drawer().style.transition = 'none';
+                    drawer().style.transform = `scale(${1 - progress * 0.08}) translateY(${dy * 0.4}px)`;
+                    drawer().style.opacity = String(1 - progress);
+                    overlay().style.opacity = String(1 - progress * 0.8);
                 }
             }, { passive: true });
 
-            document.addEventListener('touchend', function() {
+            document.addEventListener('touchend', function(e) {
                 if (!isDragging || !isMobile()) return;
-                isDragging = false;
-                const dx = currentX - startX;
+                const t = e.changedTouches[0];
+                const dx = t.clientX - startX;
+                const dy = t.clientY - startY;
 
+                // Reset inline styles
                 drawer().style.transition = '';
+                drawer().style.transform = '';
+                drawer().style.opacity = '';
                 overlay().style.opacity = '';
                 overlay().style.visibility = '';
 
-                if (!isOpen()) {
-                    // Opened enough? → open fully
-                    if (dx > SWIPE_OPEN) {
-                        openMobileMenu();
-                    } else {
-                        drawer().style.transform = '';
-                        overlay().style.opacity = '';
-                    }
-                } else {
-                    // Closed enough? → close fully
-                    if (dx < -SWIPE_CLOSE) {
-                        closeMobileMenu();
-                    } else {
-                        // Snap back open
-                        openMobileMenu();
-                    }
+                if (dragType === 'open' && dx > 60) {
+                    openMobileMenu();
+                } else if (dragType === 'close' && dy > 80) {
+                    closeMobileMenu();
                 }
-                currentX = 0;
+
+                isDragging = false;
+                dragType = null;
             }, { passive: true });
         })();
 
