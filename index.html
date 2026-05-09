@@ -32,14 +32,10 @@
     <!-- ============ HEADER / NAVBAR ============ -->
     <nav id="mainHeader" class="fixed top-0 left-0 right-0 z-50 bg-dark-950/90 backdrop-blur-md border-b border-dark-800/50">
         <div class="max-w-7xl mx-auto px-4 lg:px-6 h-16 flex items-center justify-between gap-4">
-            <!-- Mobile Menu Button (avatar) - shown on mobile only -->
-            <div class="lg:hidden flex items-center gap-1">
+            <!-- Mobile: Menu Button (left) -->
+            <div class="lg:hidden flex items-center">
                 <button class="p-2 rounded-xl hover:bg-dark-800 transition-colors" onclick="openMobileMenu()">
-                    <img src="https://picsum.photos/seed/lawyer-me/40/40.jpg" class="w-8 h-8 rounded-lg object-cover" alt="">
-                </button>
-                <button class="relative p-2 rounded-xl hover:bg-dark-800 transition-colors" onclick="showPage('notifications')">
-                    <span class="iconify text-dark-300 text-xl" data-icon="lucide:bell"></span>
-                    <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-500 rounded-full pulse-dot"></span>
+                    <span class="iconify text-dark-300 text-xl" data-icon="lucide:menu"></span>
                 </button>
             </div>
 
@@ -59,6 +55,14 @@
                         class="w-full bg-dark-900 border border-dark-700/50 rounded-xl pr-10 pl-4 py-2.5 text-sm text-white placeholder-dark-400 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/20 transition-all"
                         onkeydown="if(event.key==='Enter')doSearch()">
                 </div>
+            </div>
+
+            <!-- Mobile: Notification Bell (right) -->
+            <div class="lg:hidden flex items-center">
+                <button class="relative p-2 rounded-xl hover:bg-dark-800 transition-colors" onclick="showPage('notifications')">
+                    <span class="iconify text-dark-300 text-xl" data-icon="lucide:bell"></span>
+                    <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-500 rounded-full pulse-dot"></span>
+                </button>
             </div>
 
             <!-- Desktop Nav Actions -->
@@ -189,7 +193,20 @@
                     <span class="iconify text-xl" data-icon="lucide:settings"></span>
                     <span>الإعدادات</span>
                 </a>
+                <a href="#" class="mobile-drawer-link" onclick="showPage('notifications');closeMobileMenu()">
+                    <span class="iconify text-xl" data-icon="lucide:bell"></span>
+                    <span>الإشعارات</span>
+                </a>
             </nav>
+            <!-- Logo at bottom of drawer -->
+            <div class="p-4 border-t border-dark-800/50">
+                <div class="flex items-center gap-2 cursor-pointer" onclick="showPage('feed');closeMobileMenu()">
+                    <div class="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-700 rounded-xl flex items-center justify-center">
+                        <span class="iconify text-white text-base" data-icon="lucide:scale"></span>
+                    </div>
+                    <span class="text-lg font-bold tracking-tight">Law<span class="text-brand-500">book</span></span>
+                </div>
+            </div>
         </div>
     </div>
 
