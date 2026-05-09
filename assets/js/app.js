@@ -289,15 +289,127 @@
         }
 
         // ===== Publish Post =====
+        let userPostCounter = 0;
+
         function publishPost() {
             const input = document.getElementById('postInput');
-            if (input.textContent.trim() === '') {
+            const text = input.textContent.trim();
+            if (text === '') {
                 showToast('اكتب شيئاً قبل النشر');
                 return;
             }
-            showToast('تم نشر المنشور بنجاح ✓');
+            addPostToFeed(text);
             input.textContent = '';
             input.style.color = '';
+            showToast('تم نشر المنشور بنجاح ✓');
+        }
+
+        function publishModalPost() {
+            const textarea = document.getElementById('modalPostText');
+            const text = textarea.value.trim();
+            if (!text) {
+                showToast('اكتب شيئاً قبل النشر');
+                return;
+            }
+            addPostToFeed(text);
+            textarea.value = '';
+            closePostModal();
+            showToast('تم نشر المنشور بنجاح ✓');
+        }
+
+        function addPostToFeed(text) {
+            userPostCounter++;
+            const postId = 'user-' + userPostCounter;
+            const profile = getProfile();
+            const now = new Date();
+            const timeStr = 'الآن';
+
+            // Extract hashtags
+            const hashtagRegex = /#[\u0600-\u06FFa-zA-Z0-9_]+/g;
+            const tags = text.match(hashtagRegex) || [];
+            const tagsHTML = tags.map(t => {
+                const colors = ['brand', 'blue', 'purple', 'green', 'cyan', 'pink', 'yellow'];
+                const color = colors[Math.abs(t.charCodeAt(1)) % colors.length];
+                return `<span class="hashtag bg-${color}-500/10 text-${color}-400 text-xs font-medium px-3 py-1 rounded-full cursor-pointer transition-all" onclick="showToast('تصفية: ${t}')">${t}</span>`;
+            }).join('');
+
+            // Clean text for display
+            const displayText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+
+            const article = document.createElement('article');
+            article.className = 'post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up overflow-hidden';
+            article.innerHTML = `
+                <div class="p-5 pb-0">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center gap-3 cursor-pointer" onclick="showPage('profile')">
+                            <img src="https://picsum.photos/seed/lawyer-me/80/80.jpg" class="w-11 h-11 rounded-xl object-cover border border-dark-700" alt="">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-semibold text-sm">${profile.name}</h3>
+                                    <span class="iconify text-brand-500 text-sm" data-icon="lucide:badge-check"></span>
+                                </div>
+                                <p class="text-dark-400 text-xs">${profile.title} • ${timeStr}</p>
+                            </div>
+                        </div>
+                        <button class="p-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showPostMenu(this)">
+                            <span class="iconify text-lg text-dark-400 group-hover:text-dark-200 transition-colors" data-icon="lucide:more-horizontal"></span>
+                        </button>
+                    </div>
+                    <div class="mb-3">
+                        <p class="text-dark-200 text-sm leading-relaxed">${displayText}</p>
+                    </div>
+                    ${tags.length > 0 ? `<div class="flex flex-wrap gap-2 mb-4">${tagsHTML}</div>` : ''}
+                </div>
+                <div class="px-5 pb-2">
+                    <div class="flex items-center justify-between text-dark-400 text-xs mb-2">
+                        <span id="likes-${postId}">0 إعجاب</span>
+                        <span>0 تعليق • 0 مشاركة</span>
+                    </div>
+                </div>
+                <div class="border-t border-dark-800/50 px-2 py-1">
+                    <div class="flex items-center justify-around">
+                        <button class="like-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleLike(this, 0, 'likes-${postId}')">
+                            <span class="iconify text-lg text-dark-400 group-hover:text-red-400 transition-colors" data-icon="lucide:heart"></span>
+                            <span class="text-sm text-dark-400 group-hover:text-red-400 transition-colors like-count">0</span>
+                        </button>
+                        <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleComments('${postId}')">
+                            <span class="iconify text-lg text-dark-400 group-hover:text-blue-400 transition-colors" data-icon="lucide:message-circle"></span>
+                            <span class="text-sm text-dark-400 group-hover:text-blue-400 transition-colors">0</span>
+                        </button>
+                        <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showShareModal()">
+                            <span class="iconify text-lg text-dark-400 group-hover:text-green-400 transition-colors" data-icon="lucide:share-2"></span>
+                            <span class="text-sm text-dark-400 group-hover:text-green-400 transition-colors">0</span>
+                        </button>
+                        <button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleBookmark(this)">
+                            <span class="iconify text-lg text-dark-400 group-hover:text-brand-400 transition-colors" data-icon="lucide:bookmark"></span>
+                        </button>
+                        <button class="p-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showPostMenu(this)">
+                            <span class="iconify text-lg text-dark-400 group-hover:text-dark-200 transition-colors" data-icon="lucide:more-horizontal"></span>
+                        </button>
+                    </div>
+                </div>
+                <div class="comment-section px-5 pb-4" id="comments-${postId}">
+                    <div class="border-t border-dark-800/50 pt-3 space-y-3">
+                        <div class="flex gap-2">
+                            <input type="text" placeholder="اكتب تعليقاً..." class="flex-1 bg-dark-800 border border-dark-700/50 rounded-lg px-3 py-2 text-xs text-white placeholder-dark-400 focus:outline-none focus:border-brand-500/50 transition-all">
+                            <button class="bg-brand-500 hover:bg-brand-600 text-white text-xs px-3 py-2 rounded-lg transition-all" onclick="showToast('تم إرسال التعليق ✓')">إرسال</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Insert at top of feed
+            const feedPage = document.getElementById('page-feed');
+            const firstPost = feedPage.querySelector('.post-card, .dynamic-post');
+            if (firstPost) {
+                feedPage.insertBefore(article, firstPost);
+            } else {
+                const loader = document.getElementById('infiniteLoader');
+                feedPage.insertBefore(article, loader);
+            }
+
+            // Scroll to the new post
+            article.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
         // ===== Like Toggle =====
@@ -432,17 +544,6 @@
             document.getElementById('postModal').classList.remove('active');
             document.body.style.overflow = '';
         }
-        function publishModalPost() {
-            const text = document.getElementById('modalPostText').value.trim();
-            if (!text) {
-                showToast('اكتب شيئاً قبل النشر');
-                return;
-            }
-            showToast('تم نشر المنشور بنجاح ✓');
-            document.getElementById('modalPostText').value = '';
-            closePostModal();
-        }
-
         // ===== Edit Profile =====
         const defaultProfile = {
             name: 'د. أحمد الخالدي',
