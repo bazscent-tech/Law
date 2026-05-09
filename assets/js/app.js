@@ -112,6 +112,10 @@
             if (target) {
                 target.classList.remove('hidden');
             }
+            // Render profile posts when showing profile page
+            if (page === 'profile') {
+                renderProfilePosts();
+            }
             // Update sidebar active state
             document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
             const links = document.querySelectorAll('.sidebar-link');
@@ -290,6 +294,86 @@
 
         // ===== Publish Post =====
         let userPostCounter = 0;
+        let userPosts = JSON.parse(localStorage.getItem('userPosts') || '[]');
+
+        function saveUserPosts() {
+            localStorage.setItem('userPosts', JSON.stringify(userPosts));
+        }
+
+        function renderProfilePosts() {
+            const container = document.getElementById('profilePostsList');
+            const emptyState = document.getElementById('profileEmptyState');
+            if (!container) return;
+
+            if (userPosts.length === 0) {
+                container.innerHTML = '';
+                if (emptyState) emptyState.style.display = '';
+                return;
+            }
+
+            if (emptyState) emptyState.style.display = 'none';
+            const profile = getProfile();
+            container.innerHTML = userPosts.map((post, i) => {
+                const tagsHTML = (post.tags || []).map(t => {
+                    const colors = ['brand', 'blue', 'purple', 'green', 'cyan', 'pink', 'yellow'];
+                    const color = colors[Math.abs(t.charCodeAt(1)) % colors.length];
+                    return `<span class="hashtag bg-${color}-500/10 text-${color}-400 text-xs font-medium px-3 py-1 rounded-full cursor-pointer transition-all" onclick="showToast('تصفية: ${t}')">${t}</span>`;
+                }).join('');
+
+                return `
+                <article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up overflow-hidden">
+                    <div class="p-5 pb-0">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center gap-3 cursor-pointer" onclick="showPage('profile')">
+                                <img src="https://picsum.photos/seed/lawyer-me/80/80.jpg" class="w-11 h-11 rounded-xl object-cover border border-dark-700" alt="">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="font-semibold text-sm">${profile.name}</h3>
+                                        <span class="iconify text-brand-500 text-sm" data-icon="lucide:badge-check"></span>
+                                    </div>
+                                    <p class="text-dark-400 text-xs">${profile.title} • ${post.time}</p>
+                                </div>
+                            </div>
+                            <button class="p-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showPostMenu(this)">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-dark-200 transition-colors" data-icon="lucide:more-horizontal"></span>
+                            </button>
+                        </div>
+                        <div class="mb-3">
+                            <p class="text-dark-200 text-sm leading-relaxed">${post.displayText}</p>
+                        </div>
+                        ${post.tags && post.tags.length > 0 ? `<div class="flex flex-wrap gap-2 mb-4">${tagsHTML}</div>` : ''}
+                    </div>
+                    <div class="px-5 pb-2">
+                        <div class="flex items-center justify-between text-dark-400 text-xs mb-2">
+                            <span id="profile-likes-${post.id}">${post.likes} إعجاب</span>
+                            <span>${post.comments} تعليق • ${post.shares} مشاركة</span>
+                        </div>
+                    </div>
+                    <div class="border-t border-dark-800/50 px-2 py-1">
+                        <div class="flex items-center justify-around">
+                            <button class="like-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleLike(this, ${post.likes}, 'profile-likes-${post.id}')">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-red-400 transition-colors" data-icon="lucide:heart"></span>
+                                <span class="text-sm text-dark-400 group-hover:text-red-400 transition-colors like-count">${post.likes}</span>
+                            </button>
+                            <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showToast('التعليقات')">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-blue-400 transition-colors" data-icon="lucide:message-circle"></span>
+                                <span class="text-sm text-dark-400 group-hover:text-blue-400 transition-colors">${post.comments}</span>
+                            </button>
+                            <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showShareModal()">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-green-400 transition-colors" data-icon="lucide:share-2"></span>
+                                <span class="text-sm text-dark-400 group-hover:text-green-400 transition-colors">${post.shares}</span>
+                            </button>
+                            <button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleBookmark(this)">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-brand-400 transition-colors" data-icon="lucide:bookmark"></span>
+                            </button>
+                            <button class="p-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showPostMenu(this)">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-dark-200 transition-colors" data-icon="lucide:more-horizontal"></span>
+                            </button>
+                        </div>
+                    </div>
+                </article>`;
+            }).join('');
+        }
 
         function publishPost() {
             const input = document.getElementById('postInput');
@@ -408,6 +492,19 @@
                 feedPage.insertBefore(article, loader);
             }
 
+            // Save to userPosts for profile page
+            userPosts.unshift({
+                id: postId,
+                text: text,
+                displayText: displayText,
+                tags: tags,
+                time: timeStr,
+                likes: 0,
+                comments: 0,
+                shares: 0
+            });
+            saveUserPosts();
+
             // Scroll to the new post
             article.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
@@ -511,6 +608,29 @@
             });
             btn.classList.add('active', 'bg-dark-800', 'text-white');
             btn.classList.remove('text-dark-400');
+
+            // Render content based on tab
+            const tabName = btn.textContent.trim();
+            const postsList = document.getElementById('profilePostsList');
+            const emptyState = document.getElementById('profileEmptyState');
+
+            if (tabName === 'المنشورات') {
+                renderProfilePosts();
+            } else if (tabName === 'المقالات') {
+                if (postsList) postsList.innerHTML = '';
+                if (emptyState) {
+                    emptyState.style.display = '';
+                    emptyState.querySelector('p').textContent = 'لم تنشر أي مقال بعد';
+                    emptyState.querySelector('button').textContent = 'اكتب أول مقال';
+                }
+            } else if (tabName === 'الإعجابات') {
+                if (postsList) postsList.innerHTML = '';
+                if (emptyState) {
+                    emptyState.style.display = '';
+                    emptyState.querySelector('p').textContent = 'لم تعجب بأي منشور بعد';
+                    emptyState.querySelector('button').textContent = 'استعرض الرئيسية';
+                }
+            }
         }
 
         // ===== Connection Tab Switch =====
@@ -1307,6 +1427,7 @@
             renderFollowingPosts();
             renderSpaces('live');
             updateNotifDots();
+            renderProfilePosts();
             // Remove static posts and render dynamic feed
             hideStaticPosts();
             renderFeedPosts();

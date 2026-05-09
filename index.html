@@ -772,7 +772,9 @@
                         <button class="profile-tab flex-1 text-sm font-medium py-2 rounded-lg transition-all text-dark-400 hover:text-dark-200" onclick="switchProfileTab(this)">المقالات</button>
                         <button class="profile-tab flex-1 text-sm font-medium py-2 rounded-lg transition-all text-dark-400 hover:text-dark-200" onclick="switchProfileTab(this)">الإعجابات</button>
                     </div>
-                    <div class="text-center py-12 text-dark-400">
+                    <!-- User Posts Container -->
+                    <div id="profilePostsList"></div>
+                    <div id="profileEmptyState" class="text-center py-12 text-dark-400">
                         <span class="iconify text-4xl mb-3 block" data-icon="lucide:file-text"></span>
                         <p class="text-sm">لم تنشر أي شيء بعد</p>
                         <button class="mt-3 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-all" onclick="showPostModal()">اكتب أول منشور</button>
