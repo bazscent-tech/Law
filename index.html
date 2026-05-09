@@ -346,9 +346,11 @@
                                     data-placeholder="شارك أفكارك القانونية..." 
                                     onfocus="this.dataset.touched='true'"
                                     oninput="handlePostInput(this)"></div>
+                                <div id="postMediaPreview"></div>
+                                <input type="file" id="postMediaInput" accept="image/*,video/*,.pdf" multiple class="hidden" onchange="handleMediaUpload(this)">
                                 <div class="flex items-center justify-between mt-3">
                                     <div class="flex items-center gap-1">
-                                        <button class="p-2 rounded-lg hover:bg-dark-800 transition-colors group" title="صورة" onclick="showToast('إضافة صورة')">
+                                        <button class="p-2 rounded-lg hover:bg-dark-800 transition-colors group" title="صورة/فيديو/PDF" onclick="triggerMediaUpload()">
                                             <span class="iconify text-dark-400 group-hover:text-brand-400 text-lg transition-colors" data-icon="lucide:image"></span>
                                         </button>
                                         <button class="p-2 rounded-lg hover:bg-dark-800 transition-colors group" title="رابط" onclick="showToast('إضافة رابط')">
@@ -1734,6 +1736,48 @@
         </div>
     </div>
 
-    <script src="assets/js/app.js?v=3"></script>
+    <!-- ============ POST DETAIL MODAL ============ -->
+    <div id="postDetailModal" class="post-detail-overlay" onclick="closePostDetail(event)">
+        <div class="post-detail-modal" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between p-4 border-b border-dark-800/50 sticky top-0 bg-[#171717] z-10">
+                <h3 class="font-bold text-base">المنشور</h3>
+                <button onclick="closePostDetail()" class="p-1.5 rounded-lg hover:bg-dark-800 transition-colors">
+                    <span class="iconify text-dark-400 text-xl" data-icon="lucide:x"></span>
+                </button>
+            </div>
+            <div id="postDetailContent" class="p-0"></div>
+            <div class="p-4 border-t border-dark-800/50 sticky bottom-0 bg-[#171717]">
+                <div class="flex gap-2 relative">
+                    <button onclick="toggleStickerPicker('detail')" class="p-2 rounded-lg hover:bg-dark-800 transition-colors shrink-0">
+                        <span class="iconify text-dark-400 text-lg" data-icon="lucide:smile"></span>
+                    </button>
+                    <div id="stickerPicker-detail" class="sticker-picker"></div>
+                    <input type="text" id="detailCommentInput" placeholder="اكتب تعليقاً..." class="flex-1 bg-dark-800 border border-dark-700/50 rounded-xl px-4 py-2.5 text-sm text-white placeholder-dark-400 focus:outline-none focus:border-brand-500/50 transition-all" onkeydown="if(event.key==='Enter')submitDetailComment()">
+                    <button onclick="submitDetailComment()" class="bg-brand-500 hover:bg-brand-600 text-white text-sm px-4 py-2.5 rounded-xl transition-all shrink-0">إرسال</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ EDIT POST MODAL ============ -->
+    <div id="editPostModal" class="modal-overlay" onclick="closeEditPostModal(event)">
+        <div class="bg-dark-900 border border-dark-700/50 rounded-2xl w-[95%] max-w-lg mx-4 p-5" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-base">تعديل المنشور</h3>
+                <button onclick="closeEditPostModal()" class="p-1.5 rounded-lg hover:bg-dark-800 transition-colors">
+                    <span class="iconify text-dark-400 text-xl" data-icon="lucide:x"></span>
+                </button>
+            </div>
+            <textarea id="editPostText" rows="4" class="w-full bg-dark-850 border border-dark-700/50 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-500/50 resize-none transition-all" placeholder="شارك أفكارك..."></textarea>
+            <div id="editPostMediaPreview" class="mt-3"></div>
+            <input type="hidden" id="editPostId" value="">
+            <div class="flex gap-3 mt-4">
+                <button onclick="closeEditPostModal()" class="flex-1 bg-dark-800 hover:bg-dark-700 text-sm font-medium py-2.5 rounded-xl transition-all border border-dark-700">إلغاء</button>
+                <button onclick="saveEditPost()" class="flex-1 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold py-2.5 rounded-xl transition-all">حفظ التعديل</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/app.js?v=4"></script>
 </body>
 </html>
