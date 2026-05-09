@@ -32,6 +32,17 @@
     <!-- ============ HEADER / NAVBAR ============ -->
     <nav id="mainHeader" class="fixed top-0 left-0 right-0 z-50 bg-dark-950/90 backdrop-blur-md border-b border-dark-800/50">
         <div class="max-w-7xl mx-auto px-4 lg:px-6 h-16 flex items-center justify-between gap-4">
+            <!-- Mobile Menu Button (avatar) - shown on mobile only -->
+            <div class="lg:hidden flex items-center gap-1">
+                <button class="p-2 rounded-xl hover:bg-dark-800 transition-colors" onclick="openMobileMenu()">
+                    <img src="https://picsum.photos/seed/lawyer-me/40/40.jpg" class="w-8 h-8 rounded-lg object-cover" alt="">
+                </button>
+                <button class="relative p-2 rounded-xl hover:bg-dark-800 transition-colors" onclick="showPage('notifications')">
+                    <span class="iconify text-dark-300 text-xl" data-icon="lucide:bell"></span>
+                    <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-500 rounded-full pulse-dot"></span>
+                </button>
+            </div>
+
             <!-- Logo -->
             <div class="flex items-center gap-2 shrink-0 cursor-pointer" onclick="showPage('feed')">
                 <div class="w-9 h-9 bg-gradient-to-br from-brand-500 to-brand-700 rounded-xl flex items-center justify-center">
@@ -100,17 +111,6 @@
                 <button class="flex items-center gap-2 bg-dark-800 hover:bg-dark-700 rounded-xl pr-2 pl-3 py-1.5 transition-colors" onclick="showPage('profile')">
                     <img src="https://picsum.photos/seed/lawyer-me/40/40.jpg" class="w-8 h-8 rounded-lg object-cover" alt="الصورة الشخصية">
                     <span class="text-sm font-medium hidden xl:block">د. أحمد</span>
-                </button>
-            </div>
-
-            <!-- Mobile Menu Button & Notifications -->
-            <div class="lg:hidden flex items-center gap-1">
-                <button class="relative p-2 rounded-xl hover:bg-dark-800 transition-colors" onclick="showPage('notifications')">
-                    <span class="iconify text-dark-300 text-xl" data-icon="lucide:bell"></span>
-                    <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-500 rounded-full pulse-dot"></span>
-                </button>
-                <button class="p-2 rounded-xl hover:bg-dark-800 transition-colors" onclick="openMobileMenu()">
-                    <img src="https://picsum.photos/seed/lawyer-me/40/40.jpg" class="w-8 h-8 rounded-lg object-cover" alt="">
                 </button>
             </div>
         </div>
