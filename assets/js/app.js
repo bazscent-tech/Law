@@ -238,6 +238,26 @@
             }
         }
 
+        // ===== Follow Toggle =====
+        function toggleFollow(btn) {
+            const isFollowing = btn.dataset.following === 'true';
+            if (isFollowing) {
+                btn.innerHTML = '<span class="iconify text-sm" data-icon="lucide:user-plus"></span><span>متابعة</span>';
+                btn.classList.remove('bg-blue-500/20', 'text-blue-400', 'border-blue-500/50');
+                btn.classList.add('bg-dark-800', 'text-brand-400', 'border-brand-500/30');
+                btn.dataset.following = 'false';
+                showToast('تم إلغاء المتابعة');
+            } else {
+                btn.innerHTML = '<span class="iconify text-sm" data-icon="lucide:check"></span><span>متابَع</span>';
+                btn.classList.remove('bg-dark-800', 'text-brand-400', 'border-brand-500/30');
+                btn.classList.add('bg-blue-500/20', 'text-blue-400', 'border-blue-500/50');
+                btn.dataset.following = 'true';
+                btn.style.transform = 'scale(1.1)';
+                setTimeout(() => btn.style.transform = '', 200);
+                showToast('تمت المتابعة ✓');
+            }
+        }
+
         // ===== Connect Toggle =====
         function toggleConnect(btn) {
             const isConnected = btn.dataset.connected === 'true';
@@ -558,6 +578,16 @@
 
             return `
                 <article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up overflow-hidden" style="animation-delay:${index * 80}ms">
+                    <div class="follow-suggestion flex items-center justify-between px-5 pt-4 pb-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-full bg-gradient-to-br ${post.gradient} flex items-center justify-center text-white text-[10px] font-bold">${post.avatar}</div>
+                            <span class="text-xs text-dark-400">مقترح لك</span>
+                        </div>
+                        <button class="follow-btn flex items-center gap-1.5 bg-dark-800 hover:bg-dark-700 text-brand-400 text-xs font-semibold px-3 py-1.5 rounded-full border border-brand-500/30 transition-all active:scale-95" onclick="toggleFollow(this)">
+                            <span class="iconify text-sm" data-icon="lucide:user-plus"></span>
+                            <span>متابعة</span>
+                        </button>
+                    </div>
                     <div class="p-5 pb-0">
                         <div class="flex items-start justify-between mb-3">
                             <div class="flex items-center gap-3 cursor-pointer" onclick="showToast('عرض الملف الشخصي')">
@@ -570,9 +600,6 @@
                                     <p class="text-dark-400 text-xs">${post.role} • ${post.time}</p>
                                 </div>
                             </div>
-                            <button class="p-1.5 rounded-lg hover:bg-dark-800 transition-colors" onclick="showPostMenu(this)">
-                                <span class="iconify text-dark-400 text-lg" data-icon="lucide:more-horizontal"></span>
-                            </button>
                         </div>
                         <div class="mb-3">
                             ${titleHTML}
@@ -602,6 +629,9 @@
                             </button>
                             <button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleBookmark(this)">
                                 <span class="iconify text-lg text-dark-400 group-hover:text-brand-400 transition-colors" data-icon="lucide:bookmark"></span>
+                            </button>
+                            <button class="p-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showPostMenu(this)">
+                                <span class="iconify text-lg text-dark-400 group-hover:text-dark-200 transition-colors" data-icon="lucide:more-horizontal"></span>
                             </button>
                         </div>
                     </div>

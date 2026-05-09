@@ -355,6 +355,17 @@
 
                     <!-- Post 1 -->
                     <article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up overflow-hidden">
+                        <!-- Follow Suggestion Bar -->
+                        <div class="follow-suggestion flex items-center justify-between px-5 pt-4 pb-2">
+                            <div class="flex items-center gap-2">
+                                <img src="https://picsum.photos/seed/mohammed-ali/40/40.jpg" class="w-7 h-7 rounded-full object-cover" alt="">
+                                <span class="text-xs text-dark-400">مقترح لك</span>
+                            </div>
+                            <button class="follow-btn flex items-center gap-1.5 bg-dark-800 hover:bg-dark-700 text-brand-400 text-xs font-semibold px-3 py-1.5 rounded-full border border-brand-500/30 transition-all active:scale-95" onclick="toggleFollow(this)">
+                                <span class="iconify text-sm" data-icon="lucide:user-plus"></span>
+                                <span>متابعة</span>
+                            </button>
+                        </div>
                         <div class="p-5 pb-0">
                             <div class="flex items-start justify-between mb-3">
                                 <div class="flex items-center gap-3 cursor-pointer" onclick="showPage('profile')">
@@ -367,9 +378,6 @@
                                         <p class="text-dark-400 text-xs">محامي تحكيم دولي • 23 نوفمبر 2023</p>
                                     </div>
                                 </div>
-                                <button class="p-1.5 rounded-lg hover:bg-dark-800 transition-colors" onclick="showPostMenu(this)">
-                                    <span class="iconify text-dark-400 text-lg" data-icon="lucide:more-horizontal"></span>
-                                </button>
                             </div>
                             <div class="mb-3">
                                 <h2 class="font-bold text-base mb-2 leading-relaxed">نظرة عامة على محكمة التحكيم الدولية لسنة 2023</h2>
@@ -417,6 +425,9 @@
                                 <button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleBookmark(this)">
                                     <span class="iconify text-lg text-dark-400 group-hover:text-brand-400 transition-colors" data-icon="lucide:bookmark"></span>
                                 </button>
+                                <button class="p-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showPostMenu(this)">
+                                    <span class="iconify text-lg text-dark-400 group-hover:text-dark-200 transition-colors" data-icon="lucide:more-horizontal"></span>
+                                </button>
                             </div>
                         </div>
                         <!-- Comments Section -->
@@ -448,6 +459,16 @@
 
                     <!-- Post 2 -->
                     <article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up delay-100 overflow-hidden">
+                        <div class="follow-suggestion flex items-center justify-between px-5 pt-4 pb-2">
+                            <div class="flex items-center gap-2">
+                                <img src="https://picsum.photos/seed/sara-legal/40/40.jpg" class="w-7 h-7 rounded-full object-cover" alt="">
+                                <span class="text-xs text-dark-400">قريب من اهتمامك</span>
+                            </div>
+                            <button class="follow-btn flex items-center gap-1.5 bg-dark-800 hover:bg-dark-700 text-brand-400 text-xs font-semibold px-3 py-1.5 rounded-full border border-brand-500/30 transition-all active:scale-95" onclick="toggleFollow(this)">
+                                <span class="iconify text-sm" data-icon="lucide:user-plus"></span>
+                                <span>متابعة</span>
+                            </button>
+                        </div>
                         <div class="p-5 pb-0">
                             <div class="flex items-start justify-between mb-3">
                                 <div class="flex items-center gap-3 cursor-pointer" onclick="showToast('عرض الملف الشخصي')">
@@ -457,9 +478,6 @@
                                         <p class="text-dark-400 text-xs">مستشارة قانونية • منذ ساعتين</p>
                                     </div>
                                 </div>
-                                <button class="p-1.5 rounded-lg hover:bg-dark-800 transition-colors" onclick="showPostMenu(this)">
-                                    <span class="iconify text-dark-400 text-lg" data-icon="lucide:more-horizontal"></span>
-                                </button>
                             </div>
                             <div class="mb-3">
                                 <p class="text-dark-200 text-sm leading-relaxed">صدور قانون التحكيم الجديد في الإمارات العربية المتحدة يُعد نقلة نوعية في بيئة الأعمال. القانون يتضمن تحديثات جوهرية تتوافق مع أفضل الممارسات الدولية في مجال التحكيم التجاري. 🇦🇪⚖️</p>
@@ -496,6 +514,9 @@
                                 <button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleBookmark(this)">
                                     <span class="iconify text-lg text-dark-400 group-hover:text-brand-400 transition-colors" data-icon="lucide:bookmark"></span>
                                 </button>
+                                <button class="p-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showPostMenu(this)">
+                                    <span class="iconify text-lg text-dark-400 group-hover:text-dark-200 transition-colors" data-icon="lucide:more-horizontal"></span>
+                                </button>
                             </div>
                         </div>
                         <div class="comment-section px-5 pb-4" id="comments-2">
@@ -510,6 +531,16 @@
 
                     <!-- Post 3 -->
                     <article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up delay-200 overflow-hidden">
+                        <div class="follow-suggestion flex items-center justify-between px-5 pt-4 pb-2">
+                            <div class="flex items-center gap-2">
+                                <img src="https://picsum.photos/seed/khalid-jordan/40/40.jpg" class="w-7 h-7 rounded-full object-cover" alt="">
+                                <span class="text-xs text-dark-400">مقترح لك</span>
+                            </div>
+                            <button class="follow-btn flex items-center gap-1.5 bg-dark-800 hover:bg-dark-700 text-brand-400 text-xs font-semibold px-3 py-1.5 rounded-full border border-brand-500/30 transition-all active:scale-95" onclick="toggleFollow(this)">
+                                <span class="iconify text-sm" data-icon="lucide:user-plus"></span>
+                                <span>متابعة</span>
+                            </button>
+                        </div>
                         <div class="p-5 pb-0">
                             <div class="flex items-start justify-between mb-3">
                                 <div class="flex items-center gap-3 cursor-pointer" onclick="showToast('عرض الملف الشخصي')">
@@ -522,9 +553,6 @@
                                         <p class="text-dark-400 text-xs">أستاذ القانون الدولي • منذ 5 ساعات</p>
                                     </div>
                                 </div>
-                                <button class="p-1.5 rounded-lg hover:bg-dark-800 transition-colors" onclick="showPostMenu(this)">
-                                    <span class="iconify text-dark-400 text-lg" data-icon="lucide:more-horizontal"></span>
-                                </button>
                             </div>
                             <div class="mb-3">
                                 <h2 class="font-bold text-base mb-2">قانون حقوق النشر في الأردن: تحديثات 2023</h2>
@@ -572,6 +600,9 @@
                                 <button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleBookmark(this)">
                                     <span class="iconify text-lg text-dark-400 group-hover:text-brand-400 transition-colors" data-icon="lucide:bookmark"></span>
                                 </button>
+                                <button class="p-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showPostMenu(this)">
+                                    <span class="iconify text-lg text-dark-400 group-hover:text-dark-200 transition-colors" data-icon="lucide:more-horizontal"></span>
+                                </button>
                             </div>
                         </div>
                         <div class="comment-section px-5 pb-4" id="comments-3">
@@ -586,6 +617,16 @@
 
                     <!-- Post 4 - Poll -->
                     <article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up delay-300 overflow-hidden">
+                        <div class="follow-suggestion flex items-center justify-between px-5 pt-4 pb-2">
+                            <div class="flex items-center gap-2">
+                                <img src="https://picsum.photos/seed/fatima-fintech/40/40.jpg" class="w-7 h-7 rounded-full object-cover" alt="">
+                                <span class="text-xs text-dark-400">قريب من اهتمامك</span>
+                            </div>
+                            <button class="follow-btn flex items-center gap-1.5 bg-dark-800 hover:bg-dark-700 text-brand-400 text-xs font-semibold px-3 py-1.5 rounded-full border border-brand-500/30 transition-all active:scale-95" onclick="toggleFollow(this)">
+                                <span class="iconify text-sm" data-icon="lucide:user-plus"></span>
+                                <span>متابعة</span>
+                            </button>
+                        </div>
                         <div class="p-5">
                             <div class="flex items-start justify-between mb-3">
                                 <div class="flex items-center gap-3 cursor-pointer" onclick="showToast('عرض الملف الشخصي')">
@@ -595,9 +636,6 @@
                                         <p class="text-dark-400 text-xs">خبيرة تقنية مالية • منذ 8 ساعات</p>
                                     </div>
                                 </div>
-                                <button class="p-1.5 rounded-lg hover:bg-dark-800 transition-colors" onclick="showPostMenu(this)">
-                                    <span class="iconify text-dark-400 text-lg" data-icon="lucide:more-horizontal"></span>
-                                </button>
                             </div>
                             <div class="mb-3">
                                 <p class="text-dark-200 text-sm leading-relaxed">التنظيم العالمي للتقنية المالية (Fintech) يتسارع بشكل غير مسبوق. السعودية والإمارات تتصدران منطقة الشرق الأوسط في إطار تنظيمي يواكب التطور. سؤالي للمجتمع: ما التحديات الأبرز التي تواجه تنظيم العملات الرقمية في منطقتنا؟ 💡📉</p>
@@ -647,6 +685,9 @@
                                 </button>
                                 <button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleBookmark(this)">
                                     <span class="iconify text-lg text-dark-400 group-hover:text-brand-400 transition-colors" data-icon="lucide:bookmark"></span>
+                                </button>
+                                <button class="p-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showPostMenu(this)">
+                                    <span class="iconify text-lg text-dark-400 group-hover:text-dark-200 transition-colors" data-icon="lucide:more-horizontal"></span>
                                 </button>
                             </div>
                         </div>
