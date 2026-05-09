@@ -116,22 +116,15 @@
         </div>
     </nav>
 
-    <!-- Swipe Edge Indicator (left side hint) -->
-    <div id="swipeEdgeHint" class="swipe-edge-hint lg:hidden"></div>
-
     <!-- Mobile Menu Drawer (X-style from left) -->
     <div id="mobileMenuOverlay" class="mobile-drawer-overlay" onclick="closeMobileMenu()">
         <div id="mobileDrawer" class="mobile-drawer" onclick="event.stopPropagation()">
-            <!-- Drag Handle -->
-            <div class="flex justify-center pt-3 pb-1">
-                <div class="w-10 h-1 bg-dark-600 rounded-full"></div>
-            </div>
-            <!-- Profile Header -->
-            <div class="p-5 border-b border-dark-800/50">
+            <!-- Profile Header (like X) -->
+            <div class="p-5 pb-4">
                 <div class="flex items-center gap-3 mb-4 cursor-pointer" onclick="showPage('profile');closeMobileMenu()">
-                    <img src="https://picsum.photos/seed/lawyer-me/80/80.jpg" class="w-12 h-12 rounded-xl object-cover border border-dark-700" alt="">
+                    <img src="https://picsum.photos/seed/lawyer-me/80/80.jpg" class="w-12 h-12 rounded-full object-cover" alt="">
                     <div class="flex-1 min-w-0">
-                        <h3 class="font-semibold text-sm">د. أحمد الخالدي</h3>
+                        <h3 class="font-bold text-base text-white">د. أحمد الخالدي</h3>
                         <p class="text-dark-400 text-xs">@ahmed_alkhalidi</p>
                     </div>
                 </div>
@@ -141,14 +134,27 @@
                 </div>
             </div>
             <!-- Nav Links -->
-            <nav class="flex-1 overflow-y-auto p-3">
-                <a href="#" class="mobile-drawer-link active" onclick="showPage('feed');closeMobileMenu()">
-                    <span class="iconify text-xl" data-icon="lucide:home"></span>
-                    <span>الرئيسية</span>
-                </a>
+            <nav class="flex-1 overflow-y-auto px-2 pb-4">
                 <a href="#" class="mobile-drawer-link" onclick="showPage('profile');closeMobileMenu()">
                     <span class="iconify text-xl" data-icon="lucide:user"></span>
-                    <span>ملفي الشخصي</span>
+                    <span>الملف الشخصي</span>
+                </a>
+                <a href="#" class="mobile-drawer-link" onclick="showPage('premium');closeMobileMenu()">
+                    <span class="iconify text-xl" data-icon="lucide:badge-check"></span>
+                    <span>المحتوى المميز</span>
+                </a>
+                <a href="#" class="mobile-drawer-link" onclick="showPage('bookmarks');closeMobileMenu()">
+                    <span class="iconify text-xl" data-icon="lucide:bookmark"></span>
+                    <span>المحفوظات</span>
+                </a>
+                <a href="#" class="mobile-drawer-link" onclick="showPage('articles');closeMobileMenu()">
+                    <span class="iconify text-xl" data-icon="lucide:list"></span>
+                    <span>مقالاتي</span>
+                </a>
+                <div class="border-t border-dark-800 my-2 mx-3"></div>
+                <a href="#" class="mobile-drawer-link" onclick="showPage('feed');closeMobileMenu()">
+                    <span class="iconify text-xl" data-icon="lucide:home"></span>
+                    <span>الرئيسية</span>
                 </a>
                 <a href="#" class="mobile-drawer-link" onclick="showPage('following');closeMobileMenu()">
                     <span class="iconify text-xl" data-icon="lucide:users"></span>
@@ -157,12 +163,10 @@
                 <a href="#" class="mobile-drawer-link" onclick="showTrendingPage();closeMobileMenu()">
                     <span class="iconify text-xl" data-icon="lucide:trending-up"></span>
                     <span>المواضيع الرائجة</span>
-                    <span class="mr-auto bg-brand-500/20 text-brand-400 text-[10px] font-bold px-2 py-0.5 rounded-full">🔥</span>
                 </a>
                 <a href="#" class="mobile-drawer-link" onclick="showPage('audio-spaces');closeMobileMenu()">
                     <span class="iconify text-xl" data-icon="lucide:mic"></span>
                     <span>المساحات الصوتية</span>
-                    <span class="mr-auto bg-red-500/20 text-red-400 text-[10px] font-bold px-2 py-0.5 rounded-full">🔴</span>
                 </a>
                 <a href="#" class="mobile-drawer-link" onclick="showPage('messages');closeMobileMenu()">
                     <span class="iconify text-xl" data-icon="lucide:message-circle"></span>
@@ -172,14 +176,6 @@
                     <span class="iconify text-xl" data-icon="lucide:bell"></span>
                     <span>الإشعارات</span>
                 </a>
-                <a href="#" class="mobile-drawer-link" onclick="showPage('bookmarks');closeMobileMenu()">
-                    <span class="iconify text-xl" data-icon="lucide:bookmark"></span>
-                    <span>المحفوظات</span>
-                </a>
-                <a href="#" class="mobile-drawer-link" onclick="showPage('articles');closeMobileMenu()">
-                    <span class="iconify text-xl" data-icon="lucide:file-text"></span>
-                    <span>مقالاتي</span>
-                </a>
                 <a href="#" class="mobile-drawer-link" onclick="showPage('events');closeMobileMenu()">
                     <span class="iconify text-xl" data-icon="lucide:calendar"></span>
                     <span>الفعاليات</span>
@@ -188,7 +184,7 @@
                     <span class="iconify text-xl" data-icon="lucide:award"></span>
                     <span>الشهادات</span>
                 </a>
-                <div class="border-t border-dark-800 my-2"></div>
+                <div class="border-t border-dark-800 my-2 mx-3"></div>
                 <a href="#" class="mobile-drawer-link" onclick="showPage('settings');closeMobileMenu()">
                     <span class="iconify text-xl" data-icon="lucide:settings"></span>
                     <span>الإعدادات</span>

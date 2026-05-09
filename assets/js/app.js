@@ -50,13 +50,12 @@
             if (q) showToast('بحث عن: ' + q);
         }
 
-        // ===== Mobile Menu (X-style centered drawer) =====
+        // ===== Mobile Menu (X-style left drawer) =====
         function openMobileMenu() {
             const overlay = document.getElementById('mobileMenuOverlay');
             const drawer = document.getElementById('mobileDrawer');
             overlay.classList.add('open');
             drawer.style.transform = '';
-            drawer.style.opacity = '';
             document.body.style.overflow = 'hidden';
         }
 
@@ -65,14 +64,13 @@
             const drawer = document.getElementById('mobileDrawer');
             overlay.classList.remove('open');
             drawer.style.transform = '';
-            drawer.style.opacity = '';
             document.body.style.overflow = '';
         }
 
-        // Swipe gestures for mobile menu
+        // Swipe gestures: left edge → open, swipe left → close
         (function() {
-            let startX = 0, startY = 0, isDragging = false;
-            let dragType = null; // 'open' or 'close'
+            let startX = 0, startY = 0, currentX = 0;
+            let isDragging = false, dragType = null;
             const EDGE = 30;
 
             const overlay = () => document.getElementById('mobileMenuOverlay');
@@ -86,15 +84,14 @@
                 startX = t.clientX;
                 startY = t.clientY;
 
-                // Swipe from left edge → OPEN
                 if (!isOpen() && startX < EDGE) {
                     isDragging = true;
                     dragType = 'open';
-                }
-                // Swipe down on drawer → CLOSE
-                else if (isOpen() && startY > 60) {
+                    drawer().style.transition = 'none';
+                } else if (isOpen()) {
                     isDragging = true;
                     dragType = 'close';
+                    drawer().style.transition = 'none';
                 }
             }, { passive: true });
 
@@ -102,46 +99,57 @@
                 if (!isDragging || !isMobile()) return;
                 const t = e.touches[0];
                 const dx = t.clientX - startX;
-                const dy = t.clientY - startY;
+                const dy = Math.abs(t.clientY - startY);
 
                 if (dragType === 'open') {
-                    // Show visual feedback while swiping from edge
-                    const progress = Math.min(1, dx / 150);
-                    if (progress > 0.1) {
-                        overlay().style.visibility = 'visible';
-                        overlay().style.opacity = String(progress * 0.6);
-                    }
-                } else if (dragType === 'close' && dy > 0) {
-                    // Drag down to dismiss
-                    const progress = Math.min(1, dy / 200);
-                    drawer().style.transition = 'none';
-                    drawer().style.transform = `scale(${1 - progress * 0.08}) translateY(${dy * 0.4}px)`;
-                    drawer().style.opacity = String(1 - progress);
-                    overlay().style.opacity = String(1 - progress * 0.8);
+                    const dWidth = drawer().offsetWidth || 280;
+                    const translate = Math.max(-dWidth, -dWidth + dx);
+                    drawer().style.transform = `translateX(${translate}px)`;
+                    const progress = Math.min(1, Math.abs(translate + dWidth) / dWidth);
+                    overlay().style.opacity = String(progress * 0.5);
+                    if (progress > 0.05) overlay().style.visibility = 'visible';
+                } else if (dragType === 'close' && dx < 0) {
+                    const dWidth = drawer().offsetWidth || 280;
+                    const translate = Math.min(0, dx);
+                    drawer().style.transform = `translateX(${translate}px)`;
+                    const progress = Math.min(1, Math.abs(translate) / dWidth);
+                    overlay().style.opacity = String(0.5 - progress * 0.5);
                 }
             }, { passive: true });
 
-            document.addEventListener('touchend', function(e) {
+            document.addEventListener('touchend', function() {
                 if (!isDragging || !isMobile()) return;
-                const t = e.changedTouches[0];
-                const dx = t.clientX - startX;
-                const dy = t.clientY - startY;
+                const dx = currentX || 0;
 
-                // Reset inline styles
                 drawer().style.transition = '';
-                drawer().style.transform = '';
-                drawer().style.opacity = '';
                 overlay().style.opacity = '';
                 overlay().style.visibility = '';
 
-                if (dragType === 'open' && dx > 60) {
-                    openMobileMenu();
-                } else if (dragType === 'close' && dy > 80) {
-                    closeMobileMenu();
+                if (dragType === 'open') {
+                    const dWidth = drawer().offsetWidth || 280;
+                    const moved = (currentX - startX);
+                    if (moved > dWidth * 0.3) {
+                        openMobileMenu();
+                    } else {
+                        closeMobileMenu();
+                    }
+                } else if (dragType === 'close') {
+                    const moved = startX - currentX;
+                    if (moved > 60) {
+                        closeMobileMenu();
+                    } else {
+                        openMobileMenu();
+                    }
                 }
 
                 isDragging = false;
                 dragType = null;
+                currentX = 0;
+            }, { passive: true });
+
+            // Track currentX in touchmove
+            document.addEventListener('touchmove', function(e) {
+                if (isDragging) currentX = e.touches[0].clientX;
             }, { passive: true });
         })();
 
