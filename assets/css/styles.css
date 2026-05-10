@@ -1166,3 +1166,264 @@
         max-height: 200px;
     }
 }
+
+/* ============================================================
+   MOBILE RESPONSIVE FIXES - Twitter/X & Facebook Style
+   ============================================================ */
+
+/* 1. Hide desktop sidebar completely on mobile */
+@media (max-width: 1023px) {
+    .desktop-sidebar {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        position: absolute !important;
+        left: -9999px !important;
+    }
+}
+
+/* 2. Mobile post card fixes - Twitter/X compact style */
+@media (max-width: 640px) {
+    /* Reduce main container padding */
+    .max-w-7xl {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    /* Post card compact sizing */
+    .post-card {
+        margin-bottom: 12px !important;
+        border-radius: 16px !important;
+    }
+
+    /* Post inner padding - tighter on mobile */
+    .post-card .p-5 {
+        padding: 12px !important;
+    }
+
+    .post-card .px-5 {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+
+    .post-card .pb-0 {
+        padding-bottom: 0 !important;
+    }
+
+    .post-card .pb-2 {
+        padding-bottom: 6px !important;
+    }
+
+    /* Post images - constrain height on mobile (Twitter-like) */
+    .post-card .h-48,
+    .post-card .h-52,
+    .post-card .h-44 {
+        height: 180px !important;
+        max-height: 180px !important;
+    }
+
+    /* Article preview images */
+    .post-card .relative.h-48 {
+        height: 160px !important;
+        max-height: 160px !important;
+    }
+
+    /* Media in posts */
+    .post-card img {
+        max-height: 260px !important;
+        object-fit: cover !important;
+    }
+
+    /* Post content text - limit lines */
+    .post-card .mb-3 p.text-dark-300 {
+        display: -webkit-box !important;
+        -webkit-line-clamp: 3 !important;
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
+        font-size: 13px !important;
+        line-height: 1.5 !important;
+    }
+
+    /* Post title */
+    .post-card h2.font-bold {
+        font-size: 14px !important;
+        line-height: 1.4 !important;
+        margin-bottom: 6px !important;
+    }
+
+    /* Engagement bar - compact */
+    .post-card .border-t.border-dark-800\/50.px-2 {
+        padding: 4px 4px !important;
+    }
+
+    .post-card .like-btn,
+    .post-card .flex.items-center.justify-around > button {
+        padding: 8px 6px !important;
+        gap: 4px !important;
+    }
+
+    .post-card .like-btn .text-sm,
+    .post-card .flex.items-center.justify-around .text-sm {
+        font-size: 11px !important;
+    }
+
+    .post-card .like-btn .text-lg,
+    .post-card .flex.items-center.justify-around .text-lg {
+        font-size: 16px !important;
+    }
+
+    /* Stats row (likes/comments count) */
+    .post-card .px-5.pb-2 .text-xs {
+        font-size: 11px !important;
+    }
+
+    /* Comment section - better mobile spacing */
+    .comment-section {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+
+    .comment-section.open {
+        max-height: 400px !important;
+    }
+
+    .comment-section input[type="text"] {
+        font-size: 13px !important;
+        padding: 8px 12px !important;
+    }
+
+    .comment-section .bg-dark-850 {
+        padding: 8px 10px !important;
+    }
+
+    .comment-section .text-xs {
+        font-size: 11px !important;
+    }
+
+    /* Hashtags - smaller on mobile */
+    .hashtag {
+        font-size: 10px !important;
+        padding: 4px 8px !important;
+    }
+
+    /* Follow button - smaller */
+    .follow-btn {
+        font-size: 10px !important;
+        padding: 4px 10px !important;
+        min-width: 60px !important;
+    }
+
+    /* Author info row */
+    .post-card .w-11 {
+        width: 36px !important;
+        height: 36px !important;
+    }
+
+    .post-card .text-sm.font-semibold {
+        font-size: 13px !important;
+    }
+
+    .post-card .text-xs.text-dark-400 {
+        font-size: 10px !important;
+    }
+
+    /* Stories bar - mobile */
+    .stories-bar-container {
+        padding: 10px 8px !important;
+        border-radius: 12px !important;
+    }
+
+    .story-card {
+        width: 90px !important;
+        height: 130px !important;
+        border-radius: 12px !important;
+    }
+
+    /* Create post box - compact */
+    #page-feed .bg-dark-900\/80.border.border-dark-800\/50.rounded-2xl.p-5.mb-6 {
+        padding: 12px !important;
+        margin-bottom: 12px !important;
+        border-radius: 16px !important;
+    }
+
+    /* Feed tabs */
+    .feed-tab {
+        font-size: 13px !important;
+        padding: 6px 0 !important;
+    }
+
+    /* Poll options */
+    .poll-option {
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+    }
+
+    /* Article preview box */
+    .post-card .bg-dark-850.p-4 {
+        padding: 10px 12px !important;
+    }
+
+    .post-card .bg-dark-850 h4 {
+        font-size: 13px !important;
+    }
+
+    /* Notification dropdown - mobile */
+    .notif-dropdown {
+        right: 4px !important;
+        left: 4px !important;
+        width: auto !important;
+        max-height: 75vh !important;
+    }
+
+    /* Bottom nav safe area */
+    .mobile-bottom-nav {
+        padding-bottom: env(safe-area-inset-bottom, 8px) !important;
+    }
+}
+
+/* 3. Tablet adjustments (641px - 1023px) */
+@media (min-width: 641px) and (max-width: 1023px) {
+    .post-card .h-48,
+    .post-card .h-52,
+    .post-card .h-44 {
+        height: 220px !important;
+    }
+
+    .post-card .p-5 {
+        padding: 16px !important;
+    }
+
+    .post-card .px-5 {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
+}
+
+/* 4. Ensure no horizontal overflow on any mobile device */
+@media (max-width: 1023px) {
+    body {
+        overflow-x: hidden !important;
+    }
+
+    main {
+        min-width: 0 !important;
+        overflow-x: hidden !important;
+    }
+
+    /* Ensure post content doesn't overflow */
+    .post-card {
+        max-width: 100% !important;
+        overflow: hidden !important;
+    }
+
+    .post-card * {
+        max-width: 100% !important;
+    }
+
+    /* Safe area for notch devices */
+    .max-w-7xl {
+        padding-top: calc(5rem + env(safe-area-inset-top, 0px)) !important;
+    }
+}
