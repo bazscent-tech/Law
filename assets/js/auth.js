@@ -1,439 +1,393 @@
 // ============================================================
-// ===== AUTH MANAGER — نظام إدارة الحسابات المتعددة =========
+// ===== DEMO AUTH MANAGER — وضع تجريبي =====================
 // ============================================================
-// كل حساب = هوية مستقلة بالكامل
-// - Supabase Auth session حقيقي
-// - localStorage معزول per user
-// - تبديل حساب = تسجيل دخول جديد
+// حسابات وهمية جاهزة + تبديل سريع + عزل كامل
+// لا يحتاج تسجيل دخول أو إعداد profile
 // ============================================================
 
 const Auth = {
     _currentUserId: null,
     _accounts: [],
+    _isDemoMode: true,
+
+    // ===== حسابات تجريبية جاهزة =====
+    _demoAccounts: [
+        {
+            id: 'demo-ahmed',
+            displayName: 'د. أحمد الخالدي',
+            username: '@ahmed_alkhalidi',
+            title: 'محامي دولي',
+            bio: 'محامي دولي متخصص في التحكيم التجاري وقانون الشركات. خبرة +15 عاماً.',
+            location: 'دبي، الإمارات',
+            avatar: 'https://picsum.photos/seed/ahmed-law/120/120.jpg',
+            verified: true
+        },
+        {
+            id: 'demo-sara',
+            displayName: 'سارة المنصوري',
+            username: '@sara_mansouri',
+            title: 'مستشارة قانونية',
+            bio: 'مستشارة قانونية متخصصة في حماية البيانات والخصوصية الرقمية.',
+            location: 'أبوظبي، الإمارات',
+            avatar: 'https://picsum.photos/seed/sara-legal/120/120.jpg',
+            verified: false
+        },
+        {
+            id: 'demo-khalid',
+            displayName: 'خالد العمري',
+            username: '@khalid_omari',
+            title: 'أستاذ القانون الدولي',
+            bio: 'أستاذ جامعي متخصص في القانون الدولي والاتفاقيات التجارية.',
+            location: 'عمان، الأردن',
+            avatar: 'https://picsum.photos/seed/khalid-jordan/120/120.jpg',
+            verified: true
+        },
+        {
+            id: 'demo-nora',
+            displayName: 'نورة القحطاني',
+            username: '@nora_qahtani',
+            title: 'محامية عقود',
+            bio: 'محامية متخصصة في صياغة العقود الدولية وتسوية النزاعات.',
+            location: 'الرياض، السعودية',
+            avatar: 'https://picsum.photos/seed/nora-lawyer/120/120.jpg',
+            verified: true
+        },
+        {
+            id: 'demo-fatima',
+            displayName: 'فاطمة الحربي',
+            username: '@fatima_harbi',
+            title: 'خبيرة تقنية مالية',
+            bio: 'خبيرة في التقنية المالية والعملات الرقمية والتنظيم البنكي.',
+            location: 'جدة، السعودية',
+            avatar: 'https://picsum.photos/seed/fatima-fintech/120/120.jpg',
+            verified: false
+        }
+    ],
 
     // ===== INITIALIZATION =====
     async init() {
-        // Load accounts list from localStorage (not user-scoped)
-        this._accounts = Safe.getJSON('auth_accounts', []);
+        this._accounts = this._demoAccounts;
 
-        // Try to restore last session
-        const lastUserId = Safe.getString('auth_current_user', '');
-        if (lastUserId) {
-            const restored = await this._restoreSession(lastUserId);
-            if (restored) return restored;
+        // استعادة آخر حساب نشط
+        const lastUserId = Safe.getString('demo_current_user', '');
+        if (lastUserId && this._accounts.find(a => a.id === lastUserId)) {
+            this._currentUserId = lastUserId;
+            this._applyAccount(this._currentUserId);
+            return { userId: this._currentUserId, profile: this.getCurrentAccount() };
         }
 
-        // No valid session — show login screen
-        return null;
+        // أول مرة — نختار الحساب الأول تلقائياً
+        this._currentUserId = this._accounts[0].id;
+        Safe.setString('demo_current_user', this._currentUserId);
+        this._applyAccount(this._currentUserId);
+        this._ensureDemoData(this._currentUserId);
+        return { userId: this._currentUserId, profile: this.getCurrentAccount() };
     },
 
-    // ===== SIGN IN (create new anonymous account) =====
-    async signIn(displayName) {
-        if (!sb) return null;
-        try {
-            // Sign out any existing Supabase session first
-            await sb.auth.signOut();
+    // ===== APPLY ACCOUNT TO GLOBALS =====
+    _applyAccount(userId) {
+        const account = this._accounts.find(a => a.id === userId);
+        if (!account) return;
 
-            // Create a real Supabase anonymous auth session
-            const { data: authData, error: authError } = await sb.auth.signInAnonymously();
-            if (authError) throw authError;
-
-            const userId = authData.user.id;
-            const session = authData.session;
-
-            // Create profile in Supabase
-            const profileData = {
-                id: userId,
-                username: 'user_' + userId.substring(0, 8),
-                display_name: displayName || 'مستخدم جديد',
-                bio: '',
-                title: '',
-                location: '',
-                website: '',
-                avatar_url: '',
-                cover_url: '',
-                is_verified: false
-            };
-
-            const { error: profileError } = await sb.from('profiles').upsert(profileData);
-            if (profileError) console.warn('Profile creation warning:', profileError.message);
-
-            // Save session to localStorage
-            this._saveSession(userId, session.access_token, profileData);
-
-            // Register account
-            this._registerAccount(userId, profileData.display_name, session.access_token);
-
-            // Set globals
-            this._currentUserId = userId;
-            sbUser = { id: userId };
-            sbProfile = profileData;
-            sbOnline = true;
-
-            return { userId, profile: profileData };
-        } catch (e) {
-            console.error('[Auth] Sign in failed:', e.message);
-            return null;
-        }
-    },
-
-    // ===== SIGN OUT =====
-    async signOut() {
-        if (sb) {
-            await sb.auth.signOut();
-        }
-        this._currentUserId = null;
-        sbUser = null;
-        sbProfile = null;
-        Safe.setString('auth_current_user', '');
+        sbUser = { id: userId };
+        sbProfile = {
+            id: userId,
+            name: account.displayName,
+            username: account.username,
+            display_name: account.displayName,
+            title: account.title,
+            bio: account.bio,
+            location: account.location,
+            avatar_url: account.avatar,
+            is_verified: account.verified
+        };
+        sbOnline = false; // Demo mode = localStorage only
     },
 
     // ===== SWITCH ACCOUNT =====
-    async switchAccount(userId) {
+    switchAccount(userId) {
         if (userId === this._currentUserId) return true;
-
-        const account = this._accounts.find(a => a.userId === userId);
+        const account = this._accounts.find(a => a.id === userId);
         if (!account) return false;
 
-        try {
-            // Sign out current session
-            if (sb) await sb.auth.signOut();
-
-            // Try to restore this account's session
-            const restored = await this._restoreSession(userId);
-            if (restored) return true;
-
-            // If restore failed, create new anonymous session
-            // and re-link to the same profile
-            const { data: authData, error } = await sb.auth.signInAnonymously();
-            if (error) throw error;
-
-            // Update session token
-            this._saveSession(userId, authData.session.access_token, account.profile);
-            account.token = authData.session.access_token;
-            this._saveAccounts();
-
-            // Set globals
-            this._currentUserId = userId;
-            sbUser = { id: userId };
-            sbProfile = account.profile;
-
-            return true;
-        } catch (e) {
-            console.error('[Auth] Switch failed:', e.message);
-            // Remove invalid account
-            this._accounts = this._accounts.filter(a => a.userId !== userId);
-            this._saveAccounts();
-            return false;
-        }
-    },
-
-    // ===== ADD NEW ACCOUNT =====
-    async addAccount(displayName) {
-        return await this.signIn(displayName);
-    },
-
-    // ===== REMOVE ACCOUNT =====
-    removeAccount(userId) {
-        this._accounts = this._accounts.filter(a => a.userId !== userId);
-        this._saveAccounts();
-        // Clean up that user's localStorage data
-        this._cleanupUserData(userId);
+        this._currentUserId = userId;
+        Safe.setString('demo_current_user', userId);
+        this._applyAccount(userId);
+        this._ensureDemoData(userId);
+        return true;
     },
 
     // ===== GETTERS =====
-    getCurrentUserId() {
-        return this._currentUserId;
-    },
+    getCurrentUserId() { return this._currentUserId; },
+    getAccounts() { return [...this._accounts]; },
+    getCurrentAccount() { return this._accounts.find(a => a.id === this._currentUserId) || null; },
+    isLoggedIn() { return !!this._currentUserId; },
 
-    getAccounts() {
-        return [...this._accounts];
-    },
+    // ===== DEMO DATA GENERATION =====
+    _ensureDemoData(userId) {
+        const prefix = 'user_' + userId + '_';
 
-    getCurrentAccount() {
-        return this._accounts.find(a => a.userId === this._currentUserId) || null;
-    },
+        // إنشاء منشورات تجريبية إذا ما كانت موجودة
+        if (!Safe.getJSON(prefix + 'userPosts', null)) {
+            Safe.setJSON(prefix + 'userPosts', this._generateDemoPosts(userId));
+            Safe.setJSON(prefix + 'userPostCounter', 5);
+        }
 
-    isLoggedIn() {
-        return !!this._currentUserId;
-    },
+        // إنشاء متابعين تجريبيين
+        if (!Safe.getJSON(prefix + 'followingUsers', null)) {
+            const others = this._accounts.filter(a => a.id !== userId).map(a => a.displayName);
+            Safe.setJSON(prefix + 'followingUsers', others.slice(0, 3));
+        }
 
-    // ===== INTERNAL: SESSION MANAGEMENT =====
-    _saveSession(userId, token, profile) {
-        Safe.setString('auth_current_user', userId);
-        Safe.setString('auth_token_' + userId, token);
-        Safe.setJSON('auth_profile_' + userId, profile);
-    },
+        // إنشاء إعجابات تجريبية
+        if (!Safe.getJSON(prefix + 'userLikes', null)) {
+            Safe.setJSON(prefix + 'userLikes', []);
+        }
 
-    async _restoreSession(userId) {
-        if (!sb) return null;
+        // إنشاء ردود تجريبية
+        if (!Safe.getJSON(prefix + 'userReplies', null)) {
+            Safe.setJSON(prefix + 'userReplies', []);
+        }
 
-        const token = Safe.getString('auth_token_' + userId, '');
-        const profile = Safe.getJSON('auth_profile_' + userId, null);
+        // إنشاء تعليقات تجريبية
+        if (!Safe.getJSON(prefix + 'platformComments', null)) {
+            Safe.setJSON(prefix + 'platformComments', {});
+        }
 
-        if (!token || !profile) return null;
+        // إنشاء محادثات تجريبية
+        if (!Safe.getJSON(prefix + 'conversations', null)) {
+            Safe.setJSON(prefix + 'conversations', this._generateDemoConversations(userId));
+        }
 
-        try {
-            // Try to set the session
-            const { data, error } = await sb.auth.setSession({
-                access_token: token,
-                refresh_token: token // For anonymous, we use same token
-            });
+        // إنشاء stories تجريبية
+        if (!Safe.getJSON(prefix + 'storiesData', null)) {
+            Safe.setJSON(prefix + 'storiesData', this._generateDemoStories(userId));
+        }
 
-            if (error) {
-                // Session expired — try to create new one
-                const { data: freshData, error: freshError } = await sb.auth.signInAnonymously();
-                if (freshError) throw freshError;
+        // إنشاء إعدادات افتراضية
+        if (!Safe.getJSON(prefix + 'settings', null)) {
+            Safe.setJSON(prefix + 'settings', { profileVisible: true, emailNotifs: true, darkMode: true, twoFactor: false, language: 'ar' });
+        }
 
-                this._saveSession(userId, freshData.session.access_token, profile);
-                const acc = this._accounts.find(a => a.userId === userId);
-                if (acc) acc.token = freshData.session.access_token;
-                this._saveAccounts();
+        // إنشاء bookmarks فارغة
+        if (!Safe.getJSON(prefix + 'bookmarks', null)) {
+            Safe.setJSON(prefix + 'bookmarks', []);
+        }
 
-                this._currentUserId = userId;
-                sbUser = { id: userId };
-                sbProfile = profile;
-                sbOnline = true;
-                return { userId, profile };
+        // إنشاء مقالات فارغة
+        if (!Safe.getJSON(prefix + 'articles', null)) {
+            Safe.setJSON(prefix + 'articles', []);
+        }
+
+        // إنشاء events فارغة
+        if (!Safe.getJSON(prefix + 'registered_events', null)) {
+            Safe.setJSON(prefix + 'registered_events', []);
+        }
+
+        // إنشاء viewed stories فارغة
+        if (!Safe.getJSON(prefix + 'viewedStories', null)) {
+            Safe.setJSON(prefix + 'viewedStories', []);
+        }
+
+        // Profile
+        if (!Safe.getJSON(prefix + 'userProfile', null)) {
+            const acc = this._accounts.find(a => a.id === userId);
+            if (acc) {
+                Safe.setJSON(prefix + 'userProfile', {
+                    name: acc.displayName,
+                    username: acc.username,
+                    title: acc.title,
+                    bio: acc.bio,
+                    location: acc.location,
+                    website: ''
+                });
             }
-
-            this._currentUserId = userId;
-            sbUser = { id: userId };
-            sbProfile = profile;
-            sbOnline = true;
-            return { userId, profile };
-        } catch (e) {
-            console.warn('[Auth] Session restore failed for', userId, e.message);
-            return null;
         }
     },
 
-    _registerAccount(userId, displayName, token) {
-        if (!this._accounts.find(a => a.userId === userId)) {
-            this._accounts.push({
-                userId,
-                displayName,
-                token,
-                profile: Safe.getJSON('auth_profile_' + userId, {}),
-                addedAt: Date.now()
-            });
-            this._saveAccounts();
-        }
+    _generateDemoPosts(userId) {
+        const templates = {
+            'demo-ahmed': [
+                { text: 'محكمة التحكيم الدولية أصدرت قراراً جديداً بشأن النزاعات التجارية عابرة الحدود. تحديث مهم لكل الممارسين في مجال التحكيم التجاري. ⚖️', tags: ['#التحكيم_الدولي', '#قانون_التجارة'], likes: 45, comments: 12, shares: 8 },
+                { text: 'نصيحة قانونية: قبل توقيع أي عقد دولي، تأكد من وجود بند حل النزاعات واضح ومحدد. هذا يوفر عليك وقتاً وأموالاً في المستقبل. 📋', tags: ['#نصيحة_قانونية', '#العقود'], likes: 89, comments: 23, shares: 15 },
+                { text: 'شاركت اليوم في مؤتمر دبي للقانون الدولي. نقاشات ممتازة حول مستقبل التحكيم في المنطقة. 🏛️', tags: ['#مؤتمر_دبي', '#القانون_الدولي'], likes: 67, comments: 8, shares: 5 },
+                { text: 'قراءة في التعديلات الجديدة على قانون الشركات الإماراتي. تغييرات إيجابية تشجع الاستثمار. 🇦🇪', tags: ['#قانون_الشركات', '#الإمارات'], likes: 123, comments: 34, shares: 21 },
+                { text: 'ورشة عمل غداً عن "صياغة العقود الدولية" — مفتوحة للتسجيل. الأماكن محدودة! 📝', tags: ['#ورشة_عمل', '#العقود'], likes: 56, comments: 19, shares: 11 }
+            ],
+            'demo-sara': [
+                { text: 'تحديث مهم: صدر المرسوم التنفيذي الجديد لقانون حماية البيانات الشخصية في الإمارات. غرامات تصل إلى 5 مليون درهم! 🇦🇪📋', tags: ['#حماية_البيانات', '#الإمارات'], likes: 134, comments: 28, shares: 19 },
+                { text: 'هل تعلم؟ חברות التقنية ملزمة الآن بتشفير بيانات المستخدمين end-to-end. عدم الامتثال يعني غرامات ضخمة. 🔒', tags: ['#التشفير', '#الخصوصية'], likes: 78, comments: 15, shares: 9 },
+                { text: 'مقال جديد: "الذكاء الاصطناعي وتحديات الخصوصية" — رابط المقال في الملف الشخصي 🤖', tags: ['#الذكاء_الاصطناعي', '#الخصوصية'], likes: 201, comments: 45, shares: 32 },
+                { text: 'نصيحة: لا تشاركوا بياناتكم الشخصية مع أي تطبيق بدون قراءة سياسة الخصوصية أولاً! 🛡️', tags: ['#نصيحة', '#الخصوصية'], likes: 156, comments: 42, shares: 28 }
+            ],
+            'demo-khalid': [
+                { text: 'قانون الشركات الموحد في دول مجلس التعاون — تحليل شامل لأبرز التغييرات في مقالتي الجديدة 📚', tags: ['#قانون_الشركات', '#مجلس_التعاون'], likes: 256, comments: 67, shares: 45 },
+                { text: 'مناقشة ممتعة اليوم في الجامعة حول القانون الدولي الإنساني. الطلاب متحمسون! 🎓', tags: ['#التعليم', '#القانون_الدولي'], likes: 89, comments: 12, shares: 3 },
+                { text: 'هل تعلم أن الاتفاقية المتحدة لعقود البيع الدولي (CISG) تطبق في أكثر من 90 دولة؟ 🌍', tags: ['#CISG', '#القانون_التجاري'], likes: 145, comments: 34, shares: 22 },
+                { text: 'قراءة جديدة في حكم محكمة العدل الدولية الأخير. تأثير كبير على القانون البحري. ⚖️', tags: ['#محكمة_العدل', '#القانون_البحري'], likes: 178, comments: 45, shares: 31 }
+            ],
+            'demo-nora': [
+                { text: 'دليلك الشامل لصياغة العcontracts الدولية — 10 نصائح ذهبية من خبرة سنوات 📝', tags: ['#العقود', '#نصائح_قانونية'], likes: 312, comments: 78, shares: 56 },
+                { text: 'انتهيت من مراجعة عقد تجاري معقد بين شريكين من دولتين مختلفتين. النتيجة: اتفاق مرضٍ للطرفين! ✅', tags: ['#نجاح', '#العقود'], likes: 67, comments: 8, shares: 4 },
+                { text: 'تحديث: بند القوة القاهرة في العقود أصبح أكثر مرونة بعد التعديلات الجديدة 📋', tags: ['#القوة_القاهرة', '#العقود'], likes: 145, comments: 34, shares: 19 },
+                { text: 'ورشة عملية عن "تسوية النزاعات التجارية" الأسبوع القادم. التسجيل مفتوح! 🤝', tags: ['#ورشة', '#تسوية_النزاعات'], likes: 89, comments: 23, shares: 15 }
+            ],
+            'demo-fatima': [
+                { text: 'البنك المركزي السعودي أصدر توجيهات جديدة لشركات التقنية المالية بشأن التحقق من الهوية الرقمية (eKYC) 💡', tags: ['#Fintech', '#SAMA'], likes: 89, comments: 34, shares: 12 },
+                { text: 'مستقبل العملات الرقمية في المنطقة: تحليل شامل للإطار التنظيمي الجديد 🪙', tags: ['#العملات_الرقمية', '#التنظيم'], likes: 201, comments: 56, shares: 45 },
+                { text: 'نصيحة لرواد الأعمال: ابدأوا بالامتثال التنظيمي من اليوم الأول! لا تنتظروا حتى تكبر الشركة 🚀', tags: ['#ريادة_أعمال', '#امتثال'], likes: 156, comments: 42, shares: 28 },
+                { text: 'شاركت فيแฮكاثون التقنية المالية هذا الأسبوع. أفكار مبتكرة لمستقبل المدفوعات الرقمية! 💳', tags: ['#هاكاثون', '#تقنيات_مالية'], likes: 78, comments: 15, shares: 7 }
+            ]
+        };
+
+        const posts = templates[userId] || templates['demo-ahmed'];
+        return posts.map((p, i) => ({
+            id: 'user-' + (i + 1),
+            text: p.text,
+            displayText: p.text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>'),
+            tags: p.tags,
+            time: i === 0 ? 'الآن' : `منذ ${i + 1} ساعات`,
+            likes: p.likes,
+            comments: p.comments,
+            shares: p.shares,
+            isRepost: false,
+            commentList: [],
+            media: [],
+            edited: false
+        }));
     },
 
-    _saveAccounts() {
-        Safe.setJSON('auth_accounts', this._accounts);
+    _generateDemoConversations(userId) {
+        const others = this._accounts.filter(a => a.id !== userId);
+        return others.slice(0, 3).map((acc, i) => ({
+            id: 'conv-' + acc.id,
+            userId: acc.id,
+            userName: acc.displayName,
+            userAvatar: acc.avatar,
+            messages: [
+                { id: 'msg-1', text: 'السلام عليكم! كيف حالك؟', fromMe: false, time: '10:00 ص', timestamp: Date.now() - 3600000 * (i + 1) },
+                { id: 'msg-2', text: 'وعليكم السلام! بخير الحمد لله، وأنت؟', fromMe: true, time: '10:05 ص', timestamp: Date.now() - 3500000 * (i + 1) },
+                { id: 'msg-3', text: 'بخير! هل رأيت آخر تحديث قانوني؟', fromMe: false, time: '10:10 ص', timestamp: Date.now() - 3400000 * (i + 1) }
+            ],
+            unread: i === 0 ? 1 : 0,
+            lastActivity: Date.now() - 3400000 * (i + 1)
+        }));
     },
 
-    _cleanupUserData(userId) {
-        // Remove all localStorage keys for this user
+    _generateDemoStories(userId) {
+        const others = this._accounts.filter(a => a.id !== userId);
+        return [
+            { id: 'user-me', name: 'أنت', avatar: this._accounts.find(a => a.id === userId)?.avatar || '', isOwn: true, stories: [] },
+            ...others.slice(0, 3).map(acc => ({
+                id: acc.id,
+                name: acc.displayName,
+                avatar: acc.avatar,
+                stories: [
+                    { id: `story-${acc.id}-1`, type: 'text', text: `تحديث جديد! 📋⚖️`, bg: 'linear-gradient(135deg,#8b5cf6,#6d28d9)', time: 'منذ ساعتين', duration: 5000 }
+                ]
+            }))
+        ];
+    },
+
+    // ===== RESET DEMO DATA =====
+    resetDemoData(userId) {
+        const prefix = 'user_' + (userId || this._currentUserId) + '_';
         const keysToRemove = [];
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key && key.startsWith('user_' + userId + '_')) {
-                keysToRemove.push(key);
-            }
+            if (key && key.startsWith(prefix)) keysToRemove.push(key);
         }
         keysToRemove.forEach(k => localStorage.removeItem(k));
+        this._ensureDemoData(userId || this._currentUserId);
     },
 
-    // ===== UI: LOGIN SCREEN =====
-    showLoginScreen() {
-        const overlay = document.createElement('div');
-        overlay.id = 'authLoginScreen';
-        overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-dark-950';
-        overlay.innerHTML = `
-            <div class="w-full max-w-md mx-4 animate-fade-in-up">
-                <div class="text-center mb-8">
-                    <div class="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
-                        <span class="iconify text-white text-4xl" data-icon="lucide:scale"></span>
-                    </div>
-                    <h1 class="text-2xl font-bold text-white mb-2">قانون بوكت</h1>
-                    <p class="text-dark-400 text-sm">منصة التواصل القانوني</p>
-                </div>
-                <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-6 space-y-4">
-                    <div>
-                        <label class="text-xs text-dark-400 block mb-2">اسمك</label>
-                        <input type="text" id="authDisplayName" class="w-full bg-dark-850 border border-dark-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder-dark-400 focus:outline-none focus:border-brand-500/50 transition-all" placeholder="أدخل اسمك..." value="">
-                    </div>
-                    <button id="authSignInBtn" onclick="Auth._handleLogin()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2">
-                        <span class="iconify text-lg" data-icon="lucide:log-in"></span>
-                        <span>دخول</span>
+    // ===== UI: ACCOUNT QUICK SWITCHER (floating) =====
+    showQuickSwitcher() {
+        let bar = document.getElementById('demoQuickSwitcher');
+        if (bar) { bar.remove(); return; }
+
+        bar = document.createElement('div');
+        bar.id = 'demoQuickSwitcher';
+        bar.className = 'demo-quick-switcher';
+
+        const currentId = this._currentUserId;
+
+        bar.innerHTML = `
+            <div class="demo-switcher-header">
+                <span class="iconify text-brand-400" data-icon="lucide:zap"></span>
+                <span>Demo Mode</span>
+                <button onclick="document.getElementById('demoQuickSwitcher').remove()" class="demo-switcher-close">
+                    <span class="iconify" data-icon="lucide:x"></span>
+                </button>
+            </div>
+            <div class="demo-switcher-accounts">
+                ${this._accounts.map(acc => `
+                    <button class="demo-account-btn ${acc.id === currentId ? 'active' : ''}" onclick="Auth.quickSwitch('${acc.id}')" title="${acc.displayName}">
+                        <img src="${acc.avatar}" alt="">
+                        <span>${acc.displayName.split(' ')[0]}</span>
+                        ${acc.id === currentId ? '<span class="iconify text-brand-400 text-xs" data-icon="lucide:check-circle-2"></span>' : ''}
                     </button>
-                    ${this._accounts.length > 0 ? `
-                    <div class="border-t border-dark-800/50 pt-4">
-                        <p class="text-xs text-dark-400 mb-3">أو ادخل بحساب موجود:</p>
-                        <div class="space-y-2">
-                            ${this._accounts.map(acc => `
-                                <button onclick="Auth._handleSwitch('${acc.userId}')" class="w-full flex items-center gap-3 p-3 bg-dark-850 hover:bg-dark-800 rounded-xl border border-dark-700/30 transition-all">
-                                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold text-sm shrink-0">
-                                        ${(acc.displayName || 'م').charAt(0)}
-                                    </div>
-                                    <div class="text-right flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-white truncate">${acc.displayName || 'مستخدم'}</p>
-                                        <p class="text-[10px] text-dark-500">${new Date(acc.addedAt).toLocaleDateString('ar-SA')}</p>
-                                    </div>
-                                    <span class="iconify text-dark-500" data-icon="lucide:chevron-left"></span>
-                                </button>
-                            `).join('')}
-                        </div>
-                    </div>
-                    ` : ''}
-                </div>
+                `).join('')}
             </div>
         `;
-        document.body.appendChild(overlay);
-        document.body.style.overflow = 'hidden';
 
-        // Focus input
+        document.body.appendChild(bar);
+
+        // إغلاق عند الضغط خارجها
         setTimeout(() => {
-            const input = document.getElementById('authDisplayName');
-            if (input) input.focus();
-        }, 300);
+            document.addEventListener('click', function closeSwitcher(e) {
+                if (!bar.contains(e.target)) {
+                    bar.remove();
+                    document.removeEventListener('click', closeSwitcher);
+                }
+            });
+        }, 100);
     },
 
-    hideLoginScreen() {
-        const overlay = document.getElementById('authLoginScreen');
-        if (overlay) {
-            overlay.remove();
-            document.body.style.overflow = '';
-        }
-    },
-
-    async _handleLogin() {
-        const input = document.getElementById('authDisplayName');
-        const btn = document.getElementById('authSignInBtn');
-        const name = input ? input.value.trim() : '';
-
-        if (!name) {
-            showToast('أدخل اسمك أولاً');
-            input?.focus();
+    async quickSwitch(userId) {
+        if (userId === this._currentUserId) {
+            document.getElementById('demoQuickSwitcher')?.remove();
             return;
         }
 
-        btn.disabled = true;
-        btn.innerHTML = '<span class="iconify text-lg animate-spin" data-icon="lucide:loader-2"></span><span>جاري الدخول...</span>';
+        const account = this._accounts.find(a => a.id === userId);
+        showToast('جاري التبديل إلى ' + account.displayName + '...');
 
-        const result = await this.signIn(name);
-        if (result) {
-            this.hideLoginScreen();
-            showToast('مرحباً ' + result.profile.display_name + ' 👋');
-            // Initialize app for this user
-            if (typeof onAuthSuccess === 'function') {
-                await onAuthSuccess(result);
-            }
-        } else {
-            showToast('فشل تسجيل الدخول، حاول مرة أخرى');
-            btn.disabled = false;
-            btn.innerHTML = '<span class="iconify text-lg" data-icon="lucide:log-in"></span><span>دخول</span>';
+        this.switchAccount(userId);
+
+        document.getElementById('demoQuickSwitcher')?.remove();
+
+        // إعادة تحميل التطبيق بالبيانات الجديدة
+        if (typeof onAuthSuccess === 'function') {
+            await onAuthSuccess({ userId, profile: this.getCurrentAccount() });
         }
+
+        showToast('تم التبديل ✓ ' + account.displayName);
     },
 
-    async _handleSwitch(userId) {
-        showToast('جاري التبديل...');
-        const success = await this.switchAccount(userId);
-        if (success) {
-            this.hideLoginScreen();
-            showToast('تم التبديل ✓');
-            if (typeof onAuthSuccess === 'function') {
-                await onAuthSuccess({ userId, profile: sbProfile });
-            }
-        } else {
-            showToast('فشل التبديل، أنشئ حساباً جديداً');
-        }
-    },
+    // ===== UI: DEMO INDICATOR (صغير في الأعلى) =====
+    showDemoIndicator() {
+        let indicator = document.getElementById('demoIndicator');
+        if (indicator) indicator.remove();
 
-    // ===== UI: ACCOUNT SWITCHER (in settings) =====
-    showAccountSwitcher() {
-        let modal = document.getElementById('accountSwitcherModal');
-        if (modal) modal.remove();
-
-        modal = document.createElement('div');
-        modal.id = 'accountSwitcherModal';
-        modal.className = 'modal-overlay';
-        modal.onclick = function(e) { if (e.target === this) this.classList.remove('active'); };
-
-        const accounts = this.getAccounts();
-        const currentId = this.getCurrentUserId();
-
-        modal.innerHTML = `
-            <div class="bg-dark-900 border border-dark-700/50 rounded-2xl w-[95%] max-w-md mx-4 max-h-[80vh] overflow-y-auto" onclick="event.stopPropagation()">
-                <div class="flex items-center justify-between p-5 border-b border-dark-800/50 sticky top-0 bg-dark-900 z-10">
-                    <h3 class="font-bold text-base">تبديل الحساب</h3>
-                    <button onclick="document.getElementById('accountSwitcherModal').classList.remove('active')" class="p-1.5 rounded-lg hover:bg-dark-800">
-                        <span class="iconify text-dark-400 text-xl" data-icon="lucide:x"></span>
-                    </button>
-                </div>
-                <div class="p-4 space-y-2">
-                    ${accounts.map(acc => `
-                        <div class="flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${acc.userId === currentId ? 'bg-brand-500/10 border-brand-500/30' : 'bg-dark-850 border-dark-700/30 hover:border-dark-600'}" onclick="${acc.userId !== currentId ? `Auth._doSwitch('${acc.userId}')` : ''}">
-                            <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold shrink-0">
-                                ${(acc.displayName || 'م').charAt(0)}
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-2">
-                                    <p class="text-sm font-semibold text-white truncate">${acc.displayName || 'مستخدم'}</p>
-                                    ${acc.userId === currentId ? '<span class="text-[10px] bg-brand-500/20 text-brand-400 px-2 py-0.5 rounded-full">الحالي</span>' : ''}
-                                </div>
-                                <p class="text-[10px] text-dark-500">انضم ${new Date(acc.addedAt).toLocaleDateString('ar-SA')}</p>
-                            </div>
-                            ${acc.userId !== currentId ? `
-                            <button onclick="event.stopPropagation();Auth._confirmRemove('${acc.userId}','${acc.displayName}')" class="p-2 rounded-lg hover:bg-red-500/10 text-dark-500 hover:text-red-400 transition-all">
-                                <span class="iconify text-sm" data-icon="lucide:trash-2"></span>
-                            </button>
-                            ` : ''}
-                        </div>
-                    `).join('')}
-                </div>
-                <div class="p-4 border-t border-dark-800/50">
-                    <button onclick="Auth._addNewFromSwitcher()" class="w-full flex items-center justify-center gap-2 p-3 bg-dark-800 hover:bg-dark-700 rounded-xl border border-dark-700 transition-all text-sm">
-                        <span class="iconify text-brand-400" data-icon="lucide:user-plus"></span>
-                        <span class="text-white">إضافة حساب جديد</span>
-                    </button>
-                </div>
-            </div>
+        indicator = document.createElement('div');
+        indicator.id = 'demoIndicator';
+        indicator.className = 'demo-indicator';
+        indicator.onclick = () => this.showQuickSwitcher();
+        indicator.innerHTML = `
+            <img src="${this.getCurrentAccount()?.avatar || ''}" alt="">
+            <span>${this.getCurrentAccount()?.displayName?.split(' ')[0] || 'Demo'}</span>
+            <span class="iconify text-[10px] text-dark-400" data-icon="lucide:chevron-down"></span>
         `;
-
-        document.body.appendChild(modal);
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
+        document.body.appendChild(indicator);
     },
 
-    async _doSwitch(userId) {
-        const modal = document.getElementById('accountSwitcherModal');
-        showToast('جاري التبديل...');
-        const success = await this.switchAccount(userId);
-        if (success) {
-            if (modal) modal.classList.remove('active');
-            document.body.style.overflow = '';
-            showToast('تم التبديل إلى ' + (sbProfile?.display_name || 'الحساب'));
-            // Reload app state for new user
-            if (typeof onAuthSuccess === 'function') {
-                await onAuthSuccess({ userId, profile: sbProfile });
-            }
-        } else {
-            showToast('فشل التبديل');
-        }
+    hideDemoIndicator() {
+        document.getElementById('demoIndicator')?.remove();
     },
 
-    _confirmRemove(userId, name) {
-        if (confirm(`هل تريد إزالة حساب "${name}"؟\nسيتم حذف جميع بياناته المحلية.`)) {
-            this.removeAccount(userId);
-            showToast('تم إزالة الحساب');
-            // Refresh the switcher
-            document.getElementById('accountSwitcherModal')?.classList.remove('active');
-            document.body.style.overflow = '';
-            if (this._accounts.length === 0) {
-                this.showLoginScreen();
-            } else {
-                this.showAccountSwitcher();
-            }
-        }
-    },
-
-    async _addNewFromSwitcher() {
-        document.getElementById('accountSwitcherModal')?.classList.remove('active');
-        document.body.style.overflow = '';
-        this.showLoginScreen();
+    // ===== SIGN OUT (for demo: just shows switcher) =====
+    async signOut() {
+        this.showQuickSwitcher();
     }
 };

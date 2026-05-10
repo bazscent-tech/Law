@@ -1,25 +1,23 @@
-        // ===== Init =====
+        // ===== Init — Demo Mode =====
         document.addEventListener('DOMContentLoaded', async()=>{
-            // Initialize Supabase first
+            // تهيئة Supabase (اختياري — Demo mode يعمل بدونه)
             await initSupabase();
 
-            // Initialize Auth system — يحدد المستخدم الحالي
+            // تهيئة Demo Auth — يختار أول حساب تلقائياً
             const authResult = await Auth.init();
 
-            if (!authResult) {
-                // No valid session — show login screen
-                Auth.showLoginScreen();
-                return;
+            if (authResult) {
+                console.log('✅ Demo Mode:', authResult.profile.name);
+                // إظهار مؤشر Demo
+                Auth.showDemoIndicator();
+                // تهيئة التطبيق
+                await initAppForUser();
             }
-
-            console.log('✅ Auth:', sbUser?.id, sbProfile?.display_name);
-
-            // Initialize app for authenticated user
-            await initAppForUser();
         });
 
-        // Called after successful auth (login or account switch)
+        // Called after account switch
         async function onAuthSuccess(result) {
+            Auth.showDemoIndicator();
             await initAppForUser();
         }
 
