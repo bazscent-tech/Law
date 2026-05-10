@@ -80,6 +80,14 @@
             if (searchInput) {
                 searchInput.onkeydown = function(e) { if (e.key === 'Enter') doSearch(); };
             }
+
+            // Initialize Library module
+            if (typeof Library !== 'undefined') {
+                Library.init();
+                // Pre-fetch libraries for current user
+                const uid = sbUser?.id || 'local';
+                Library.fetchLibraries(uid);
+            }
         });
 
         // ===== L. ENHANCED LIKE WITH BOOKMARK TRACKING =====
