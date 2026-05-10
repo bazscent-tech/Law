@@ -1,5 +1,6 @@
 
         function handleStoryImageUpload(input) {
+            if (!requireAuth()) return;
             const file = input.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -26,6 +27,7 @@
         }
 
         function handleStoryVideoUpload(input) {
+            if (!requireAuth()) return;
             const file = input.files[0]; if (!file) return;
             if (file.size > 50 * 1024 * 1024) { showToast('الفيديو كبير جداً (max 50MB)'); return; }
             showStoryUploadProgress();
@@ -300,6 +302,7 @@
         })();
 
         function sendStoryReply() {
+            if (!requireAuth()) return;
             const input = document.getElementById('storyReplyInput');
             const text = input.value.trim();
             if (!text) return;
@@ -349,6 +352,7 @@
         }
 
         function reactToStory(emoji) {
+            if (!requireAuth()) return;
             const user = storiesData[currentStoryUserIndex];
             if (!user) return;
             const story = user.stories[currentStoryIndex];

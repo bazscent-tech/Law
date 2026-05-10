@@ -194,6 +194,7 @@
         let textStoryColor = 'linear-gradient(135deg,#f97316,#ea580c)';
 
         function startTextStory() {
+            if (typeof requireAuth === 'function' && !requireAuth()) return;
             document.getElementById('createStoryModal').classList.remove('active');
             document.getElementById('textStoryEditor').style.display = 'flex';
             document.getElementById('textStoryEditor').classList.add('active');
@@ -219,6 +220,7 @@
         }
 
         function publishTextStory() {
+            if (typeof requireAuth === 'function' && !requireAuth()) return;
             const text = document.getElementById('textStoryInput').value.trim();
             if (!text) { showToast('اكتب شيئاً أولاً'); return; }
 

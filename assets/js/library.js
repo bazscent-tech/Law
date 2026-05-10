@@ -488,6 +488,7 @@ const Library = {
 
     // ===== MODALS: CREATE LIBRARY =====
     openCreateLibraryModal() {
+        if (!requireAuth()) return;
         const modal = document.getElementById('createLibraryModal');
         if (!modal) return;
         document.getElementById('createLibName').value = '';
@@ -513,6 +514,7 @@ const Library = {
     },
 
     async submitCreateLibrary() {
+        if (!requireAuth()) return;
         const name = document.getElementById('createLibName').value.trim();
         if (!name) { showToast('أدخل اسم المكتبة'); document.getElementById('createLibName').focus(); return; }
 
@@ -541,6 +543,7 @@ const Library = {
 
     // ===== MODALS: ADD ITEM =====
     openAddItemModal(libId) {
+        if (!requireAuth()) return;
         const modal = document.getElementById('addItemModal');
         if (!modal) return;
         document.getElementById('addItemLibId').value = libId;
@@ -573,6 +576,7 @@ const Library = {
     },
 
     async submitAddItem() {
+        if (!requireAuth()) return;
         const libId = document.getElementById('addItemLibId').value;
         const title = document.getElementById('addItemTitle').value.trim();
         if (!title) { showToast('أدخل عنوان العنصر'); document.getElementById('addItemTitle').focus(); return; }
@@ -641,6 +645,7 @@ const Library = {
 
     // ===== MODALS: EDIT ITEM =====
     editItem(itemId) {
+        if (!requireAuth()) return;
         let item = null;
         for (const libId in this._cache.items) {
             item = this._cache.items[libId].find(i => i.id === itemId);
@@ -669,6 +674,7 @@ const Library = {
     },
 
     async submitEditItem() {
+        if (!requireAuth()) return;
         const itemId = document.getElementById('editItemId').value;
         const libId = document.getElementById('editItemLibId').value;
         const title = document.getElementById('editItemTitle').value.trim();
@@ -791,6 +797,7 @@ const Library = {
 
     // ===== DELETE =====
     confirmDeleteItem(itemId, libId) {
+        if (!requireAuth()) return;
         const modal = document.getElementById('confirmModal');
         if (modal) {
             document.getElementById('confirmTitle').textContent = 'حذف العنصر';
@@ -810,6 +817,7 @@ const Library = {
     },
 
     confirmDeleteLibrary(libId) {
+        if (!requireAuth()) return;
         const modal = document.getElementById('confirmModal');
         if (modal) {
             document.getElementById('confirmTitle').textContent = 'حذف المكتبة';
@@ -888,6 +896,7 @@ const Library = {
     },
 
     async submitEditLibrary() {
+        if (!requireAuth()) return;
         const libId = document.getElementById('editLibId').value;
         const name = document.getElementById('editLibName').value.trim();
         if (!name) { showToast('أدخل اسم المكتبة'); return; }

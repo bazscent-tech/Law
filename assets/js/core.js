@@ -15,6 +15,12 @@
             try {
                 if (typeof supabase !== 'undefined' && supabase.createClient) {
                     sb = supabase.createClient(SB_URL, SB_KEY);
+                    // Restore session
+                    const { data: { session } } = await sb.auth.getSession();
+                    if (session && session.user) {
+                        window.sbUser = session.user;
+                        window.sbOnline = true;
+                    }
                     // Test connection
                     const { data, error } = await sb.from('profiles').select('id').limit(1);
                     if (!error) {
@@ -353,3 +359,13 @@
             getCurrentUser() { return sbUser; },
             getCurrentProfile() { return sbProfile; }
         };
+
+        // Auth guard helper — reusable across all modules
+        function requireAuth(action) {
+            if (!Auth.isLoggedIn()) {
+                showToast('سجّل دخولك أولاً');
+                AuthUI.show();
+                return false;
+            }
+            return true;
+        }

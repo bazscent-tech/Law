@@ -193,6 +193,7 @@
         }
 
         function sendChatMessage() {
+            if (!requireAuth()) return;
             const input = document.getElementById('chatInput');
             if (!input) return;
             const text = input.value.trim();
@@ -440,6 +441,7 @@
         }
 
         function publishArticle() {
+            if (!requireAuth()) return;
             const title = document.getElementById('articleTitle').value.trim();
             const content = document.getElementById('articleContent').value.trim();
             const tagsStr = document.getElementById('articleTags').value.trim();

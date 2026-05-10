@@ -23,6 +23,7 @@
 
         // Initialize all app modules for current user
         async function initAppForUser() {
+            if (!Auth.isLoggedIn()) { AuthUI.show(); return; }
             loadSavedImages();
             loadProfile();
             renderTrendingList('all');

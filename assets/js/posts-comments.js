@@ -74,6 +74,7 @@
         function closeEditPostModal(e) { if(e&&e.target!==e.currentTarget)return; document.getElementById('editPostModal').classList.remove('active'); document.body.style.overflow=''; }
 
         function saveEditPost() {
+            if (!requireAuth()) return;
             const postId = document.getElementById('editPostId').value;
             const newText = document.getElementById('editPostText').value.trim();
             if (!newText) { showToast('المنشور فارغ'); return; }
@@ -93,6 +94,7 @@
         }
 
         function deletePost(postId) {
+            if (!requireAuth()) return;
             if (!confirm('هل أنت متأكد من حذف هذا المنشور؟')) return;
             userPosts = userPosts.filter(p => p.id !== postId);
             saveUserPosts();
@@ -216,6 +218,7 @@
         }
 
         function submitDetailComment() {
+            if (!requireAuth()) return;
             const input = document.getElementById('detailCommentInput');
             const text = input.value.trim();
             if (!text || !currentDetailPostId) return;
@@ -261,6 +264,7 @@
         }
 
         function shareCommentAsPost(postId, commentOrId) {
+            if (!requireAuth()) return;
             let c;
             if (typeof commentOrId === 'object') {
                 c = commentOrId;
@@ -290,6 +294,7 @@
         // ===== LIKE / REPOST / BOOKMARK =====================
         // ====================================================
         function toggleLike(btn, count, likesId, postId, articleEl) {
+            if (!requireAuth()) return;
             const isNowLiked = btn.classList.toggle('liked');
             const countEl = btn.querySelector('.like-count');
             const icon = btn.querySelector('.iconify');
@@ -328,6 +333,7 @@
         }
 
         function toggleRepost(postId, btn, articleEl) {
+            if (!requireAuth()) return;
             if (isReposted(postId)) {
                 userPosts = userPosts.filter(p => p.repostOf !== postId); saveUserPosts();
                 btn.classList.remove('reposted');
@@ -350,6 +356,7 @@
         }
 
         function toggleBookmark(btn) {
+            if (!requireAuth()) return;
             const isSaved = btn.classList.toggle('saved');
             const icon = btn.querySelector('.iconify');
             if (isSaved) { icon.setAttribute('data-icon','lucide:bookmark-check'); icon.style.color='#f97316'; showToast('تم الحفظ ✓'); }
@@ -358,6 +365,7 @@
 
         // ===== Comment Submit (from post card) =====
         function submitComment(inputEl, postId) {
+            if (!requireAuth()) return;
             const text = inputEl.value.trim();
             if (!text) return;
             const profile = getProfile();
@@ -402,10 +410,11 @@
         function toggleComments(postId) { const s = document.getElementById('comments-' + postId); if (s) s.classList.toggle('open'); }
 
         // ===== Publish Post =====
-        function publishPost() { const i=document.getElementById('postInput'); const t=i.textContent.trim(); if(!t&&!pendingMedia.length){showToast('اكتب شيئاً قبل النشر');return;} addPostToFeed(t); i.textContent=''; i.style.color=''; showToast('تم نشر المنشور بنجاح ✓'); }
-        function publishModalPost() { const t=document.getElementById('modalPostText'); const v=t.value.trim(); if(!v&&!pendingMedia.length){showToast('اكتب شيئاً قبل النشر');return;} addPostToFeed(v); t.value=''; closePostModal(); showToast('تم نشر المنشور بنجاح ✓'); }
+        function publishPost() { if(!requireAuth())return; const i=document.getElementById('postInput'); const t=i.textContent.trim(); if(!t&&!pendingMedia.length){showToast('اكتب شيئاً قبل النشر');return;} addPostToFeed(t); i.textContent=''; i.style.color=''; showToast('تم نشر المنشور بنجاح ✓'); }
+        function publishModalPost() { if(!requireAuth())return; const t=document.getElementById('modalPostText'); const v=t.value.trim(); if(!v&&!pendingMedia.length){showToast('اكتب شيئاً قبل النشر');return;} addPostToFeed(v); t.value=''; closePostModal(); showToast('تم نشر المنشور بنجاح ✓'); }
 
         function addPostToFeed(text) {
+            if (!requireAuth()) return;
             userPostCounter++;
             const postId = 'user-' + userPostCounter;
             const profile = getProfile();
