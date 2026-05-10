@@ -1,0 +1,328 @@
+// ============================================================
+// ===== API LAYER — كل طلبات Supabase في مكان واحد =========
+// ============================================================
+// كل دالة ترجع { data, error } — لا أخطاء مخفية.
+
+import { store } from './store.js';
+
+const SB_URL = 'https://wxokmokxehssnchtmjke.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4b2ttb2t4ZWhzc25jaHRtamtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMTg4MjQsImV4cCI6MjA5Mzg5NDgyNH0.6RRUCXnX7IdExnirAr4Uz3Y-PmJbMMB00JVDr1BbDkU';
+
+let sb = null;
+
+// ===== INITIALIZATION =====
+export async function initAPI() {
+    try {
+        if (typeof supabase === 'undefined' || !supabase.createClient) {
+            console.warn('[API] Supabase library not loaded');
+            return false;
+        }
+        sb = supabase.createClient(SB_URL, SB_KEY);
+        store.set('supabaseClient', sb);
+
+        // Test connection
+        const { error } = await sb.from('profiles').select('id').limit(1);
+        if (error) throw error;
+
+        store.set('isOnline', true);
+        console.log('✅ Supabase connected');
+        return true;
+    } catch (e) {
+        console.warn('[API] Supabase unavailable:', e.message);
+        store.set('isOnline', false);
+        return false;
+    }
+}
+
+// ===== AUTH =====
+export const Auth = {
+    async getSession() {
+        if (!sb) return null;
+        try {
+            const { data: { session } } = await sb.auth.getSession();
+            if (session?.user) {
+                store.set('user', session.user);
+                store.set('isLoggedIn', true);
+                return session;
+            }
+            // Try refresh
+            const { data: { session: refreshed } } = await sb.auth.refreshSession();
+            if (refreshed?.user) {
+                store.set('user', refreshed.user);
+                store.set('isLoggedIn', true);
+                return refreshed;
+            }
+        } catch (e) {
+            console.warn('[Auth] Session error:', e.message);
+        }
+        return null;
+    },
+
+    async signIn(email, password) {
+        if (!sb) return { error: 'الخدمة غير متاحة' };
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) return { error: translateError(error.message) };
+        store.set('user', data.user);
+        store.set('isLoggedIn', true);
+        return { data };
+    },
+
+    async signUp(email, password, name) {
+        if (!sb) return { error: 'الخدمة غير متاحة' };
+        const { data, error } = await sb.auth.signUp({
+            email, password,
+            options: { data: { display_name: name, username: generateUsername(name) } }
+        });
+        if (error) return { error: translateError(error.message) };
+        return { data };
+    },
+
+    async signOut() {
+        if (sb) await sb.auth.signOut();
+        store.set('user', null);
+        store.set('profile', null);
+        store.set('isLoggedIn', false);
+        localStorage.clear();
+        window.location.reload();
+    },
+
+    onAuthChange(callback) {
+        if (!sb) return;
+        sb.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+                store.set('user', session.user);
+                store.set('isLoggedIn', true);
+            } else if (event === 'SIGNED_OUT') {
+                store.set('user', null);
+                store.set('isLoggedIn', false);
+            }
+            callback(event, session);
+        });
+    }
+};
+
+// ===== PROFILES =====
+export const Profiles = {
+    async get(userId) {
+        if (!sb) return { error: 'Offline' };
+        const { data, error } = await sb.from('profiles').select('*').eq('id', userId).maybeSingle();
+        return { data, error };
+    },
+
+    async update(userId, updates) {
+        if (!sb) return { error: 'Offline' };
+        const { data, error } = await sb.from('profiles')
+            .update({ ...updates, updated_at: new Date().toISOString() })
+            .eq('id', userId).select().single();
+        if (!error && data) store.set('profile', data);
+        return { data, error };
+    },
+
+    async search(query) {
+        if (!sb) return { data: [] };
+        const { data } = await sb.from('profiles')
+            .select('*').or(`name.ilike.%${query}%,username.ilike.%${query}%`).limit(10);
+        return { data: data || [] };
+    },
+
+    async ensureProfile(user) {
+        if (!sb) return null;
+        const { data: existing } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+        if (existing) {
+            store.set('profile', existing);
+            cacheProfile(user.id, existing);
+            return existing;
+        }
+        // Create new
+        const meta = user.user_metadata || {};
+        const name = meta.display_name || meta.full_name || 'مستخدم';
+        const newProfile = {
+            id: user.id, username: generateUsername(name), name,
+            bio: '', title: '', location: '', website: '',
+            avatar_url: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=f97316&textColor=ffffff`,
+            cover_url: '', followers_count: 0, following_count: 0, posts_count: 0, verified: false
+        };
+        const { data: created } = await sb.from('profiles').insert(newProfile).select().single();
+        if (created) {
+            store.set('profile', created);
+            cacheProfile(user.id, created);
+        }
+        return created || newProfile;
+    }
+};
+
+// ===== POSTS =====
+export const Posts = {
+    async getAll(limit = 50) {
+        if (!sb) return { data: [] };
+        const { data, error } = await sb.from('posts')
+            .select('*, profiles(*)').order('created_at', { ascending: false }).limit(limit);
+        return { data: data || [], error };
+    },
+
+    async getByUser(userId) {
+        if (!sb) return { data: [] };
+        const { data } = await sb.from('posts')
+            .select('*, profiles(*)').eq('author_id', userId)
+            .order('created_at', { ascending: false });
+        return { data: data || [] };
+    },
+
+    async create(content, title = '', tags = []) {
+        const user = store.get('user');
+        if (!sb || !user) return { error: 'Not authenticated' };
+        const { data, error } = await sb.from('posts').insert({
+            author_id: user.id, content, title, tags
+        }).select('*, profiles(*)').single();
+        return { data, error };
+    },
+
+    async update(postId, updates) {
+        const user = store.get('user');
+        if (!sb || !user) return { error: 'Not authenticated' };
+        const { data, error } = await sb.from('posts')
+            .update({ ...updates, is_edited: true, updated_at: new Date().toISOString() })
+            .eq('id', postId).eq('author_id', user.id).select().single();
+        return { data, error };
+    },
+
+    async delete(postId) {
+        const user = store.get('user');
+        if (!sb || !user) return { error: 'Not authenticated' };
+        await sb.from('posts').delete().eq('id', postId).eq('author_id', user.id);
+        return { data: null, error: null };
+    }
+};
+
+// ===== INTERACTIONS =====
+export const Likes = {
+    async toggle(postId) {
+        const user = store.get('user');
+        if (!sb || !user) return { error: 'Not authenticated' };
+        const { data: existing } = await sb.from('likes')
+            .select('id').eq('user_id', user.id).eq('post_id', postId).maybeSingle();
+        if (existing) {
+            await sb.from('likes').delete().eq('id', existing.id);
+            return { data: false };
+        }
+        await sb.from('likes').insert({ user_id: user.id, post_id: postId });
+        return { data: true };
+    },
+
+    async getByUser() {
+        const user = store.get('user');
+        if (!sb || !user) return { data: [] };
+        const { data } = await sb.from('likes')
+            .select('post_id, posts(*, profiles(*)').eq('user_id', user.id);
+        return { data: data || [] };
+    }
+};
+
+export const Comments = {
+    async get(postId) {
+        if (!sb) return { data: [] };
+        const { data } = await sb.from('comments')
+            .select('*, profiles(*)').eq('post_id', postId).order('created_at');
+        return { data: data || [] };
+    },
+
+    async add(postId, content, isSticker = false) {
+        const user = store.get('user');
+        if (!sb || !user) return { error: 'Not authenticated' };
+        const { data, error } = await sb.from('comments').insert({
+            post_id: postId, author_id: user.id, content, is_sticker: isSticker
+        }).select('*, profiles(*)').single();
+        return { data, error };
+    }
+};
+
+export const Follows = {
+    async toggle(userId) {
+        const user = store.get('user');
+        if (!sb || !user) return { error: 'Not authenticated' };
+        const { data: existing } = await sb.from('follows')
+            .select('id').eq('follower_id', user.id).eq('following_id', userId).maybeSingle();
+        if (existing) {
+            await sb.from('follows').delete().eq('id', existing.id);
+            return { data: false };
+        }
+        await sb.from('follows').insert({ follower_id: user.id, following_id: userId });
+        return { data: true };
+    }
+};
+
+export const Bookmarks = {
+    async toggle(postId) {
+        const user = store.get('user');
+        if (!sb || !user) return { error: 'Not authenticated' };
+        const { data: existing } = await sb.from('bookmarks')
+            .select('id').eq('user_id', user.id).eq('post_id', postId).maybeSingle();
+        if (existing) {
+            await sb.from('bookmarks').delete().eq('id', existing.id);
+            return { data: false };
+        }
+        await sb.from('bookmarks').insert({ user_id: user.id, post_id: postId });
+        return { data: true };
+    }
+};
+
+export const Libraries = {
+    async getByUser(userId) {
+        if (!sb) return { data: [] };
+        const { data } = await sb.from('libraries').select('*')
+            .eq('owner_id', userId).order('created_at', { ascending: false });
+        return { data: data || [] };
+    },
+
+    async getItems(libId) {
+        if (!sb) return { data: [] };
+        const { data } = await sb.from('library_items').select('*')
+            .eq('library_id', libId).order('created_at', { ascending: false });
+        return { data: data || [] };
+    },
+
+    async create(libData) {
+        const user = store.get('user');
+        if (!sb || !user) return { error: 'Not authenticated' };
+        const { data, error } = await sb.from('libraries').insert({
+            owner_id: user.id, ...libData
+        }).select().single();
+        return { data, error };
+    },
+
+    async delete(libId) {
+        if (!sb) return { error: 'Offline' };
+        await sb.from('libraries').delete().eq('id', libId);
+        return { data: null, error: null };
+    }
+};
+
+// ===== HELPERS =====
+function cacheProfile(userId, data) {
+    try { localStorage.setItem('auth_profile_' + userId, JSON.stringify(data)); } catch(e) {}
+}
+
+function generateUsername(name) {
+    const map = { 'ا':'a','أ':'a','إ':'a','آ':'a','ب':'b','ت':'t','ث':'th','ج':'j','ح':'h','خ':'kh','د':'d','ذ':'dh','ر':'r','ز':'z','س':'s','ش':'sh','ص':'s','ض':'d','ط':'t','ظ':'z','ع':'a','غ':'gh','ف':'f','ق':'q','ك':'k','ل':'l','م':'m','ن':'n','ه':'h','و':'w','ي':'y','ة':'a','ى':'a','ء':'a',' ':'_' };
+    let base = '';
+    for (const c of name) base += map[c] || c;
+    base = base.toLowerCase().replace(/[^a-z0-9_]/g, '').replace(/_+/g, '_').substring(0, 20);
+    if (base.length < 2) base = 'user';
+    return base + '_' + Math.floor(Math.random() * 9000 + 1000);
+}
+
+function translateError(msg) {
+    const map = {
+        'Invalid login credentials': 'بيانات تسجيل الدخول غير صحيحة',
+        'User already registered': 'البريد الإلكتروني مسجل بالفعل',
+        'Email not confirmed': 'يرجى تأكيد البريد الإلكتروني أولاً',
+    };
+    for (const [en, ar] of Object.entries(map)) {
+        if (msg.includes(en)) return ar;
+    }
+    return msg;
+}
+
+export function isConnected() {
+    return store.get('isOnline') && !!sb;
+}
