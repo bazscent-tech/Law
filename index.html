@@ -1786,13 +1786,13 @@
             </div>
             <div id="postDetailContent" class="p-0"></div>
             <div class="p-4 border-t border-dark-800/50 sticky bottom-0 bg-[#171717]">
-                <div class="flex gap-2 relative">
-                    <button onclick="toggleStickerPicker('detail')" class="p-2 rounded-lg hover:bg-dark-800 transition-colors shrink-0">
+                <div class="comment-input-row">
+                    <button onclick="toggleStickerPicker('detail')" class="comment-sticker-btn">
                         <span class="iconify text-dark-400 text-lg" data-icon="lucide:smile"></span>
                     </button>
                     <div id="stickerPicker-detail" class="sticker-picker"></div>
-                    <input type="text" id="detailCommentInput" placeholder="اكتب تعليقاً..." class="flex-1 bg-dark-800 border border-dark-700/50 rounded-xl px-4 py-2.5 text-sm text-white placeholder-dark-400 focus:outline-none focus:border-brand-500/50 transition-all" onkeydown="if(event.key==='Enter')submitDetailComment()">
-                    <button onclick="submitDetailComment()" class="bg-brand-500 hover:bg-brand-600 text-white text-sm px-4 py-2.5 rounded-xl transition-all shrink-0">إرسال</button>
+                    <input type="text" id="detailCommentInput" placeholder="اكتب تعليقاً..." class="comment-input-field" onkeydown="if(event.key==='Enter')submitDetailComment()">
+                    <button onclick="submitDetailComment()" class="comment-send-btn"><span class="iconify text-white text-sm" data-icon="lucide:send"></span></button>
                 </div>
             </div>
         </div>

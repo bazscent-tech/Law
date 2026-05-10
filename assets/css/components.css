@@ -90,6 +90,86 @@
     padding-top: 12px;
 }
 
+/* ===== Comment Input — Mobile Responsive ===== */
+.comment-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #171717;
+    border-radius: 14px;
+    border: 1px solid rgba(64, 64, 64, 0.4);
+    transition: border-color 0.2s;
+}
+.comment-input-row:focus-within {
+    border-color: rgba(249, 115, 22, 0.4);
+}
+.comment-input-field {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #fff;
+    font-size: 13px;
+    font-family: inherit;
+    padding: 4px 0;
+}
+.comment-input-field::placeholder {
+    color: #525252;
+    font-size: 12px;
+}
+.comment-send-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f97316;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    flex-shrink: 0;
+}
+.comment-send-btn:hover {
+    background: #ea580c;
+}
+.comment-send-btn:active {
+    transform: scale(0.92);
+}
+.comment-sticker-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+.comment-sticker-btn:hover {
+    background: rgba(64, 64, 64, 0.5);
+}
+
+/* Mobile: tighter padding */
+@media (max-width: 640px) {
+    .comment-section.open {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+    .comment-input-row {
+        padding: 6px 10px;
+        border-radius: 12px;
+    }
+    .comment-input-field {
+        font-size: 14px; /* prevent iOS zoom */
+    }
+}
+
 /* Share modal */
 .share-options { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 
