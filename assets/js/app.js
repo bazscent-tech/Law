@@ -2,7 +2,7 @@
         // ===== SUPABASE INTEGRATION MODULE ========================
         // ============================================================
         const SB_URL = 'https://wxokmokxehssnchtmjke.supabase.co';
-        const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4b2ttb2t4ZWhzc25jaHRtamtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMTg4MjQsImV4cCI6MjA5Mzg5NDgyNH0.6RRUCXnX7IdExnirAr4Uz3Y-PmJbMMB00JVDr1BbDkU';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4b2ttb2t4ZWhzc25jaHRtamtlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODMxODgyNCwiZXhwIjoyMDkzODk0ODI0fQ.AN5SkazpJVm4R-6Pdh2ZqvzqhNIM-Mu2XHCbrCmqs3g';
 
         let sb = null; // Supabase client
         let sbUser = null; // Current auth user
@@ -13,7 +13,7 @@
         async function initSupabase() {
             try {
                 if (typeof supabase !== 'undefined' && supabase.createClient) {
-                    sb = supabase.createClient(SB_URL, SB_ANON);
+                    sb = supabase.createClient(SB_URL, SB_KEY);
                     // Test connection
                     const { data, error } = await sb.from('profiles').select('id').limit(1);
                     if (!error) {
@@ -56,42 +56,23 @@
             return data;
         }
 
-        // Auth: Anonymous sign-in (auto-create profile)
+        // Auth: Load profile directly (bypass Supabase Auth)
         async function signInAnonymously() {
             if (!sb) return null;
-            // Try sign in with stored credentials
-            const stored = localStorage.getItem('sb_session');
-            if (stored) {
-                try {
-                    const { data } = await sb.auth.setSession(JSON.parse(stored));
-                    if (data.session) {
-                        sbUser = data.session.user;
-                        await loadUserProfile();
-                        return sbUser;
-                    }
-                } catch(e) {}
-            }
-            // Create anonymous user
-            const { data, error } = await sb.auth.signInAnonymously();
-            if (data && data.user) {
-                sbUser = data.user;
-                // Create profile
-                const profile = {
-                    id: sbUser.id,
-                    username: 'user_' + Date.now().toString(36),
-                    name: 'د. أحمد الخالدي',
-                    bio: 'محامي دولي متخصص في التحكيم التجاري',
-                    title: 'محامي دولي',
-                    location: 'دبي، الإمارات',
-                    avatar_url: 'https://picsum.photos/seed/lawyer-me/120/120.jpg',
-                    is_verified: true
-                };
-                const { data: p } = await sb.from('profiles').upsert(profile).select().single();
-                sbProfile = p;
-                // Store session
-                const { data: { session } } = await sb.auth.getSession();
-                if (session) localStorage.setItem('sb_session', JSON.stringify(session));
-                return sbUser;
+            try {
+                // Get the first profile as the "logged in" user
+                const { data: profiles } = await sb.from('profiles')
+                    .select('*')
+                    .order('created_at', { ascending: true })
+                    .limit(1);
+                if (profiles && profiles.length > 0) {
+                    sbProfile = profiles[0];
+                    sbUser = { id: sbProfile.id };
+                    console.log('✅ Supabase profile:', sbProfile.name);
+                    return sbUser;
+                }
+            } catch(e) {
+                console.warn('Profile load failed:', e.message);
             }
             return null;
         }
