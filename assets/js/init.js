@@ -134,6 +134,18 @@
             const sEmail = document.getElementById('settingsEmail');
             if (sName) sName.textContent = name;
             if (sEmail) sEmail.textContent = sbUser?.email || '-';
+
+            // Update profile page
+            const ppName = document.getElementById('profileDisplayName');
+            const ppSub = document.getElementById('profileSubtitle');
+            const ppBio = document.getElementById('profileBio');
+            const ppLoc = document.getElementById('profileLocation');
+            const ppWeb = document.getElementById('profileWebsite');
+            if (ppName) ppName.textContent = name;
+            if (ppSub) ppSub.textContent = subtitle;
+            if (ppBio) ppBio.textContent = p.bio || '';
+            if (ppLoc) ppLoc.textContent = p.location || '';
+            if (ppWeb) ppWeb.textContent = p.website || '';
         }
 
         // ===== Connect Button =====
