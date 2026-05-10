@@ -16,7 +16,7 @@
         }
         function loadSavedImages() {
             const sa = UserStore.getString('profileAvatar');
-            if (sa) ['mobileAvatar','sidebarAvatar','desktopAvatar'].forEach(id => { const el = document.getElementById(id); if (el) el.src = sa; });
+            if (sa) ['mobileAvatar','sidebarAvatar','desktopAvatar','profilePageAvatar','storyCreatorAvatar','modalPostAvatar','mobileDrawerAvatar'].forEach(id => { const el = document.getElementById(id); if (el) el.src = sa; });
             const sc = UserStore.getString('coverPhoto');
             if (sc) { const img = document.getElementById('coverPhoto'); if (img) { img.src = sc; img.classList.remove('hidden'); img.parentElement.style.background = 'none'; } }
         }
@@ -180,15 +180,39 @@
         const defaultProfile = { name:'د. أحمد الخالدي', username:'@ahmed_alkhalidi', title:'محامي دولي', bio:'محامي دولي متخصص في التحكيم التجاري وقانون الشركات. خبرة +15 عاماً في القضايا المعقدة عابرة الحدود.', location:'دبي، الإمارات', website:'ahmed-law.com' };
         function getProfile() { const s = UserStore.getString('userProfile'); return s ? JSON.parse(s) : { ...defaultProfile }; }
         function applyProfile(p) {
-            const pn=document.querySelector('#page-profile .text-xl.font-bold'); if(pn)pn.textContent=p.name;
-            const ps=document.querySelector('#page-profile .text-dark-400.text-sm.mb-3'); if(ps)ps.textContent=p.username+' • '+p.title+' • الإمارات 🇦🇪';
-            const pb=document.querySelector('#page-profile .text-dark-300.text-sm.mb-4'); if(pb)pb.textContent=p.bio;
-            const pl=document.querySelector('#page-profile .flex.flex-wrap.gap-4 span:first-child'); if(pl)pl.innerHTML='<span class="iconify" data-icon="lucide:map-pin" style="font-size:14px"></span>'+p.location;
-            const pw=document.querySelector('#page-profile .text-brand-400.cursor-pointer'); if(pw)pw.textContent=p.website;
-            const sn=document.querySelector('.desktop-sidebar .font-semibold.text-sm'); if(sn)sn.textContent=p.name;
-            const dn=document.querySelector('#mobileDrawer h3'); if(dn)dn.textContent=p.name;
+            const pn=document.querySelector('#page-profile .text-xl.font-bold'); if(pn)pn.textContent=p.name||p.display_name||'';
+            const ps=document.querySelector('#page-profile .text-dark-400.text-sm.mb-3'); if(ps)ps.textContent=(p.username?'@'+p.username:'')+' • '+(p.title||'')+' • '+(p.location||'');
+            const pb=document.querySelector('#page-profile .text-dark-300.text-sm.mb-4'); if(pb)pb.textContent=p.bio||'';
+            const pl=document.querySelector('#page-profile .flex.flex-wrap.gap-4 span:first-child'); if(pl)pl.innerHTML='<span class="iconify" data-icon="lucide:map-pin" style="font-size:14px"></span>'+(p.location||'');
+            const pw=document.querySelector('#page-profile .text-brand-400.cursor-pointer'); if(pw)pw.textContent=p.website||'';
+            const sn=document.querySelector('.desktop-sidebar .font-semibold.text-sm'); if(sn)sn.textContent=p.name||p.display_name||'';
+            const dn=document.querySelector('#mobileDrawer h3'); if(dn)dn.textContent=p.name||p.display_name||'';
         }
-        function loadProfile() { const s=UserStore.getString('userProfile'); if(s)applyProfile(JSON.parse(s)); }
+        async function loadProfile() {
+            // Try localStorage first
+            const s=UserStore.getString('userProfile');
+            if(s){try{applyProfile(JSON.parse(s));}catch(e){}}
+            // Also load from Supabase profile if available
+            if(sbProfile){
+                applyProfile({
+                    name: sbProfile.display_name,
+                    username: sbProfile.username,
+                    title: sbProfile.title,
+                    bio: sbProfile.bio,
+                    location: sbProfile.location,
+                    website: sbProfile.website
+                });
+                // Sync to localStorage for offline use
+                UserStore.setJSON('userProfile',{
+                    name: sbProfile.display_name,
+                    username: '@'+(sbProfile.username||''),
+                    title: sbProfile.title||'',
+                    bio: sbProfile.bio||'',
+                    location: sbProfile.location||'',
+                    website: sbProfile.website||''
+                });
+            }
+        }
 
         // ===== VISIT OTHER USER'S PROFILE =====
         let _visitingProfile = null; // null = viewing own profile

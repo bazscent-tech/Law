@@ -1,162 +1,149 @@
+        // ===== Init — Real Auth Mode =====
+        document.addEventListener('DOMContentLoaded', async () => {
+            // تهيئة Supabase
+            await initSupabase();
 
-        // ===== J. INFINITE SCROLL =====
-        let feedPage = 0;
-        const feedPageSize = 5;
+            // محاولة استعادة الجلسة الحقيقية
+            const hasSession = await Auth.init();
 
-        function setupInfiniteScroll() {
-            const loader = document.getElementById('infiniteLoader');
-            if (!loader) return;
-
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) loadMoreFeedPosts();
-                });
-            }, { threshold: 0.5 });
-
-            observer.observe(loader);
-        }
-
-        function loadMoreFeedPosts() {
-            const container = document.getElementById('page-feed');
-            const searchActive = container.querySelector('.search-results-section');
-            if (searchActive) return;
-
-            const existingPosts = container.querySelectorAll('.post-card, .dynamic-post');
-            const totalAvailable = allPosts.length + userPosts.length;
-
-            if (existingPosts.length >= totalAvailable) {
-                document.getElementById('infiniteLoader').style.display = 'none';
-                document.getElementById('feedEnd').style.display = '';
-                return;
-            }
-
-            document.getElementById('infiniteLoader').style.display = 'flex';
-
-            // Simulate loading delay
-            setTimeout(() => {
-                // Load more platform posts that haven't been shown yet
-                const shownCount = existingPosts.length;
-                const morePosts = allPosts.slice(shownCount, shownCount + feedPageSize);
-
-                morePosts.forEach((post, i) => {
-                    const div = document.createElement('div');
-                    div.className = 'dynamic-post';
-                    div.innerHTML = buildPlatformPostHTML(post, shownCount + i);
-                    container.insertBefore(div.firstElementChild || div, document.getElementById('infiniteLoader'));
-                });
-
-                if (shownCount + morePosts.length >= allPosts.length) {
-                    document.getElementById('infiniteLoader').style.display = 'none';
-                    document.getElementById('feedEnd').style.display = '';
-                }
-            }, 800);
-        }
-
-        // ===== K. ENHANCED INIT =====
-        // الآن يتم التهيئة عبر Auth system في features.js → initAppForUser()
-        // بعد تسجيل الدخول بنجاح يتم استدعاء onAuthSuccess() → initAppForUser()
-        // هذا يضمن عزل كامل للبيانات بين الحسابات
-
-        // ===== L. ENHANCED LIKE WITH BOOKMARK TRACKING =====
-        const _origToggleLike = toggleLike;
-        toggleLike = function(btn, count, likesId, postId, articleEl) {
-            _origToggleLike(btn, count, likesId, postId, articleEl);
-            // Track likes for profile
-            if (btn.classList.contains('liked')) {
-                const pd = extractPostDataFromDOM(articleEl, postId);
-                if (pd && !userLikes.some(p => p.id === postId)) {
-                    userLikes.unshift(pd);
-                    saveUserLikes();
-                }
-            }
-        };
-
-        // ===== M. X-STYLE FOLLOW SYSTEM (NO RE-RENDER, NO TOAST) =====
-        toggleFollow = async function(btn) {
-            const author = btn.dataset.author;
-            const authorId = btn.dataset.authorId;
-            if (!author) return;
-
-            const icon = btn.querySelector('.iconify');
-            const textEl = btn.querySelector('.follow-text');
-
-            // Optimistic UI: update immediately
-            const wasFollowing = isFollowing(author);
-            if (wasFollowing) {
-                followingUsers = followingUsers.filter(a => a !== author);
-                btn.classList.remove('following');
-                btn.style.transition = 'all 0.2s ease';
-                btn.style.color = '#f97316';
-                btn.style.borderColor = 'rgba(249,115,22,0.3)';
-                btn.style.background = 'transparent';
-                if (textEl) textEl.textContent = 'متابعة';
-                if (icon) icon.setAttribute('data-icon', 'lucide:user-plus');
+            if (hasSession && Auth.isLoggedIn()) {
+                console.log('✅ Authenticated:', sbProfile?.display_name || sbUser?.id);
+                await initAppForUser();
             } else {
-                followingUsers.push(author);
-                btn.classList.add('following');
-                btn.style.transition = 'all 0.2s ease';
-                btn.style.color = '#a3a3a3';
-                btn.style.borderColor = '#404040';
-                btn.style.background = 'transparent';
-                if (textEl) textEl.textContent = 'متابَع';
-                if (icon) icon.setAttribute('data-icon', 'lucide:check');
+                // لا توجد جلسة — إظهار شاشة تسجيل الدخول
+                console.log('🔒 No session — showing auth screen');
+                AuthUI.show();
             }
-            saveFollowing();
+        });
 
-            // Sync with Supabase in background
-            if (sbOnline && authorId) {
-                try {
-                    await SB.toggleFollow(authorId);
-                } catch(e) {
-                    // Revert on error
-                    console.warn('Follow sync failed:', e);
-                }
+        // Called after successful auth (not used in real auth — page reloads)
+        async function onAuthSuccess() {
+            await initAppForUser();
+        }
+
+        // Initialize all app modules for current user
+        async function initAppForUser() {
+            loadSavedImages();
+            loadProfile();
+            renderTrendingList('all');
+            renderFollowingPosts();
+            renderSpaces('live');
+            updateNotifDots();
+            renderProfilePosts();
+            hideStaticPosts();
+            renderFeedPosts();
+
+            // Update UI with real user data
+            updateUIWithRealProfile();
+
+            // Initialize enhanced features
+            initDefaultConversations();
+            initSettings();
+            initEvents();
+            initNotifications();
+
+            // Render enhanced pages
+            renderMessagesPage();
+            renderArticlesPage();
+            renderBookmarksPage();
+            renderConnectionsPage();
+
+            // Initialize SPA system
+            Router.init();
+            PullToRefresh.init();
+            NotifPTR.init();
+            initStories();
+
+            // Setup infinite scroll
+            setupInfiniteScroll();
+
+            // Fix article editor button
+            const newArticleBtn = document.querySelector('#page-articles button');
+            if (newArticleBtn) {
+                newArticleBtn.onclick = showArticleEditor;
             }
-        };
 
-        // ===== N. AUTO-REFRESH MESSAGES BADGE =====
-        setInterval(() => {
-            const unread = MsgStore.getTotalUnread();
-            // Update any message badge indicators
-            const msgBtns = document.querySelectorAll('[onclick*="showPage(\'messages\')"]');
-            msgBtns.forEach(btn => {
-                let badge = btn.querySelector('.msg-badge');
-                if (unread > 0) {
-                    if (!badge) {
-                        badge = document.createElement('span');
-                        badge.className = 'msg-badge absolute -top-1 -left-1 w-4 h-4 bg-brand-500 rounded-full text-[9px] flex items-center justify-center font-bold';
-                        btn.style.position = 'relative';
-                        btn.appendChild(badge);
-                    }
-                    badge.textContent = unread;
-                } else if (badge) {
-                    badge.remove();
-                }
+            // Fix search input
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.onkeydown = function(e) { if (e.key === 'Enter') doSearch(); };
+            }
+
+            // Initialize Library module
+            if (typeof Library !== 'undefined') {
+                Library.init();
+                const uid = sbUser?.id || 'local';
+                Library.fetchLibraries(uid);
+            }
+
+            // Restore state (if returning from refresh)
+            const restored = AppState.restore();
+            if (restored) {
+                // State was restored, skip default scroll-to-top
+            }
+        }
+
+        // ===== Update UI with real profile data =====
+        function updateUIWithRealProfile() {
+            if (!sbProfile) return;
+
+            const name = sbProfile.display_name || 'مستخدم';
+            const username = sbProfile.username ? '@' + sbProfile.username : '';
+            const avatar = sbProfile.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=f97316&textColor=ffffff`;
+            const title = sbProfile.title || '';
+            const location = sbProfile.location || '';
+            const subtitle = (title || location) ? `${title}${title && location ? ' • ' : ''}${location}` : username;
+
+            // Update all avatars
+            ['mobileAvatar', 'sidebarAvatar', 'desktopAvatar', 'mobileDrawerAvatar', 'postCreatorAvatar', 'profilePageAvatar', 'storyCreatorAvatar', 'modalPostAvatar'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.src = avatar;
             });
-        }, 5000);
 
-        // ===== O. ENHANCED STORIES - FIX PUBLISH =====
-        function publishTextStory() {
-            const text = document.getElementById('textStoryInput').value.trim();
-            if (!text) { showToast('اكتب شيئاً أولاً'); return; }
+            // Update header user name
+            const headerName = document.getElementById('headerUserName');
+            if (headerName) headerName.textContent = name;
 
-            let myUser = storiesData.find(u => u.isOwn);
-            if (!myUser) {
-                myUser = { id: 'user-me', name: getProfile().name, avatar: UserStore.getString('profileAvatar') || 'https://picsum.photos/seed/lawyer-me/80/80.jpg', isOwn: true, stories: [] };
-                storiesData.unshift(myUser);
+            // Update desktop sidebar
+            const sidebarName = document.getElementById('sidebarName');
+            const sidebarSub = document.getElementById('sidebarSubtitle');
+            if (sidebarName) sidebarName.textContent = name;
+            if (sidebarSub) sidebarSub.textContent = subtitle;
+
+            // Update sidebar counts
+            const sF = document.getElementById('sidebarFollowers');
+            const sG = document.getElementById('sidebarFollowing');
+            const sP = document.getElementById('sidebarPosts');
+            if (sF) sF.textContent = (sbProfile.followers_count || 0).toLocaleString('ar');
+            if (sG) sG.textContent = (sbProfile.following_count || 0).toLocaleString('ar');
+            if (sP) sP.textContent = (sbProfile.posts_count || 0).toLocaleString('ar');
+
+            // Update mobile drawer
+            const mdName = document.getElementById('mobileDrawerName');
+            const mdUser = document.getElementById('mobileDrawerUsername');
+            const mdFoll = document.getElementById('mobileDrawerFollowers');
+            const mdFing = document.getElementById('mobileDrawerFollowing');
+            if (mdName) mdName.textContent = name;
+            if (mdUser) mdUser.textContent = username;
+            if (mdFoll) mdFoll.textContent = (sbProfile.followers_count || 0).toLocaleString('ar');
+            if (mdFing) mdFing.textContent = (sbProfile.following_count || 0).toLocaleString('ar');
+        }
+
+        // ===== Connect Button =====
+        function toggleConnect(btn) {
+            if (btn.classList.contains('connected')) {
+                btn.classList.remove('connected');
+                btn.textContent = 'متابعة';
+                btn.style.borderColor = '';
+                btn.style.color = '';
+                btn.style.background = '';
+                showToast('تم إلغاء المتابعة');
+            } else {
+                btn.classList.add('connected');
+                btn.textContent = 'متابَع ✓';
+                btn.style.borderColor = 'rgba(34,197,94,0.5)';
+                btn.style.color = '#22c55e';
+                btn.style.background = 'rgba(34,197,94,0.1)';
+                showToast('متابَع ✓');
             }
-
-            myUser.stories.push({
-                id: 'story-' + Date.now(),
-                type: 'text',
-                text: text,
-                bg: textStoryColor,
-                time: 'الآن',
-                duration: 5000,
-                data: null
-            });
-            saveStories();
-            closeTextStoryEditor();
-            renderStoriesBar();
-            showToast('تم نشر الحالة ✓');
         }

@@ -1,27 +1,5 @@
-        // ===== Init — Demo Mode =====
-        document.addEventListener('DOMContentLoaded', async()=>{
-            // تهيئة Supabase (اختياري — Demo mode يعمل بدونه)
-            await initSupabase();
+        // ===== App Initialization (called from init.js after auth) =====
 
-            // تهيئة Demo Auth — يختار أول حساب تلقائياً
-            const authResult = await Auth.init();
-
-            if (authResult) {
-                console.log('✅ Demo Mode:', authResult.profile.name);
-                // إظهار مؤشر Demo
-                Auth.showDemoIndicator();
-                // تهيئة التطبيق
-                await initAppForUser();
-            }
-        });
-
-        // Called after account switch
-        async function onAuthSuccess(result) {
-            Auth.showDemoIndicator();
-            await initAppForUser();
-        }
-
-        // Initialize all app modules for current user
         async function initAppForUser() {
             loadSavedImages();
             loadProfile();
@@ -400,22 +378,13 @@
                 };
             });
 
-            // Logout button
+            // Logout button — real Supabase sign out
             const logoutBtn = document.querySelector('#page-settings .text-red-400:first-of-type');
             if (logoutBtn && logoutBtn.textContent.includes('تسجيل الخروج')) {
                 logoutBtn.onclick = async function() {
                     if (confirm('هل تريد تسجيل الخروج؟')) {
                         await Auth.signOut();
-                        location.reload();
                     }
-                };
-            }
-
-            // Account switcher button
-            const switchBtn = document.querySelector('#page-settings [data-action="switch-account"]');
-            if (switchBtn) {
-                switchBtn.onclick = function() {
-                    Auth.showAccountSwitcher();
                 };
             }
 
@@ -424,12 +393,14 @@
             if (deleteBtn && deleteBtn.textContent.includes('حذف الحساب')) {
                 deleteBtn.onclick = async function() {
                     if (confirm('تحذير: سيتم حذف جميع بياناتك نهائياً! هل أنت متأكد؟')) {
-                        const uid = Auth.getCurrentUserId();
+                        // Delete user data from Supabase
+                        if (sb && sbUser) {
+                            try {
+                                await sb.from('profiles').delete().eq('id', sbUser.id);
+                            } catch(e) { console.warn('Profile delete failed:', e); }
+                        }
                         UserStore.clearAll();
-                        Auth.removeAccount(uid);
                         await Auth.signOut();
-                        showToast('تم حذف الحساب');
-                        setTimeout(() => location.reload(), 1000);
                     }
                 };
             }
