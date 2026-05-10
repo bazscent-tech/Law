@@ -2,7 +2,7 @@
         // ===== F. BOOKMARKS SYSTEM (معزول لكل مستخدم) =====
         const BookmarksStore = {
             _key: 'bookmarks',
-            getIds() { return UserStore.getJSON(this._key, '[]'); },
+            getIds() { const v = UserStore.getJSON(this._key, []); return Array.isArray(v) ? v : []; },
             toggle(postId) {
                 let ids = this.getIds();
                 if (ids.includes(postId)) {
