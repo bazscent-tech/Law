@@ -8,10 +8,30 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0">
     <title>Lawbook - المنصة القانونية الاجتماعية</title>
+
+    <!-- ===== Performance: Preconnect & DNS Prefetch ===== -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://code.iconify.design" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://picsum.photos" crossorigin>
+    <link rel="dns-prefetch" href="https://wxokmokxehssnchtmjke.supabase.co">
+
+    <!-- ===== Preload Critical Resources ===== -->
+    <link rel="preload" href="assets/css/styles.css?v=99" as="style">
+    <link rel="preload" href="assets/js/safe.js?v=201" as="script">
+    <link rel="preload" href="assets/js/core.js?v=201" as="script">
+    <link rel="preload" href="https://fonts.gstatic.com/s/notokufiarabic/v23/qFdb35qfg4qRVGakaG9yZjh0P-cH4fVqJQ.woff2" as="font" type="font/woff2" crossorigin>
+
+    <!-- ===== Styles ===== -->
+    <link rel="stylesheet" href="assets/css/styles.css?v=99">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- ===== External Scripts (render-blocking — needed for Tailwind JIT) ===== -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://code.iconify.design/3/3.1.0/iconify.min.js" defer></script>
     <script>
         tailwind.config = {
             theme: {
