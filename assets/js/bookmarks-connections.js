@@ -2,7 +2,7 @@
         // ===== F. BOOKMARKS SYSTEM =====
         const BookmarksStore = {
             _key: 'lawbook_bookmarks',
-            getIds() { return JSON.parse(localStorage.getItem(this._key) || '[]'); },
+            getIds() { return Safe.getJSON(this._key, '[]'); },
             toggle(postId) {
                 let ids = this.getIds();
                 if (ids.includes(postId)) {
@@ -12,7 +12,7 @@
                     ids.push(postId);
                     showToast('تم الحفظ ✓');
                 }
-                localStorage.setItem(this._key, JSON.stringify(ids));
+                Safe.setJSON(this._key, ids);
                 return ids.includes(postId);
             },
             isBookmarked(postId) { return this.getIds().includes(postId); }

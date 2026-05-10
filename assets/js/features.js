@@ -53,11 +53,11 @@
             _activeId: null,
 
             getAll() {
-                return JSON.parse(localStorage.getItem(this._key) || '[]');
+                return Safe.getJSON(this._key, '[]');
             },
 
             save(list) {
-                localStorage.setItem(this._key, JSON.stringify(list));
+                Safe.setJSON(this._key, list);
             },
 
             getOrCreate(userId, userName, userAvatar) {
@@ -320,13 +320,13 @@
                 language: 'ar'
             },
             get() {
-                const saved = JSON.parse(localStorage.getItem(this._key) || '{}');
+                const saved = Safe.getJSON(this._key, '{}');
                 return { ...this._defaults, ...saved };
             },
             update(key, value) {
                 const s = this.get();
                 s[key] = value;
-                localStorage.setItem(this._key, JSON.stringify(s));
+                Safe.setJSON(this._key, s);
             }
         };
 
@@ -350,7 +350,7 @@
             if (logoutBtn && logoutBtn.textContent.includes('تسجيل الخروج')) {
                 logoutBtn.onclick = function() {
                     if (confirm('هل تريد تسجيل الخروج؟')) {
-                        localStorage.clear();
+                        try { localStorage.clear(); } catch(e) { console.warn("[Safe] clear failed:", e.message); }
                         sessionStorage.clear();
                         location.reload();
                     }
@@ -362,7 +362,7 @@
             if (deleteBtn && deleteBtn.textContent.includes('حذف الحساب')) {
                 deleteBtn.onclick = function() {
                     if (confirm('تحذير: سيتم حذف جميع بياناتك نهائياً! هل أنت متأكد؟')) {
-                        localStorage.clear();
+                        try { localStorage.clear(); } catch(e) { console.warn("[Safe] clear failed:", e.message); }
                         sessionStorage.clear();
                         showToast('تم حذف الحساب');
                         setTimeout(() => location.reload(), 1000);
@@ -374,7 +374,7 @@
         // ===== D. EVENTS REGISTRATION =====
         const EventsStore = {
             _key: 'lawbook_registered_events',
-            getRegistered() { return JSON.parse(localStorage.getItem(this._key) || '[]'); },
+            getRegistered() { return Safe.getJSON(this._key, '[]'); },
             toggle(eventId) {
                 let reg = this.getRegistered();
                 if (reg.includes(eventId)) {
@@ -384,7 +384,7 @@
                     reg.push(eventId);
                     showToast('تم التسجيل بنجاح ✓');
                 }
-                localStorage.setItem(this._key, JSON.stringify(reg));
+                Safe.setJSON(this._key, reg);
                 return reg.includes(eventId);
             },
             isRegistered(eventId) { return this.getRegistered().includes(eventId); }
@@ -415,8 +415,8 @@
         // ===== E. ARTICLES MANAGEMENT =====
         const ArticlesStore = {
             _key: 'lawbook_articles',
-            getAll() { return JSON.parse(localStorage.getItem(this._key) || '[]'); },
-            save(list) { localStorage.setItem(this._key, JSON.stringify(list)); },
+            getAll() { return Safe.getJSON(this._key, '[]'); },
+            save(list) { Safe.setJSON(this._key, list); },
             add(article) {
                 const list = this.getAll();
                 list.unshift(article);

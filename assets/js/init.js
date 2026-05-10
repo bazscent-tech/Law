@@ -167,7 +167,7 @@
 
             let myUser = storiesData.find(u => u.isOwn);
             if (!myUser) {
-                myUser = { id: 'user-me', name: getProfile().name, avatar: localStorage.getItem('profileAvatar') || 'https://picsum.photos/seed/lawyer-me/80/80.jpg', isOwn: true, stories: [] };
+                myUser = { id: 'user-me', name: getProfile().name, avatar: Safe.getString('profileAvatar') || 'https://picsum.photos/seed/lawyer-me/80/80.jpg', isOwn: true, stories: [] };
                 storiesData.unshift(myUser);
             }
 

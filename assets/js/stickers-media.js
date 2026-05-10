@@ -121,10 +121,10 @@
         // ====================================================
         // ===== POST DATA STORE ==============================
         // ====================================================
-        let userPostCounter = parseInt(localStorage.getItem('userPostCounter') || '0');
-        let userPosts = JSON.parse(localStorage.getItem('userPosts') || '[]');
-        let userReplies = JSON.parse(localStorage.getItem('userReplies') || '[]');
-        let userLikes = JSON.parse(localStorage.getItem('userLikes') || '[]');
-        let platformComments = JSON.parse(localStorage.getItem('platformComments') || '{}'); // { postId: [comments] }
+        let userPostCounter = parseInt(Safe.getString('userPostCounter') || '0');
+        let userPosts = Safe.getJSON('userPosts', []);
+        let userReplies = Safe.getJSON('userReplies', []);
+        let userLikes = Safe.getJSON('userLikes', []);
+        let platformComments = Safe.getJSON('platformComments', {}); // { postId: [comments] }
 
-        function saveUserPosts() { localStorage.setItem('userPosts', JSON.stringify(userPosts)); localStorage.setItem('userPostCounter', String(userPostCounter)); }
+        function saveUserPosts() { Safe.setJSON('userPosts', userPosts); Safe.setString('userPostCounter', String(userPostCounter)); }

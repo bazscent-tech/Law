@@ -24,7 +24,7 @@
                 try {
                     const raw = sessionStorage.getItem(this._key);
                     if (!raw) return false;
-                    const state = JSON.parse(raw);
+                    const state = Safe.parse(raw, null);
                     if (!state.currentPage) return false;
 
                     // Restore page
@@ -110,7 +110,7 @@
 
             _restoreScrollPosition(page) {
                 try {
-                    const positions = JSON.parse(sessionStorage.getItem(this._scrollKey) || '{}');
+                    Safe.parse(sessionStorage.getItem(this._scrollKey) || '{}', {});
                     const y = positions[page] || 0;
                     window.scrollTo({ top: y, behavior: 'instant' });
                 } catch(e) {}

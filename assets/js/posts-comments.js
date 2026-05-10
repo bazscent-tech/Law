@@ -1,6 +1,6 @@
-        function saveUserReplies() { localStorage.setItem('userReplies', JSON.stringify(userReplies)); }
-        function saveUserLikes() { localStorage.setItem('userLikes', JSON.stringify(userLikes)); }
-        function savePlatformComments() { localStorage.setItem('platformComments', JSON.stringify(platformComments)); }
+        function saveUserReplies() { Safe.setJSON('userReplies', userReplies); }
+        function saveUserLikes() { Safe.setJSON('userLikes', userLikes); }
+        function savePlatformComments() { Safe.setJSON('platformComments', platformComments); }
 
         function isLiked(postId) { return userLikes.some(p => p.id === postId); }
         function isReposted(postId) { return userPosts.some(p => p.repostOf === postId); }
@@ -229,7 +229,7 @@
             if (typeof commentOrId === 'object') {
                 c = commentOrId;
             } else if (typeof commentOrId === 'string' && commentOrId.startsWith('{')) {
-                c = JSON.parse(commentOrId);
+                c = Safe.parse(commentOrId, null);
             } else {
                 // Look up by ID from platformComments
                 const comments = platformComments[postId] || [];
