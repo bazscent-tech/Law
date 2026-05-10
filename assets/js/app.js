@@ -521,6 +521,9 @@
 
                 document.addEventListener('touchstart', (e) => {
                     if (this._refreshing) return;
+                    // Don't activate if story viewer is open
+                    const storyViewer = document.getElementById('storyViewer');
+                    if (storyViewer && storyViewer.classList.contains('active')) return;
                     // Only activate at top of page or inside specific scrollable containers
                     const scrollY = window.scrollY || document.documentElement.scrollTop;
                     if (scrollY > 5) return;
@@ -2086,7 +2089,7 @@
             }, { passive: true });
         })();
 
-        // ===== SWIPE UP for story owner to see viewers =====
+        // ===== SWIPE UP/DOWN for story viewer =====
         (function() {
             let touchStartY = 0;
             let touchStartTime = 0;
@@ -2113,6 +2116,11 @@
                         if (video) video.pause();
                         showStoryViewersList();
                     }
+                }
+
+                // Swipe down fast (deltaY < -80px, within 400ms) → close story
+                if (deltaY < -80 && elapsed < 400) {
+                    closeStoryViewer();
                 }
             }, { passive: true });
         })();
