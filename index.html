@@ -2014,30 +2014,32 @@
     <script src="assets/js/features.js?v=200"></script>
     <script src="assets/js/bookmarks-connections.js?v=200"></script>
     <script src="assets/js/init.js?v=200"></script>
-    <script src="assets/js/library.js?v=200"></script>
+    <script src="assets/js/library.js?v=201"></script>
 
-    <!-- ===== LIBRARY MODALS ===== -->
+    <!-- ===== LIBRARY MODALS (Premium Grade) ===== -->
 
     <!-- Create Library Modal -->
-    <div id="createLibraryModal" class="modal-overlay" onclick="Library.closeCreateLibraryModal(event)">
-        <div class="bg-dark-900 border border-dark-800 rounded-2xl w-[95%] max-w-md max-h-[90vh] overflow-y-auto p-6" onclick="event.stopPropagation()">
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="font-bold text-lg">إنشاء مكتبة جديدة</h3>
-                <button onclick="Library.closeCreateLibraryModal()" class="p-2 rounded-lg hover:bg-dark-800 transition-colors">
-                    <span class="iconify text-dark-400" data-icon="lucide:x"></span>
+    <div id="createLibraryModal" class="lib-modal" onclick="Library.closeCreateLibraryModal(event)">
+        <div class="lib-modal-overlay"></div>
+        <div class="lib-modal-sheet" onclick="event.stopPropagation()">
+            <div class="lib-modal-handle"></div>
+            <div class="lib-modal-header">
+                <h3>مكتبة جديدة</h3>
+                <button class="lib-modal-close" onclick="Library.closeCreateLibraryModal()">
+                    <span class="iconify" data-icon="lucide:x"></span>
                 </button>
             </div>
-
-            <div class="space-y-4">
-                <!-- Icon + Name -->
-                <div class="flex items-center gap-3">
+            <div class="lib-modal-body">
+                <!-- Icon + Name Row -->
+                <div class="flex items-start gap-3 mb-5">
                     <div class="relative">
                         <button id="createLibIconBtn" onclick="document.getElementById('emojiPicker').classList.toggle('hidden')"
-                            class="w-12 h-12 rounded-xl bg-dark-800 flex items-center justify-center text-2xl hover:bg-dark-700 transition-colors">
+                            class="w-14 h-14 rounded-2xl bg-dark-800 border border-dark-700 flex items-center justify-center text-3xl hover:border-brand-500/50 transition-colors">
                             📚
                         </button>
                         <input type="hidden" id="createLibIcon" value="📚">
-                        <div id="emojiPicker" class="hidden absolute top-14 right-0 z-50 bg-dark-800 border border-dark-700 rounded-xl p-3 shadow-xl w-64">
+                        <div id="emojiPicker" class="hidden absolute top-16 right-0 z-50 bg-dark-800 border border-dark-700 rounded-2xl p-3 shadow-2xl w-72">
+                            <p class="text-dark-400 text-xs font-semibold mb-2 px-1">اختر أيقونة</p>
                             <div class="emoji-grid">
                                 <button class="emoji-btn selected" onclick="Library._pickEmoji(this,'📚')">📚</button>
                                 <button class="emoji-btn" onclick="Library._pickEmoji(this,'⚖️')">⚖️</button>
@@ -2059,23 +2061,19 @@
                         </div>
                     </div>
                     <div class="flex-1">
-                        <label class="text-dark-400 text-xs mb-1 block">اسم المكتبة</label>
-                        <input type="text" id="createLibName" placeholder="مثال: التحكيم التجاري"
-                            class="w-full bg-dark-800 border border-dark-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-dark-500 focus:outline-none focus:border-brand-500/50">
+                        <label class="lib-label">اسم المكتبة</label>
+                        <input type="text" id="createLibName" placeholder="مثال: التحكيم التجاري" class="lib-input">
                     </div>
                 </div>
-
                 <!-- Description -->
-                <div>
-                    <label class="text-dark-400 text-xs mb-1 block">الوصف (اختياري)</label>
-                    <textarea id="createLibDesc" rows="2" placeholder="وصف قصير للمكتبة..."
-                        class="w-full bg-dark-800 border border-dark-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-dark-500 focus:outline-none focus:border-brand-500/50 resize-none"></textarea>
+                <div class="mb-5">
+                    <label class="lib-label">الوصف <span class="text-dark-600 font-normal">(اختياري)</span></label>
+                    <textarea id="createLibDesc" rows="2" placeholder="وصف قصير يظهر تحت المكتبة..." class="lib-input lib-textarea"></textarea>
                 </div>
-
                 <!-- Color -->
-                <div>
-                    <label class="text-dark-400 text-xs mb-2 block">اللون</label>
-                    <div class="flex items-center gap-2">
+                <div class="mb-5">
+                    <label class="lib-label">اللون</label>
+                    <div class="flex items-center gap-2.5">
                         <input type="hidden" id="createLibColor" value="#f97316">
                         <button class="color-pick ring-2" data-color="#f97316" style="background:#f97316" onclick="Library._pickColor(this)"></button>
                         <button class="color-pick" data-color="#ef4444" style="background:#ef4444" onclick="Library._pickColor(this)"></button>
@@ -2084,167 +2082,280 @@
                         <button class="color-pick" data-color="#22c55e" style="background:#22c55e" onclick="Library._pickColor(this)"></button>
                         <button class="color-pick" data-color="#eab308" style="background:#eab308" onclick="Library._pickColor(this)"></button>
                         <button class="color-pick" data-color="#ec4899" style="background:#ec4899" onclick="Library._pickColor(this)"></button>
-                        <button class="color-pick" data-color="#737373" style="background:#737373" onclick="Library._pickColor(this)"></button>
+                        <button class="color-pick" data-color="#6b7280" style="background:#6b7280" onclick="Library._pickColor(this)"></button>
                     </div>
                 </div>
-
                 <!-- Visibility -->
-                <div>
-                    <label class="text-dark-400 text-xs mb-1 block">الخصوصية</label>
-                    <select id="createLibVisibility"
-                        class="w-full bg-dark-800 border border-dark-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50">
+                <div class="mb-2">
+                    <label class="lib-label">الخصوصية</label>
+                    <select id="createLibVisibility" class="lib-input lib-select">
                         <option value="public">🌍 عام — الجميع يمكنه المشاهدة</option>
                         <option value="followers">👥 المتابعين فقط</option>
                         <option value="private">🔒 خاص — أنت فقط</option>
                     </select>
                 </div>
-
-                <!-- Submit -->
-                <button onclick="Library.submitCreateLibrary()"
-                    class="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 rounded-xl transition-all">
-                    إنشاء المكتبة
+            </div>
+            <div class="lib-modal-footer">
+                <button class="lib-btn-secondary" onclick="Library.closeCreateLibraryModal()">إلغاء</button>
+                <button id="createLibSubmitBtn" class="lib-btn-primary" onclick="Library.submitCreateLibrary()">
+                    <span class="iconify" data-icon="lucide:plus"></span> إنشاء المكتبة
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Add Item Modal -->
-    <div id="addItemModal" class="modal-overlay" onclick="Library.closeAddItemModal(event)">
-        <div class="bg-dark-900 border border-dark-800 rounded-2xl w-[95%] max-w-md max-h-[90vh] overflow-y-auto p-6" onclick="event.stopPropagation()">
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="font-bold text-lg">إضافة عنصر جديد</h3>
-                <button onclick="Library.closeAddItemModal()" class="p-2 rounded-lg hover:bg-dark-800 transition-colors">
-                    <span class="iconify text-dark-400" data-icon="lucide:x"></span>
+    <div id="addItemModal" class="lib-modal" onclick="Library.closeAddItemModal(event)">
+        <div class="lib-modal-overlay"></div>
+        <div class="lib-modal-sheet" onclick="event.stopPropagation()">
+            <div class="lib-modal-handle"></div>
+            <div class="lib-modal-header">
+                <h3>إضافة عنصر</h3>
+                <button class="lib-modal-close" onclick="Library.closeAddItemModal()">
+                    <span class="iconify" data-icon="lucide:x"></span>
                 </button>
             </div>
-            <input type="hidden" id="addItemLibId">
-            <div class="space-y-4">
+            <div class="lib-modal-body">
+                <input type="hidden" id="addItemLibId">
                 <!-- Type -->
-                <div>
-                    <label class="text-dark-400 text-xs mb-1 block">نوع العنصر</label>
-                    <select id="addItemType" onchange="Library._toggleItemFields(this.value)"
-                        class="w-full bg-dark-800 border border-dark-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50">
-                        <option value="note">📝 ملاحظة</option>
-                        <option value="document">📄 مستند</option>
-                        <option value="link">🔗 رابط</option>
-                        <option value="post_reference">📌 مرجع منشور</option>
+                <div class="mb-4">
+                    <label class="lib-label">النوع</label>
+                    <select id="addItemType" onchange="Library._toggleItemFields(this.value)" class="lib-input lib-select">
+                        <option value="note">📝 ملاحظة نصية</option>
+                        <option value="document">📄 مستند / ملف</option>
+                        <option value="link">🔗 رابط خارجي</option>
+                        <option value="post_reference">📌 مرجع من منشور</option>
                     </select>
                 </div>
                 <!-- Title -->
-                <div>
-                    <label class="text-dark-400 text-xs mb-1 block">العنوان</label>
-                    <input type="text" id="addItemTitle" placeholder="عنوان العنصر..."
-                        class="w-full bg-dark-800 border border-dark-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-dark-500 focus:outline-none focus:border-brand-500/50">
+                <div class="mb-4">
+                    <label class="lib-label">العنوان</label>
+                    <input type="text" id="addItemTitle" placeholder="عنوان العنصر..." class="lib-input">
+                </div>
+                <!-- File Upload (for document type) -->
+                <div id="addItemFileRow" class="mb-4" style="display:none">
+                    <label class="lib-label">رفع ملف</label>
+                    <div class="lib-upload-zone" onclick="document.getElementById('addItemFileInput').click()">
+                        <span class="iconify text-3xl text-dark-500 mb-2 block" data-icon="lucide:upload-cloud"></span>
+                        <p class="text-dark-300 text-sm font-medium">اضغط لاختيار ملف</p>
+                        <p class="text-dark-500 text-xs mt-1">PDF, DOCX, صور — حتى 10 ميجا</p>
+                        <input type="file" id="addItemFileInput" class="hidden"
+                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp"
+                            onchange="Library._handleFileUpload(this.files[0])">
+                    </div>
+                    <div id="addItemFilePreview" class="hidden mt-3"></div>
                 </div>
                 <!-- Content -->
-                <div id="addItemContentRow">
-                    <label class="text-dark-400 text-xs mb-1 block">المحتوى</label>
-                    <textarea id="addItemContent" rows="3" placeholder="اكتب ملاحظاتك هنا..."
-                        class="w-full bg-dark-800 border border-dark-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-dark-500 focus:outline-none focus:border-brand-500/50 resize-none"></textarea>
+                <div id="addItemContentRow" class="mb-4">
+                    <label class="lib-label">المحتوى</label>
+                    <textarea id="addItemContent" rows="4" placeholder="اكتب ملاحظاتك هنا..." class="lib-input lib-textarea"></textarea>
                 </div>
                 <!-- URL -->
-                <div id="addItemUrlRow" style="display:none">
-                    <label class="text-dark-400 text-xs mb-1 block">الرابط</label>
-                    <input type="url" id="addItemUrl" placeholder="https://..."
-                        class="w-full bg-dark-800 border border-dark-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-dark-500 focus:outline-none focus:border-brand-500/50">
+                <div id="addItemUrlRow" class="mb-4" style="display:none">
+                    <label class="lib-label">الرابط</label>
+                    <input type="url" id="addItemUrl" placeholder="https://..." class="lib-input">
                 </div>
                 <!-- Tags -->
-                <div>
-                    <label class="text-dark-400 text-xs mb-1 block">الوسوم (مفصولة بفاصلة)</label>
-                    <input type="text" id="addItemTags" placeholder="#تحكيم, #عقود"
-                        class="w-full bg-dark-800 border border-dark-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-dark-500 focus:outline-none focus:border-brand-500/50">
+                <div class="mb-2">
+                    <label class="lib-label">الوسوم <span class="text-dark-600 font-normal">(مفصولة بفاصلة)</span></label>
+                    <input type="text" id="addItemTags" placeholder="#تحكيم, #عقود, #قانون_تجاري" class="lib-input">
                 </div>
-                <!-- Submit -->
-                <button onclick="Library.submitAddItem()"
-                    class="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 rounded-xl transition-all">
-                    إضافة العنصر
+            </div>
+            <div class="lib-modal-footer">
+                <button class="lib-btn-secondary" onclick="Library.closeAddItemModal()">إلغاء</button>
+                <button id="addItemSubmitBtn" class="lib-btn-primary" onclick="Library.submitAddItem()">
+                    <span class="iconify" data-icon="lucide:plus"></span> إضافة العنصر
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Edit Item Modal -->
-    <div id="editItemModal" class="modal-overlay" onclick="Library.closeEditItemModal(event)">
-        <div class="bg-dark-900 border border-dark-800 rounded-2xl w-[95%] max-w-md max-h-[90vh] overflow-y-auto p-6" onclick="event.stopPropagation()">
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="font-bold text-lg">تعديل العنصر</h3>
-                <button onclick="Library.closeEditItemModal()" class="p-2 rounded-lg hover:bg-dark-800 transition-colors">
-                    <span class="iconify text-dark-400" data-icon="lucide:x"></span>
+    <div id="editItemModal" class="lib-modal" onclick="Library.closeEditItemModal(event)">
+        <div class="lib-modal-overlay"></div>
+        <div class="lib-modal-sheet" onclick="event.stopPropagation()">
+            <div class="lib-modal-handle"></div>
+            <div class="lib-modal-header">
+                <h3>تعديل العنصر</h3>
+                <button class="lib-modal-close" onclick="Library.closeEditItemModal()">
+                    <span class="iconify" data-icon="lucide:x"></span>
                 </button>
             </div>
-            <input type="hidden" id="editItemId">
-            <input type="hidden" id="editItemLibId">
-            <div class="space-y-4">
-                <div>
-                    <label class="text-dark-400 text-xs mb-1 block">العنوان</label>
-                    <input type="text" id="editItemTitle"
-                        class="w-full bg-dark-800 border border-dark-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50">
+            <div class="lib-modal-body">
+                <input type="hidden" id="editItemId">
+                <input type="hidden" id="editItemLibId">
+                <div class="mb-4">
+                    <label class="lib-label">العنوان</label>
+                    <input type="text" id="editItemTitle" class="lib-input">
                 </div>
-                <div>
-                    <label class="text-dark-400 text-xs mb-1 block">المحتوى</label>
-                    <textarea id="editItemContent" rows="3"
-                        class="w-full bg-dark-800 border border-dark-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50 resize-none"></textarea>
+                <div class="mb-4">
+                    <label class="lib-label">المحتوى</label>
+                    <textarea id="editItemContent" rows="4" class="lib-input lib-textarea"></textarea>
                 </div>
-                <div>
-                    <label class="text-dark-400 text-xs mb-1 block">الرابط</label>
-                    <input type="url" id="editItemUrl"
-                        class="w-full bg-dark-800 border border-dark-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50">
+                <div class="mb-4">
+                    <label class="lib-label">الرابط</label>
+                    <input type="url" id="editItemUrl" class="lib-input" placeholder="https://...">
                 </div>
-                <div>
-                    <label class="text-dark-400 text-xs mb-1 block">الوسوم</label>
-                    <input type="text" id="editItemTags"
-                        class="w-full bg-dark-800 border border-dark-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50">
+                <div class="mb-2">
+                    <label class="lib-label">الوسوم</label>
+                    <input type="text" id="editItemTags" class="lib-input" placeholder="#تحكيم, #عقود">
                 </div>
-                <button onclick="Library.submitEditItem()"
-                    class="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 rounded-xl transition-all">
-                    حفظ التعديلات
+            </div>
+            <div class="lib-modal-footer">
+                <button class="lib-btn-secondary" onclick="Library.closeEditItemModal()">إلغاء</button>
+                <button id="editItemSubmitBtn" class="lib-btn-primary" onclick="Library.submitEditItem()">
+                    <span class="iconify" data-icon="lucide:check"></span> حفظ التعديلات
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Library Detail Modal -->
-    <div id="libraryDetailModal" class="modal-overlay" onclick="Library.closeLibrary()">
-        <div class="bg-dark-900 border border-dark-800 rounded-2xl w-[95%] max-w-lg max-h-[90vh] overflow-hidden flex flex-col" onclick="event.stopPropagation()">
+    <div id="libraryDetailModal" class="lib-modal" onclick="Library.closeLibrary(event)">
+        <div class="lib-modal-overlay"></div>
+        <div class="lib-modal-sheet" onclick="event.stopPropagation()">
+            <div class="lib-modal-handle"></div>
+            <!-- Accent Bar -->
+            <div id="libDetailAccent" class="h-1 w-full" style="background:#f97316"></div>
             <!-- Header -->
-            <div class="p-5 border-b border-dark-800/50 flex items-center justify-between shrink-0">
+            <div class="lib-modal-header">
                 <div class="flex items-center gap-3">
-                    <div id="libraryDetailIcon" class="w-10 h-10 rounded-xl flex items-center justify-center text-xl">📚</div>
+                    <div id="libDetailIcon" class="w-11 h-11 rounded-2xl flex items-center justify-center text-2xl">📚</div>
                     <div>
-                        <h3 id="libraryDetailTitle" class="font-bold text-base">اسم المكتبة</h3>
-                        <div class="flex items-center gap-2 text-xs text-dark-400">
-                            <span id="libraryDetailCount">0 عنصر</span>
-                            <span>•</span>
-                            <span id="libraryDetailVis">عام</span>
-                        </div>
+                        <h3 id="libDetailTitle" class="font-bold text-[15px]">اسم المكتبة</h3>
+                        <p id="libDetailMeta" class="text-dark-500 text-xs">0 عناصر • عام</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-1">
-                    <button onclick="Library.openAddItemModal(Library._cache.currentLib?.id)"
-                        class="p-2 rounded-lg hover:bg-dark-800 transition-colors" title="إضافة عنصر">
-                        <span class="iconify text-brand-400" data-icon="lucide:plus"></span>
-                    </button>
-                    <button onclick="Library.closeLibrary()"
-                        class="p-2 rounded-lg hover:bg-dark-800 transition-colors">
-                        <span class="iconify text-dark-400" data-icon="lucide:x"></span>
-                    </button>
-                </div>
+                <button class="lib-modal-close" onclick="Library.closeLibrary()">
+                    <span class="iconify" data-icon="lucide:x"></span>
+                </button>
             </div>
             <!-- Description -->
-            <p id="libraryDetailDesc" class="px-5 pt-3 text-dark-300 text-sm hidden"></p>
-            <!-- Items List -->
-            <div id="libraryItemsList" class="flex-1 overflow-y-auto p-4 space-y-1">
-                <!-- Items injected by JS -->
-            </div>
+            <p id="libDetailDesc" class="px-5 pt-2 text-dark-400 text-sm hidden"></p>
+            <!-- Items -->
+            <div id="libDetailItems" class="lib-modal-body px-4"></div>
             <!-- Footer -->
-            <div class="p-4 border-t border-dark-800/50 flex items-center justify-between shrink-0">
-                <button onclick="Library.confirmDeleteLibrary(Library._cache.currentLib?.id)"
-                    class="text-red-400 text-xs hover:text-red-300 transition-colors flex items-center gap-1">
-                    <span class="iconify text-xs" data-icon="lucide:trash-2"></span>حذف المكتبة
+            <div class="lib-modal-footer">
+                <button id="libDetailDeleteBtn" class="lib-btn-secondary" style="color:#ef4444;border-color:rgba(239,68,68,0.3)">
+                    <span class="iconify" data-icon="lucide:trash-2"></span> حذف
                 </button>
-                <button onclick="Library.openAddItemModal(Library._cache.currentLib?.id)"
-                    class="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
-                    <span class="iconify mr-1" data-icon="lucide:plus"></span>إضافة عنصر
+                <button id="libDetailAddBtn" class="lib-btn-primary">
+                    <span class="iconify" data-icon="lucide:plus"></span> إضافة عنصر
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Item Detail Modal -->
+    <div id="itemDetailModal" class="lib-modal" onclick="Library.closeItemDetail(event)">
+        <div class="lib-modal-overlay"></div>
+        <div class="lib-modal-sheet" onclick="event.stopPropagation()">
+            <div class="lib-modal-handle"></div>
+            <div class="lib-modal-header">
+                <h3 id="itemDetailTitle" class="font-bold text-[15px] truncate max-w-[70%]">عنوان العنصر</h3>
+                <button class="lib-modal-close" onclick="Library.closeItemDetail()">
+                    <span class="iconify" data-icon="lucide:x"></span>
+                </button>
+            </div>
+            <div class="lib-modal-body space-y-4">
+                <div class="flex items-center gap-2">
+                    <span id="itemDetailTypeBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-dark-800 text-xs font-medium"></span>
+                    <span id="itemDetailDate" class="text-dark-500 text-xs"></span>
+                </div>
+                <div id="itemDetailImage" class="hidden"></div>
+                <p id="itemDetailContent" class="text-dark-200 text-sm leading-relaxed hidden"></p>
+                <div id="itemDetailFile" class="hidden"></div>
+                <div id="itemDetailLink" class="hidden"></div>
+                <div id="itemDetailTags" class="flex flex-wrap gap-1.5 hidden"></div>
+            </div>
+            <div class="lib-modal-footer">
+                <button class="lib-btn-secondary" onclick="Library.closeItemDetail()">إغلاق</button>
+                <button id="itemDetailEditBtn" class="lib-btn-primary">
+                    <span class="iconify" data-icon="lucide:pencil"></span> تعديل
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Library Context Menu Modal -->
+    <div id="libMenuModal" class="lib-modal" onclick="Library.closeMenu(event)">
+        <div class="lib-modal-overlay"></div>
+        <div class="lib-modal-sheet" onclick="event.stopPropagation()" style="max-height:50vh">
+            <div class="lib-modal-handle"></div>
+            <div class="p-5 pb-3">
+                <div class="flex items-center gap-3 mb-1">
+                    <div id="libMenuIcon" class="w-10 h-10 rounded-xl flex items-center justify-center text-xl">📚</div>
+                    <h3 id="libMenuTitle" class="font-bold text-[15px] truncate">اسم المكتبة</h3>
+                </div>
+            </div>
+            <div class="px-3 pb-4 space-y-1">
+                <button id="libMenuEdit" class="lib-menu-option">
+                    <span class="iconify" data-icon="lucide:pencil"></span>
+                    تعديل المكتبة
+                </button>
+                <button id="libMenuAdd" class="lib-menu-option">
+                    <span class="iconify" data-icon="lucide:plus-circle"></span>
+                    إضافة عنصر
+                </button>
+                <button id="libMenuVisibility" class="lib-menu-option">
+                    <span class="iconify" data-icon="lucide:lock"></span>
+                    تغيير الخصوصية
+                </button>
+                <button id="libMenuDelete" class="lib-menu-option danger">
+                    <span class="iconify" data-icon="lucide:trash-2"></span>
+                    حذف المكتبة
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Library Modal -->
+    <div id="editLibraryModal" class="lib-modal" onclick="Library.closeEditLibraryModal(event)">
+        <div class="lib-modal-overlay"></div>
+        <div class="lib-modal-sheet" onclick="event.stopPropagation()" style="max-height:50vh">
+            <div class="lib-modal-handle"></div>
+            <div class="lib-modal-header">
+                <h3>تعديل المكتبة</h3>
+                <button class="lib-modal-close" onclick="Library.closeEditLibraryModal()">
+                    <span class="iconify" data-icon="lucide:x"></span>
+                </button>
+            </div>
+            <div class="lib-modal-body">
+                <input type="hidden" id="editLibId">
+                <div class="mb-4">
+                    <label class="lib-label">اسم المكتبة</label>
+                    <input type="text" id="editLibName" class="lib-input">
+                </div>
+                <div class="mb-2">
+                    <label class="lib-label">الوصف</label>
+                    <textarea id="editLibDesc" rows="3" class="lib-input lib-textarea" placeholder="وصف قصير..."></textarea>
+                </div>
+            </div>
+            <div class="lib-modal-footer">
+                <button class="lib-btn-secondary" onclick="Library.closeEditLibraryModal()">إلغاء</button>
+                <button class="lib-btn-primary" onclick="Library.submitEditLibrary()">
+                    <span class="iconify" data-icon="lucide:check"></span> حفظ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div id="confirmModal" class="lib-modal" onclick="if(event.target===this)this.classList.remove('active')">
+        <div class="lib-modal-overlay"></div>
+        <div class="lib-modal-sheet" onclick="event.stopPropagation()" style="max-height:40vh">
+            <div class="lib-modal-handle"></div>
+            <div class="lib-modal-body text-center py-8">
+                <div class="lib-confirm-icon bg-red-500/10">
+                    <span class="iconify text-2xl text-red-400" data-icon="lucide:alert-triangle"></span>
+                </div>
+                <h3 id="confirmTitle" class="font-bold text-lg mb-2">تأكيد الحذف</h3>
+                <p id="confirmMsg" class="text-dark-400 text-sm">هل أنت متأكد؟</p>
+            </div>
+            <div class="lib-modal-footer">
+                <button class="lib-btn-secondary flex-1 justify-center" onclick="document.getElementById('confirmModal').classList.remove('active')">إلغاء</button>
+                <button id="confirmOkBtn" class="lib-btn-primary flex-1 justify-center" style="background:#ef4444">
+                    <span class="iconify" data-icon="lucide:trash-2"></span> حذف
                 </button>
             </div>
         </div>
