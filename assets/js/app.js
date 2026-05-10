@@ -2375,16 +2375,41 @@
             }
         };
 
-        // ===== M. ENHANCED FOLLOW - MOVE POSTS =====
-        const _origToggleFollow = toggleFollow;
+        // ===== M. X-STYLE FOLLOW SYSTEM (NO RE-RENDER, NO TOAST) =====
         toggleFollow = function(btn) {
             const author = btn.dataset.author;
-            _origToggleFollow(btn);
-            // Re-render feed and following
-            setTimeout(() => {
-                renderFeedPosts();
-                renderFollowingPosts();
-            }, 100);
+            if (!author) return;
+
+            const icon = btn.querySelector('.iconify');
+            const textEl = btn.querySelector('.follow-text');
+
+            // Optimistic UI: update immediately, no re-render
+            if (isFollowing(author)) {
+                // UNFOLLOW
+                followingUsers = followingUsers.filter(a => a !== author);
+                btn.classList.remove('following');
+                // Smooth transition only on the button
+                btn.style.transition = 'all 0.2s ease';
+                btn.style.color = '#f97316';
+                btn.style.borderColor = 'rgba(249,115,22,0.3)';
+                btn.style.background = 'transparent';
+                if (textEl) textEl.textContent = 'متابعة';
+                if (icon) icon.setAttribute('data-icon', 'lucide:user-plus');
+            } else {
+                // FOLLOW
+                followingUsers.push(author);
+                btn.classList.add('following');
+                // Smooth transition only on the button
+                btn.style.transition = 'all 0.2s ease';
+                btn.style.color = '#a3a3a3';
+                btn.style.borderColor = '#404040';
+                btn.style.background = 'transparent';
+                if (textEl) textEl.textContent = 'متابَع';
+                if (icon) icon.setAttribute('data-icon', 'lucide:check');
+            }
+            saveFollowing();
+            // NO renderFeedPosts(), NO renderFollowingPosts(), NO showToast()
+            // The button state is updated in-place. Feed stays untouched.
         };
 
         // ===== N. AUTO-REFRESH MESSAGES BADGE =====

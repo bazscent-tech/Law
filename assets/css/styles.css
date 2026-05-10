@@ -22,22 +22,32 @@
 
         .follow-suggestion { border-bottom: 1px solid rgba(64,64,64,0.3); }
 
-        /* X-style follow button */
+        /* X-style follow button - Professional, no layout shift */
         .follow-btn {
             min-width: 80px;
             text-align: center;
-            transition: background 0.2s, color 0.2s, border-color 0.2s;
             white-space: nowrap;
+            transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+            will-change: color, border-color;
+            /* Prevent any layout shift */
+            box-sizing: border-box;
+            flex-shrink: 0;
         }
+        /* Hover on "متابعة" (not following yet) → subtle highlight */
+        .follow-btn:not(.following):hover {
+            background: rgba(249,115,22,0.08) !important;
+        }
+        /* "متابَع" state (following) - calm, quiet, like X */
         .follow-btn.following {
-            background: transparent !important;
             color: #a3a3a3 !important;
-            border-color: #525252 !important;
+            border-color: #404040 !important;
+            background: transparent !important;
         }
+        /* Hover on "متابَع" → show unfollow hint */
         .follow-btn.following:hover {
-            background: rgba(239,68,68,0.08) !important;
             color: #ef4444 !important;
             border-color: rgba(239,68,68,0.4) !important;
+            background: rgba(239,68,68,0.06) !important;
         }
         .follow-btn.following:hover .follow-text { display: none; }
         .follow-btn.following:hover .unfollow-text { display: inline; }
