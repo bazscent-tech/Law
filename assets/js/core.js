@@ -42,13 +42,17 @@
         // Load current user profile (called after auth)
         async function loadUserProfile() {
             if (!sb || !sbUser) return null;
-            const { data } = await sb.from('profiles').select('*').eq('id', sbUser.id).single();
-            if (data) {
-                sbProfile = data;
-                // Cache profile for this user
-                Safe.setJSON('auth_profile_' + sbUser.id, data);
+            try {
+                const { data } = await sb.from('profiles').select('*').eq('id', sbUser.id).maybeSingle();
+                if (data) {
+                    sbProfile = data;
+                    Safe.setJSON('auth_profile_' + sbUser.id, data);
+                }
+                return data;
+            } catch (e) {
+                console.warn('[Core] loadUserProfile failed:', e.message);
+                return null;
             }
-            return data;
         }
 
         // ============================================================
@@ -339,7 +343,7 @@
                 if (!sbOnline) return null;
                 const { data } = await sb.from('posts')
                     .select('*, profiles(*)')
-                    .or(`content.ilike.%${query}%,name.ilike.%${query}%`)
+                    .ilike('content', `%${query}%`)
                     .order('created_at', { ascending: false })
                     .limit(20);
                 return data;

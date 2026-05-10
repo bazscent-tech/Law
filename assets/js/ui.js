@@ -79,7 +79,7 @@
             window.scrollTo(0, 0);
         }
         function getPageLabel(page) { const m = { 'feed':'الرئيسية','profile':'ملفي الشخصي','connections':'الروابط','bookmarks':'المحفوظات','articles':'مقالاتي','events':'الفعاليات','certificates':'الشهادات','notifications':'الإشعارات','messages':'الرسائل','settings':'الإعدادات','following':'أتابع','audio-spaces':'المساحات الصوتية','trending':'المواضيع الرائجة' }; return m[page] || ''; }
-        function doSearch() { const q = document.getElementById('searchInput').value.trim(); if (q) showToast('بحث عن: ' + q); }
+        // ⚡ doSearch is defined in features.js — no duplicate here
 
         // ===== Mobile Menu =====
         function openMobileMenu() { document.getElementById('mobileMenuOverlay').classList.add('open'); document.body.style.overflow = 'hidden'; const h=document.getElementById('swipeEdgeHint'); if(h)h.style.display='none'; }
@@ -354,11 +354,19 @@
                         this.classList.remove('following');
                         this.innerHTML = '<span class="iconify inline ml-1" data-icon="lucide:user-plus" style="font-size:14px"></span>متابعة';
                         this.className = 'bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-all';
+                        // ⚡ مزامنة إلغاء المتابعة مع Supabase
+                        if (sbOnline && sbUser && _visitingProfile) {
+                            SB.toggleFollow(_visitingProfile.id).catch(err => console.warn('Unfollow failed:', err));
+                        }
                         showToast('تم إلغاء المتابعة');
                     } else {
                         this.classList.add('following');
                         this.innerHTML = '<span class="iconify inline ml-1" data-icon="lucide:check" style="font-size:14px"></span>متابَع ✓';
                         this.className = 'bg-dark-700 hover:bg-dark-600 text-green-400 text-sm font-semibold px-5 py-2 rounded-xl transition-all border border-green-500/30';
+                        // ⚡ مزامنة المتابعة مع Supabase
+                        if (sbOnline && sbUser && _visitingProfile) {
+                            SB.toggleFollow(_visitingProfile.id).catch(err => console.warn('Follow failed:', err));
+                        }
                         showToast('متابَع ✓');
                     }
                 };
