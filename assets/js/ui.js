@@ -86,6 +86,164 @@
             const dn=document.querySelector('#mobileDrawer h3'); if(dn)dn.textContent=p.name;
         }
         function loadProfile() { const s=Safe.getString('userProfile'); if(s)applyProfile(JSON.parse(s)); }
+
+        // ===== VISIT OTHER USER'S PROFILE =====
+        let _visitingProfile = null; // null = viewing own profile
+        async function openUserProfile(authorName) {
+            if (!authorName) return;
+            // Find profile from Supabase
+            let profile = null;
+            if (sbOnline) {
+                try {
+                    const { data } = await sb.from('profiles')
+                        .select('*')
+                        .eq('name', authorName)
+                        .limit(1);
+                    if (data && data.length > 0) profile = data[0];
+                } catch(e) { console.warn('Profile fetch failed:', e); }
+            }
+            if (!profile) {
+                showToast('لا يمكن عرض الملف الشخصي');
+                return;
+            }
+            _visitingProfile = profile;
+            _applyVisitedProfile(profile);
+            showPage('profile');
+            _renderVisitedProfilePosts(profile.id);
+            _renderVisitedProfileLibraries(profile.id);
+        }
+
+        function _applyVisitedProfile(p) {
+            const pn = document.querySelector('#page-profile .text-xl.font-bold');
+            if (pn) pn.textContent = p.name;
+            const vb = document.querySelector('#page-profile .iconify[data-icon="lucide:badge-check"]');
+            if (vb) vb.style.display = p.verified ? '' : 'none';
+            const ps = document.querySelector('#page-profile .text-dark-400.text-sm.mb-3');
+            if (ps) ps.textContent = '@' + p.username + (p.title ? ' • ' + p.title : '') + (p.location ? ' • ' + p.location : '');
+            const pb = document.querySelector('#page-profile .text-dark-300.text-sm.mb-4');
+            if (pb) pb.textContent = p.bio || '';
+            const pl = document.querySelector('#page-profile .flex.flex-wrap.gap-4 span:first-child');
+            if (pl) pl.innerHTML = p.location ? '<span class="iconify" data-icon="lucide:map-pin" style="font-size:14px"></span>' + p.location : '';
+            const pw = document.querySelector('#page-profile .text-brand-400.cursor-pointer');
+            if (pw) pw.textContent = p.website || '';
+            const pa = document.querySelector('#desktopAvatar');
+            if (pa) pa.src = p.avatar_url || 'https://picsum.photos/seed/default/120/120.jpg';
+            const cv = document.querySelector('#coverPhoto');
+            if (cv) { if (p.cover_url) { cv.src = p.cover_url; cv.classList.remove('hidden'); } else { cv.classList.add('hidden'); } }
+            // Stats
+            const stats = document.querySelectorAll('#page-profile .profile-stat-item .font-bold');
+            if (stats[0]) stats[0].textContent = p.followers_count || 0;
+            if (stats[1]) stats[1].textContent = p.following_count || 0;
+            if (stats[2]) stats[2].textContent = p.posts_count || 0;
+            // Hide edit buttons, show back button
+            const editBtns = document.querySelectorAll('#page-profile .bg-dark-800');
+            editBtns.forEach(b => { if (b.textContent.includes('تعديل') || b.querySelector('[data-icon="lucide:share-2"]')) b.style.display = 'none'; });
+            // Add back button if not exists
+            let backBtn = document.getElementById('backToMyProfile');
+            if (!backBtn) {
+                backBtn = document.createElement('button');
+                backBtn.id = 'backToMyProfile';
+                backBtn.className = 'bg-dark-800 hover:bg-dark-700 text-sm font-medium px-4 py-2 rounded-xl transition-all border border-dark-700';
+                backBtn.innerHTML = '<span class="iconify inline ml-1" data-icon="lucide:arrow-right" style="font-size:14px"></span>رجوع';
+                backBtn.onclick = closeUserProfile;
+                const btnContainer = document.querySelector('#page-profile .flex.gap-2');
+                if (btnContainer) btnContainer.prepend(backBtn);
+            }
+            backBtn.style.display = '';
+            // Cover click → do nothing for other users
+            const coverEl = document.querySelector('#page-profile .h-48');
+            if (coverEl) coverEl.onclick = null;
+            const avatarEl = document.querySelector('#desktopAvatar');
+            if (avatarEl) avatarEl.onclick = null;
+        }
+
+        function closeUserProfile() {
+            _visitingProfile = null;
+            // Restore own profile
+            loadProfile();
+            const pa = document.querySelector('#desktopAvatar');
+            if (pa) { pa.src = 'https://picsum.photos/seed/lawyer-me/120/120.jpg'; pa.onclick = () => document.getElementById('profileAvatarUpload').click(); }
+            const cv = document.querySelector('#coverPhoto');
+            if (cv) { cv.classList.add('hidden'); }
+            const coverEl = document.querySelector('#page-profile .h-48');
+            if (coverEl) coverEl.onclick = () => document.getElementById('coverUpload').click();
+            const editBtns = document.querySelectorAll('#page-profile .bg-dark-800');
+            editBtns.forEach(b => b.style.display = '');
+            const backBtn = document.getElementById('backToMyProfile');
+            if (backBtn) backBtn.style.display = 'none';
+            renderProfilePosts();
+            if (typeof Library !== 'undefined') Library.renderProfileLibraries(sbUser?.id || 'local');
+            // Switch to posts tab
+            const postsTab = document.querySelector('#page-profile .profile-tab');
+            if (postsTab) switchProfileTab(postsTab);
+        }
+
+        async function _renderVisitedProfilePosts(profileId) {
+            const c = document.getElementById('profilePostsList');
+            const e = document.getElementById('profileEmptyState');
+            if (!c) return;
+            c.innerHTML = '';
+            if (e) e.style.display = 'none';
+            if (!sbOnline) return;
+            try {
+                const { data: posts } = await sb.from('posts')
+                    .select('*, profiles(*)')
+                    .eq('author_id', profileId)
+                    .order('created_at', { ascending: false });
+                if (!posts || posts.length === 0) {
+                    if (e) { e.style.display = ''; e.querySelector('p').textContent = 'لا توجد منشورات بعد'; }
+                    return;
+                }
+                posts.forEach((sp, i) => {
+                    const profile = sp.profiles || {};
+                    const name = profile.name || 'مستخدم';
+                    const timeDiff = Date.now() - new Date(sp.created_at).getTime();
+                    const mins = Math.floor(timeDiff / 60000);
+                    let time = 'الآن';
+                    if (mins < 60) time = `منذ ${mins} دقيقة`;
+                    else if (mins < 1440) time = `منذ ${Math.floor(mins/60)} ساعة`;
+                    else time = `منذ ${Math.floor(mins/1440)} يوم`;
+                    const gradients = ['from-blue-500 to-purple-600','from-pink-500 to-yellow-500','from-cyan-500 to-purple-500','from-green-500 to-cyan-500','from-purple-500 to-red-500'];
+                    const post = {
+                        id: sp.id, author: name, avatar: name.charAt(0),
+                        verified: profile.verified || false, role: profile.title || '',
+                        time: time, title: sp.title || '', content: sp.content || '',
+                        tags: sp.tags || [], likes: sp.likes_count || 0,
+                        comments: sp.comments_count || 0, shares: sp.shares_count || 0,
+                        gradient: gradients[(sp.id.charCodeAt(0)||0) % gradients.length]
+                    };
+                    const div = document.createElement('div');
+                    div.className = 'dynamic-post';
+                    div.innerHTML = buildPlatformPostHTML(post, i);
+                    c.appendChild(div);
+                });
+            } catch(err) { console.warn('Posts fetch failed:', err); }
+        }
+
+        async function _renderVisitedProfileLibraries(profileId) {
+            if (typeof Library === 'undefined') return;
+            const container = document.getElementById('profileLibraries');
+            const grid = document.getElementById('librariesGrid');
+            const emptyState = document.getElementById('libraryEmptyState');
+            if (!container) return;
+            try {
+                const { data: libs } = await sb.from('libraries')
+                    .select('*')
+                    .eq('owner_id', profileId)
+                    .order('created_at', { ascending: false });
+                if (!libs || libs.length === 0) {
+                    if (grid) grid.classList.add('hidden');
+                    if (emptyState) emptyState.classList.remove('hidden');
+                } else {
+                    if (emptyState) emptyState.classList.add('hidden');
+                    if (grid) {
+                        grid.classList.remove('hidden');
+                        grid.innerHTML = libs.map(lib => Library._buildLibraryCard(lib)).join('');
+                    }
+                }
+            } catch(e) { console.warn('Libraries fetch failed:', e); }
+        }
+
         function openEditProfile() { const p=getProfile(); document.getElementById('editName').value=p.name; document.getElementById('editUsername').value=p.username; document.getElementById('editTitle').value=p.title; document.getElementById('editBio').value=p.bio; document.getElementById('editLocation').value=p.location; document.getElementById('editWebsite').value=p.website; document.getElementById('editProfileModal').classList.add('active'); document.body.style.overflow='hidden'; }
         function closeEditProfile(e) { if(e&&e.target!==e.currentTarget)return; document.getElementById('editProfileModal').classList.remove('active'); document.body.style.overflow=''; }
         function saveProfile() { const p={name:document.getElementById('editName').value.trim()||defaultProfile.name,username:document.getElementById('editUsername').value.trim()||defaultProfile.username,title:document.getElementById('editTitle').value.trim()||defaultProfile.title,bio:document.getElementById('editBio').value.trim()||defaultProfile.bio,location:document.getElementById('editLocation').value.trim()||defaultProfile.location,website:document.getElementById('editWebsite').value.trim()||defaultProfile.website}; Safe.setJSON('userProfile', p); applyProfile(p); closeEditProfile(); showToast('تم حفظ الملف الشخصي ✓'); }
