@@ -7,7 +7,50 @@
         function hideStaticPosts(){const fp=document.getElementById('page-feed');if(!fp)return;fp.querySelectorAll(':scope > article.post-card').forEach(a=>a.remove())}
         function getFeedPosts(){return allPosts.filter(p=>!isFollowing(p.author))}
 
-        function renderFeedPosts(){
+        // Load Supabase posts into allPosts for the feed
+        const _gradients = ['from-blue-500 to-purple-600','from-pink-500 to-yellow-500','from-cyan-500 to-purple-500','from-green-500 to-cyan-500','from-purple-500 to-red-500','from-red-500 to-purple-500','from-yellow-500 to-green-500','from-teal-500 to-blue-500','from-indigo-500 to-purple-600','from-rose-500 to-orange-500','from-emerald-500 to-teal-600','from-sky-500 to-blue-600'];
+        async function loadSupabaseFeedPosts() {
+            if (!sbOnline) return;
+            try {
+                const { data: sbPosts } = await sb.from('posts')
+                    .select('*, profiles(*)')
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+                if (!sbPosts || sbPosts.length === 0) return;
+                const existingIds = new Set(allPosts.map(p => p.id));
+                sbPosts.forEach((sp, i) => {
+                    if (existingIds.has(sp.id)) return;
+                    const profile = sp.profiles || {};
+                    const name = profile.name || 'مستخدم';
+                    const avatar = name.charAt(0);
+                    const timeDiff = Date.now() - new Date(sp.created_at).getTime();
+                    const mins = Math.floor(timeDiff / 60000);
+                    let time = 'الآن';
+                    if (mins < 60) time = `منذ ${mins} دقيقة`;
+                    else if (mins < 1440) time = `منذ ${Math.floor(mins/60)} ساعة`;
+                    else time = `منذ ${Math.floor(mins/1440)} يوم`;
+                    allPosts.push({
+                        id: sp.id,
+                        author: name,
+                        avatar: avatar,
+                        verified: profile.verified || false,
+                        role: profile.title || '',
+                        time: time,
+                        title: sp.title || '',
+                        content: sp.content || '',
+                        tags: sp.tags || [],
+                        likes: sp.likes_count || 0,
+                        comments: sp.comments_count || 0,
+                        shares: sp.shares_count || 0,
+                        gradient: _gradients[(sp.id.charCodeAt(0) || 0) % _gradients.length],
+                        relevance: 70 + Math.floor(Math.random() * 20)
+                    });
+                });
+            } catch(e) { console.warn('Feed Supabase load failed:', e); }
+        }
+
+        async function renderFeedPosts(){
+            await loadSupabaseFeedPosts();
             const container=document.getElementById('page-feed');if(!container)return;
             container.querySelectorAll('.post-card,.dynamic-post').forEach(el=>el.remove());
             const posts=getFeedPosts().sort((a,b)=>b.relevance-a.relevance);
@@ -17,7 +60,7 @@
             document.getElementById('infiniteLoader').style.display='none';document.getElementById('feedEnd').style.display='none';
         }
 
-        function renderFollowingPosts(){const c=document.getElementById('followingPosts');if(!c)return;const posts=allPosts.filter(p=>isFollowing(p.author));if(posts.length===0){c.innerHTML='<div class="text-center py-12 text-dark-400"><span class="iconify text-4xl mb-3 block" data-icon="lucide:user-plus"></span><p class="text-sm">لم تتابع أحداً بعد</p></div>';return;}c.innerHTML=posts.map((p,i)=>buildPlatformPostHTML(p,i)).join('')}
+        async function renderFollowingPosts(){await loadSupabaseFeedPosts();const c=document.getElementById('followingPosts');if(!c)return;const posts=allPosts.filter(p=>isFollowing(p.author));if(posts.length===0){c.innerHTML='<div class="text-center py-12 text-dark-400"><span class="iconify text-4xl mb-3 block" data-icon="lucide:user-plus"></span><p class="text-sm">لم تتابع أحداً بعد</p></div>';return;}c.innerHTML=posts.map((p,i)=>buildPlatformPostHTML(p,i)).join('')}
         function switchFollowingTab(btn,filter){document.querySelectorAll('.following-tab').forEach(t=>{t.classList.remove('active','bg-dark-800','text-white');t.classList.add('text-dark-400')});btn.classList.add('active','bg-dark-800','text-white');btn.classList.remove('text-dark-400');showToast('عرض: '+(filter==='all'?'الكل':filter==='people'?'أشخاص':'صفحات'));renderFollowingPosts()}
 
         // ===== Audio Spaces =====
