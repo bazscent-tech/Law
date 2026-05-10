@@ -50,7 +50,6 @@
 
             // Initialize SPA system
             Router.init();
-            PullToRefresh.init();
             NotifPTR.init();
             initStories();
 
