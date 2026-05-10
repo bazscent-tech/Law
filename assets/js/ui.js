@@ -294,6 +294,15 @@
             // Hide edit buttons, show back button
             const editBtns = document.querySelectorAll('#page-profile .bg-dark-800');
             editBtns.forEach(b => { if (b.textContent.includes('تعديل') || b.querySelector('[data-icon="lucide:share-2"]')) b.style.display = 'none'; });
+            // Hide library create buttons when visiting another profile
+            const libCreateBtns = document.querySelectorAll('#page-profile .lib-btn-primary, #librariesGrid button[onclick*="openMenu"]');
+            libCreateBtns.forEach(b => b.style.display = 'none');
+            // Hide "إنشاء مكتبة" button
+            const createLibBtn = document.querySelector('#libraryEmptyState button, [onclick="Library.openCreateLibraryModal()"]');
+            if (createLibBtn) createLibBtn.style.display = 'none';
+            // Hide empty state publish button
+            const emptyStateBtn = document.querySelector('#profileEmptyState button');
+            if (emptyStateBtn) emptyStateBtn.style.display = 'none';
             // Add back button if not exists
             let backBtn = document.getElementById('backToMyProfile');
             if (!backBtn) {
@@ -325,6 +334,12 @@
             if (coverEl) coverEl.onclick = () => document.getElementById('coverUpload').click();
             const editBtns = document.querySelectorAll('#page-profile .bg-dark-800');
             editBtns.forEach(b => b.style.display = '');
+            // Restore empty state publish button
+            const emptyBtn = document.querySelector('#profileEmptyState button');
+            if (emptyBtn) { emptyBtn.style.display = ''; emptyBtn.textContent = 'اكتب أول منشور'; emptyBtn.setAttribute('onclick', 'showPostModal()'); }
+            // Restore library create button
+            const createLibBtn = document.querySelector('[onclick="Library.openCreateLibraryModal()"]');
+            if (createLibBtn) createLibBtn.style.display = '';
             const backBtn = document.getElementById('backToMyProfile');
             if (backBtn) backBtn.style.display = 'none';
             renderProfilePosts();
@@ -339,7 +354,12 @@
             const e = document.getElementById('profileEmptyState');
             if (!c) return;
             c.innerHTML = '';
-            if (e) e.style.display = 'none';
+            // Hide empty state "publish" button when visiting another profile
+            if (e) {
+                e.style.display = 'none';
+                const btn = e.querySelector('button');
+                if (btn) btn.style.display = 'none'; // Hide "اكتب أول منشور" button
+            }
             if (!sbOnline) return;
             try {
                 const { data: posts } = await sb.from('posts')
@@ -347,7 +367,12 @@
                     .eq('author_id', profileId)
                     .order('created_at', { ascending: false });
                 if (!posts || posts.length === 0) {
-                    if (e) { e.style.display = ''; e.querySelector('p').textContent = 'لا توجد منشورات بعد'; }
+                    if (e) {
+                        e.style.display = '';
+                        e.querySelector('p').textContent = 'لا توجد منشورات بعد';
+                        const btn = e.querySelector('button');
+                        if (btn) btn.style.display = 'none'; // Don't show publish button for other users
+                    }
                     return;
                 }
                 posts.forEach((sp, i) => {
