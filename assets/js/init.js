@@ -179,7 +179,6 @@
         }
 
         // ===== Infinite Scroll =====
-        let feedPage = 0;
         const feedPageSize = 5;
 
         function setupInfiniteScroll() {

@@ -88,6 +88,7 @@
         // Initialize default conversations if empty
         function initDefaultConversations() {
             if (MsgStore.getAll().length > 0) return;
+            if (UserStore.getString('_conv_initialized')) return;
             const defaults = [
                 { userId: 'sara', userName: 'سارة المنصوري', userAvatar: 'https://picsum.photos/seed/sara-legal/40/40.jpg',
                   messages: [
@@ -110,6 +111,7 @@
                   ], unread: 0, lastActivity: Date.now()-86400000 }
             ];
             MsgStore.save(defaults);
+            UserStore.setString('_conv_initialized', '1');
         }
 
         function renderMessagesPage() {
