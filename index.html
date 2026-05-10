@@ -1820,10 +1820,16 @@
             <!-- Navigation Hints -->
             <div class="story-nav-prev" onclick="storyPrev(event)"></div>
             <div class="story-nav-next" onclick="storyNext(event)"></div>
-            <!-- Story Viewers Count -->
-            <div class="story-viewers-bar" id="storyViewersBar" onclick="showStoryViewersList()">
+            <!-- Story Viewers Count (owner only - hidden by default) -->
+            <div class="story-viewers-bar" id="storyViewersBar" style="display:none" onclick="showStoryViewersList()">
                 <span class="iconify text-white/70 text-xs" data-icon="lucide:eye"></span>
                 <span id="storyViewCount">0</span>
+                <span class="text-white/50 text-[10px] mr-1">مشاهد</span>
+            </div>
+            <!-- Swipe Up Hint (owner only - hidden by default) -->
+            <div class="story-swipe-hint" id="storySwipeHint" style="display:none">
+                <span class="iconify text-white/50 text-sm" data-icon="lucide:chevrons-up"></span>
+                <span class="text-white/50 text-[10px]">اسحب لفوق لعرض المشاهدين</span>
             </div>
             <!-- Reply Bar (Facebook-style) -->
             <div class="story-reply-bar">

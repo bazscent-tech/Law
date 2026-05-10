@@ -1923,6 +1923,25 @@
                 saveViewedStories();
             }
 
+            // Check if this is the owner's story
+            const isOwn = user.id === 'user-me' || user.isOwn === true;
+            const viewersBar = document.getElementById('storyViewersBar');
+            const swipeHint = document.getElementById('storySwipeHint');
+            const reactionsRow = document.querySelector('.story-reactions');
+
+            if (isOwn) {
+                // Owner: show viewers bar + swipe hint, hide reactions
+                if (viewersBar) viewersBar.style.display = 'flex';
+                if (swipeHint) swipeHint.style.display = 'flex';
+                if (reactionsRow) reactionsRow.style.display = 'none';
+                updateStoryViewCount();
+            } else {
+                // Not owner: hide viewers bar + swipe hint, show reactions
+                if (viewersBar) viewersBar.style.display = 'none';
+                if (swipeHint) swipeHint.style.display = 'none';
+                if (reactionsRow) reactionsRow.style.display = 'flex';
+            }
+
             // Header
             document.getElementById('storyHeaderAvatar').innerHTML = `<img src="${user.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
             document.getElementById('storyHeaderName').textContent = user.name;
@@ -2063,6 +2082,37 @@
                     storyProgressStart = Date.now() - (parseFloat(document.querySelector('.story-progress-segment.active .story-progress-fill')?.style.width || '0') / 100) * 5000;
                     const video = viewer.querySelector('video');
                     if (video) video.play();
+                }
+            }, { passive: true });
+        })();
+
+        // ===== SWIPE UP for story owner to see viewers =====
+        (function() {
+            let touchStartY = 0;
+            let touchStartTime = 0;
+            const viewer = document.getElementById('storyViewer');
+            if (!viewer) return;
+
+            viewer.addEventListener('touchstart', (e) => {
+                touchStartY = e.touches[0].clientY;
+                touchStartTime = Date.now();
+            }, { passive: true });
+
+            viewer.addEventListener('touchend', (e) => {
+                const touchEndY = e.changedTouches[0].clientY;
+                const deltaY = touchStartY - touchEndY;
+                const elapsed = Date.now() - touchStartTime;
+
+                // Swipe up fast (deltaY > 80px, within 400ms)
+                if (deltaY > 80 && elapsed < 400) {
+                    const user = storiesData[currentStoryUserIndex];
+                    if (user && (user.id === 'user-me' || user.isOwn)) {
+                        // Pause story and show viewers
+                        storyPaused = true;
+                        const video = viewer.querySelector('video');
+                        if (video) video.pause();
+                        showStoryViewersList();
+                    }
                 }
             }, { passive: true });
         })();
