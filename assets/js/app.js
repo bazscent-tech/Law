@@ -1373,7 +1373,7 @@
             userPosts.unshift(post);
             saveUserPosts();
 
-            // Add to feed
+            // Add to feed DOM
             const article = document.createElement('article');
             article.className = 'post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up overflow-hidden';
             article.innerHTML = buildOwnPostHTML(post);
@@ -1382,6 +1382,17 @@
             const loader = document.getElementById('infiniteLoader');
             if (first) fp.insertBefore(article, first); else fp.insertBefore(article, loader);
             article.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // Sync to Supabase in background
+            if (sbOnline && sbUser) {
+                SB.createPost(text, '', tags).then(result => {
+                    if (result) {
+                        // Update local post with Supabase ID for future sync
+                        post.sbId = result.id;
+                        saveUserPosts();
+                    }
+                }).catch(() => {});
+            }
         }
 
         // ====================================================
@@ -1453,11 +1464,50 @@
         // ====================================================
         // ===== PROFILE RENDER ===============================
         // ====================================================
-        function renderProfilePosts() {
+        async function renderProfilePosts() {
             const c=document.getElementById('profilePostsList'); const e=document.getElementById('profileEmptyState'); if(!c)return;
-            if(userPosts.length===0){c.innerHTML='';if(e){e.style.display='';e.querySelector('p').textContent='لم تنشر أي شيء بعد';e.querySelector('button').textContent='اكتب أول منشور';e.querySelector('button').setAttribute('onclick','showPostModal()');}return;}
+
+            // Merge localStorage posts with Supabase posts
+            let allUserPostsLocal = [...userPosts];
+
+            // Fetch from Supabase if connected
+            if (sbOnline && sbUser) {
+                try {
+                    const { data: sbPosts } = await sb.from('posts')
+                        .select('*, profiles(*)')
+                        .eq('author_id', sbUser.id)
+                        .order('created_at', { ascending: false });
+                    if (sbPosts && sbPosts.length > 0) {
+                        // Convert Supabase posts to local format and merge (avoid duplicates)
+                        const localIds = new Set(allUserPostsLocal.map(p => p.sbId || p.id));
+                        sbPosts.forEach(sp => {
+                            if (!localIds.has(sp.id)) {
+                                allUserPostsLocal.unshift({
+                                    id: sp.id, sbId: sp.id,
+                                    text: sp.content,
+                                    displayText: sp.content.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'),
+                                    tags: sp.tags || [], time: sp.created_at,
+                                    likes: sp.likes_count || 0, comments: sp.comments_count || 0,
+                                    shares: sp.shares_count || 0,
+                                    isRepost: sp.is_repost, repostOf: sp.repost_of,
+                                    title: sp.title, media: sp.media || [],
+                                    edited: sp.is_edited, commentList: []
+                                });
+                            }
+                        });
+                        // Sort by time
+                        allUserPostsLocal.sort((a, b) => {
+                            const ta = typeof a.time === 'string' && a.time === 'الآن' ? Date.now() : new Date(a.time || 0).getTime();
+                            const tb = typeof b.time === 'string' && b.time === 'الآن' ? Date.now() : new Date(b.time || 0).getTime();
+                            return tb - ta;
+                        });
+                    }
+                } catch(err) { console.warn('Supabase posts fetch failed:', err); }
+            }
+
+            if(allUserPostsLocal.length===0){c.innerHTML='';if(e){e.style.display='';e.querySelector('p').textContent='لم تنشر أي شيء بعد';e.querySelector('button').textContent='اكتب أول منشور';e.querySelector('button').setAttribute('onclick','showPostModal()');}return;}
             if(e)e.style.display='none';
-            c.innerHTML=userPosts.map(post=>{
+            c.innerHTML=allUserPostsLocal.map(post=>{
                 if(post.isRepost){
                     return `<article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up overflow-hidden"><div class="flex items-center gap-2 px-5 pt-3 pb-0 text-dark-500 text-xs"><span class="iconify text-sm" data-icon="lucide:repeat-2"></span><span>${getProfile().name} أعاد النشر</span></div><div class="p-5 pb-0"><div class="flex items-start justify-between mb-3"><div class="flex items-center gap-3"><div class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold border border-dark-700 shrink-0">${(post.originalAuthor||'').charAt(0)}</div><div><h3 class="font-semibold text-sm">${post.originalAuthor}</h3><p class="text-dark-400 text-xs">${post.time}</p></div></div></div>${post.title?`<h2 class="font-bold text-base mb-2">${post.title}</h2>`:''}<div class="mb-3 cursor-pointer" onclick="openPostDetail('${post.repostOf||post.id}')"><p class="text-dark-200 text-sm leading-relaxed">${post.displayText}</p></div></div><div class="border-t border-dark-800/50 px-2 py-1"><div class="flex items-center justify-around"><button class="like-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleLike(this,${post.likes},'pf-likes-${post.id}','${post.id}',this.closest('article'))"><span class="iconify text-lg text-dark-400 group-hover:text-red-400" data-icon="lucide:heart"></span><span class="text-sm text-dark-400 like-count">${post.likes}</span></button><button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="openPostDetail('${post.id}')"><span class="iconify text-lg text-dark-400 group-hover:text-blue-400" data-icon="lucide:message-circle"></span><span class="text-sm text-dark-400">${post.comments}</span></button><button class="repost-btn reposted flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleRepost('${post.id}',this,this.closest('article'))"><span class="iconify text-lg text-green-400" data-icon="lucide:repeat-2"></span><span class="text-sm text-green-400">${post.shares}</span></button><button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleBookmark(this)"><span class="iconify text-lg text-dark-400 group-hover:text-brand-400" data-icon="lucide:bookmark"></span></button></div></div></article>`;
                 }
@@ -1465,19 +1515,83 @@
             }).join('');
         }
 
-        function renderProfileReplies() {
+        async function renderProfileReplies() {
             const c=document.getElementById('profilePostsList'); const e=document.getElementById('profileEmptyState'); if(!c)return;
-            if(userReplies.length===0){c.innerHTML='';if(e){e.style.display='';e.querySelector('p').textContent='لم تكتب أي رد بعد';e.querySelector('button').textContent='استعرض الرئيسية';e.querySelector('button').setAttribute('onclick',"showPage('feed')");}return;}
+
+            // Merge local + Supabase replies
+            let allReplies = [...userReplies];
+            if (sbOnline && sbUser) {
+                try {
+                    const { data: sbComments } = await sb.from('comments')
+                        .select('*, posts(title, content, author_id, profiles!author_id(name))')
+                        .eq('author_id', sbUser.id)
+                        .order('created_at', { ascending: false });
+                    if (sbComments && sbComments.length > 0) {
+                        const localIds = new Set(allReplies.map(r => r.id));
+                        sbComments.forEach(sc => {
+                            if (!localIds.has(sc.id)) {
+                                const parentPost = sc.posts;
+                                allReplies.push({
+                                    id: sc.id, postId: sc.post_id,
+                                    parentAuthor: parentPost?.profiles?.name || 'مستخدم',
+                                    parentContent: (parentPost?.title || parentPost?.content || '').substring(0, 80),
+                                    replyText: sc.content, time: sc.created_at,
+                                    isSticker: sc.is_sticker
+                                });
+                            }
+                        });
+                    }
+                } catch(err) { console.warn('Supabase replies fetch failed:', err); }
+            }
+
+            if(allReplies.length===0){c.innerHTML='';if(e){e.style.display='';e.querySelector('p').textContent='لم تكتب أي رد بعد';e.querySelector('button').textContent='استعرض الرئيسية';e.querySelector('button').setAttribute('onclick',"showPage('feed')");}return;}
             if(e)e.style.display='none';
             const profile=getProfile();
-            c.innerHTML=userReplies.map(r=>`<article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-4 transition-all duration-300 animate-fade-in-up overflow-hidden cursor-pointer hover:border-brand-500/30" onclick="openPostDetail('${r.postId}')"><div class="p-5"><div class="flex items-center gap-2 mb-3 text-dark-500 text-xs"><span class="iconify text-sm" data-icon="lucide:message-circle"></span><span>${profile.name} ردّ على ${r.parentAuthor}</span><span class="mr-auto">${r.time}</span></div><div class="bg-dark-850 rounded-xl p-3 mb-3 border-r-2 border-dark-700"><p class="text-xs text-dark-400 font-medium mb-1">${r.parentAuthor}</p><p class="text-xs text-dark-500 truncate">${r.parentContent}</p></div><div class="flex items-start gap-3"><img src="https://picsum.photos/seed/lawyer-me/40/40.jpg" class="w-8 h-8 rounded-lg object-cover shrink-0 mt-0.5" alt=""><div class="flex-1"><div class="flex items-center gap-2 mb-1"><span class="text-xs font-semibold">${profile.name}</span><span class="text-[10px] text-dark-500">${r.time}</span></div>${r.isSticker?`<div class="comment-sticker">${r.replyText}</div>`:`<p class="text-sm text-dark-200 leading-relaxed">${r.replyText}</p>`}</div></div></div></article>`).join('');
+            c.innerHTML=allReplies.map(r=>{
+                const timeDisplay = typeof r.time === 'string' && r.time.includes('T') ? new Date(r.time).toLocaleDateString('ar-SA') : r.time;
+                return `<article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-4 transition-all duration-300 animate-fade-in-up overflow-hidden cursor-pointer hover:border-brand-500/30" onclick="openPostDetail('${r.postId}')"><div class="p-5"><div class="flex items-center gap-2 mb-3 text-dark-500 text-xs"><span class="iconify text-sm" data-icon="lucide:message-circle"></span><span>${profile.name} ردّ على ${r.parentAuthor}</span><span class="mr-auto">${timeDisplay}</span></div><div class="bg-dark-850 rounded-xl p-3 mb-3 border-r-2 border-dark-700"><p class="text-xs text-dark-400 font-medium mb-1">${r.parentAuthor}</p><p class="text-xs text-dark-500 truncate">${r.parentContent}</p></div><div class="flex items-start gap-3"><img src="https://picsum.photos/seed/lawyer-me/40/40.jpg" class="w-8 h-8 rounded-lg object-cover shrink-0 mt-0.5" alt=""><div class="flex-1"><div class="flex items-center gap-2 mb-1"><span class="text-xs font-semibold">${profile.name}</span><span class="text-[10px] text-dark-500">${timeDisplay}</span></div>${r.isSticker?`<div class="comment-sticker">${r.replyText}</div>`:`<p class="text-sm text-dark-200 leading-relaxed">${r.replyText}</p>`}</div></div></div></article>`;
+            }).join('');
         }
 
-        function renderProfileLikes() {
+        async function renderProfileLikes() {
             const c=document.getElementById('profilePostsList'); const e=document.getElementById('profileEmptyState'); if(!c)return;
-            if(userLikes.length===0){c.innerHTML='';if(e){e.style.display='';e.querySelector('p').textContent='لم تعجب بأي منشور بعد';e.querySelector('button').textContent='استعرض الرئيسية';e.querySelector('button').setAttribute('onclick',"showPage('feed')");}return;}
+
+            // Merge local + Supabase likes
+            let allLikes = [...userLikes];
+            if (sbOnline && sbUser) {
+                try {
+                    const { data: sbLikes } = await sb.from('likes')
+                        .select('post_id, posts(*, profiles(*))')
+                        .eq('user_id', sbUser.id)
+                        .order('created_at', { ascending: false });
+                    if (sbLikes && sbLikes.length > 0) {
+                        const localIds = new Set(allLikes.map(l => l.id));
+                        sbLikes.forEach(sl => {
+                            if (sl.posts && !localIds.has(sl.post_id)) {
+                                const sp = sl.posts;
+                                allLikes.push({
+                                    id: sl.post_id,
+                                    author: sp.profiles?.name || 'مستخدم',
+                                    role: sp.profiles?.title || '',
+                                    content: sp.content, displayText: sp.content,
+                                    title: sp.title, tags: sp.tags || [],
+                                    likes: sp.likes_count || 0, comments: sp.comments_count || 0,
+                                    shares: sp.shares_count || 0, time: sp.created_at,
+                                    gradient: 'from-blue-500 to-purple-600'
+                                });
+                            }
+                        });
+                    }
+                } catch(err) { console.warn('Supabase likes fetch failed:', err); }
+            }
+
+            if(allLikes.length===0){c.innerHTML='';if(e){e.style.display='';e.querySelector('p').textContent='لم تعجب بأي منشور بعد';e.querySelector('button').textContent='استعرض الرئيسية';e.querySelector('button').setAttribute('onclick',"showPage('feed')");}return;
+            }
             if(e)e.style.display='none';
-            c.innerHTML=userLikes.map(post=>`<article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up overflow-hidden"><div class="p-5 pb-0"><div class="flex items-start justify-between mb-3"><div class="flex items-center gap-3"><div class="w-11 h-11 rounded-xl bg-gradient-to-br ${post.gradient||'from-blue-500 to-purple-600'} flex items-center justify-center text-white font-bold border border-dark-700 shrink-0">${(post.author||'').charAt(0)}</div><div><h3 class="font-semibold text-sm">${post.author}</h3><p class="text-dark-400 text-xs">${post.role||''} • ${post.time}</p></div></div></div>${post.title?`<h2 class="font-bold text-base mb-2">${post.title}</h2>`:''}<div class="mb-3 cursor-pointer" onclick="openPostDetail('${post.id}')"><p class="text-dark-200 text-sm leading-relaxed">${post.displayText||post.content}</p></div></div><div class="border-t border-dark-800/50 px-2 py-1"><div class="flex items-center justify-around"><button class="like-btn liked flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleLike(this,${post.likes||0},'lk-${post.id}','${post.id}',this.closest('article'));renderProfileLikes()"><span class="iconify text-lg text-red-400 group-hover:text-red-400" data-icon="lucide:heart"></span><span class="text-sm text-red-400 like-count">${post.likes||0}</span></button><button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="openPostDetail('${post.id}')"><span class="iconify text-lg text-dark-400 group-hover:text-blue-400" data-icon="lucide:message-circle"></span><span class="text-sm text-dark-400">${post.comments||0}</span></button><button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showShareModal()"><span class="iconify text-lg text-dark-400 group-hover:text-green-400" data-icon="lucide:repeat-2"></span><span class="text-sm text-dark-400">${post.shares||0}</span></button><button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleBookmark(this)"><span class="iconify text-lg text-dark-400 group-hover:text-brand-400" data-icon="lucide:bookmark"></span></button></div></div></article>`).join('');
+            c.innerHTML=allLikes.map(post=>{
+                const timeDisplay = typeof post.time === 'string' && post.time.includes('T') ? new Date(post.time).toLocaleDateString('ar-SA') : (post.time || '');
+                return `<article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up overflow-hidden"><div class="p-5 pb-0"><div class="flex items-start justify-between mb-3"><div class="flex items-center gap-3"><div class="w-11 h-11 rounded-xl bg-gradient-to-br ${post.gradient||'from-blue-500 to-purple-600'} flex items-center justify-center text-white font-bold border border-dark-700 shrink-0">${(post.author||'').charAt(0)}</div><div><h3 class="font-semibold text-sm">${post.author}</h3><p class="text-dark-400 text-xs">${post.role||''} • ${timeDisplay}</p></div></div></div>${post.title?`<h2 class="font-bold text-base mb-2">${post.title}</h2>`:''}<div class="mb-3 cursor-pointer" onclick="openPostDetail('${post.id}')"><p class="text-dark-200 text-sm leading-relaxed">${post.displayText||post.content||''}</p></div></div><div class="border-t border-dark-800/50 px-2 py-1"><div class="flex items-center justify-around"><button class="like-btn liked flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleLike(this,${post.likes||0},'lk-${post.id}','${post.id}',this.closest('article'));renderProfileLikes()"><span class="iconify text-lg text-red-400 group-hover:text-red-400" data-icon="lucide:heart"></span><span class="text-sm text-red-400 like-count">${post.likes||0}</span></button><button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="openPostDetail('${post.id}')"><span class="iconify text-lg text-dark-400 group-hover:text-blue-400" data-icon="lucide:message-circle"></span><span class="text-sm text-dark-400">${post.comments||0}</span></button><button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="showShareModal()"><span class="iconify text-lg text-dark-400 group-hover:text-green-400" data-icon="lucide:repeat-2"></span><span class="text-sm text-dark-400">${post.shares||0}</span></button><button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleBookmark(this)"><span class="iconify text-lg text-dark-400 group-hover:text-brand-400" data-icon="lucide:bookmark"></span></button></div></div></article>`;
+            }).join('');
         }
 
         // ===== Navigate to post =====
