@@ -52,10 +52,27 @@
 
         // ===== Page Navigation =====
         function showPage(page) {
+            // If navigating away from a visited profile, reset it
+            if (_visitingProfile && page !== 'profile') closeUserProfile();
             document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
             const target = document.getElementById('page-' + page);
             if (target) target.classList.remove('hidden');
-            if (page === 'profile') { renderProfilePosts(); if (!_visitingProfile) _setProfileEditMode(true); }
+            if (page === 'profile') {
+                if (_visitingProfile) {
+                    // Stay on visited profile — don't reset
+                    _renderVisitedProfilePosts(_visitingProfile.id);
+                } else {
+                    renderProfilePosts();
+                    _setProfileEditMode(true);
+                }
+            }
+            // Always reset visited profile when clicking sidebar "ملفي الشخصي"
+            // (called from sidebar, not from openUserProfile)
+            if (page === 'myprofile') {
+                closeUserProfile();
+                showPage('profile');
+                return;
+            }
             document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
             document.querySelectorAll('.sidebar-link').forEach(l => { if (l.textContent.includes(getPageLabel(page))) l.classList.add('active'); });
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -312,18 +329,31 @@
             // Hide empty state publish button
             const emptyStateBtn = document.querySelector('#profileEmptyState button');
             if (emptyStateBtn) emptyStateBtn.style.display = 'none';
-            // Add back button if not exists
-            let backBtn = document.getElementById('backToMyProfile');
-            if (!backBtn) {
-                backBtn = document.createElement('button');
-                backBtn.id = 'backToMyProfile';
-                backBtn.className = 'bg-dark-800 hover:bg-dark-700 text-sm font-medium px-4 py-2 rounded-xl transition-all border border-dark-700';
-                backBtn.innerHTML = '<span class="iconify inline ml-1" data-icon="lucide:arrow-right" style="font-size:14px"></span>رجوع';
-                backBtn.onclick = closeUserProfile;
+            // Add follow button if not exists (like Facebook/X)
+            let followBtn = document.getElementById('visitProfileFollowBtn');
+            if (!followBtn) {
+                followBtn = document.createElement('button');
+                followBtn.id = 'visitProfileFollowBtn';
+                followBtn.className = 'bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-all';
+                followBtn.innerHTML = '<span class="iconify inline ml-1" data-icon="lucide:user-plus" style="font-size:14px"></span>متابعة';
+                followBtn.onclick = function() {
+                    if (!requireAuth()) return;
+                    if (this.classList.contains('following')) {
+                        this.classList.remove('following');
+                        this.innerHTML = '<span class="iconify inline ml-1" data-icon="lucide:user-plus" style="font-size:14px"></span>متابعة';
+                        this.className = 'bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-all';
+                        showToast('تم إلغاء المتابعة');
+                    } else {
+                        this.classList.add('following');
+                        this.innerHTML = '<span class="iconify inline ml-1" data-icon="lucide:check" style="font-size:14px"></span>متابَع ✓';
+                        this.className = 'bg-dark-700 hover:bg-dark-600 text-green-400 text-sm font-semibold px-5 py-2 rounded-xl transition-all border border-green-500/30';
+                        showToast('متابَع ✓');
+                    }
+                };
                 const btnContainer = document.querySelector('#page-profile .flex.gap-2');
-                if (btnContainer) btnContainer.prepend(backBtn);
+                if (btnContainer) btnContainer.prepend(followBtn);
             }
-            backBtn.style.display = '';
+            followBtn.style.display = '';
             // Cover click → do nothing for other users
             const coverEl = document.querySelector('#page-profile .h-48');
             if (coverEl) coverEl.onclick = null;
@@ -356,8 +386,9 @@
             if (libEmptyDesc) libEmptyDesc.textContent = 'نظم مراجعك القانونية، ووثائقك، وأبحاثك في مكان واحد';
             const libFeatures = document.querySelector('#libraryEmptyState .bg-dark-900');
             if (libFeatures) libFeatures.style.display = '';
-            const backBtn = document.getElementById('backToMyProfile');
-            if (backBtn) backBtn.style.display = 'none';
+            // Remove follow button (was added for visited profiles)
+            const followBtn = document.getElementById('visitProfileFollowBtn');
+            if (followBtn) followBtn.remove();
             renderProfilePosts();
             if (typeof Library !== 'undefined') Library.renderProfileLibraries(sbUser?.id || 'local');
             // Switch to posts tab
