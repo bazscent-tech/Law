@@ -44,23 +44,8 @@
             }).join('');
         }
 
-        // Enhanced toggleBookmark to save actual post data
-        const _origToggleBookmark = typeof toggleBookmark === 'function' ? toggleBookmark : null;
-        function toggleBookmark(btn, postId) {
-            const isSaved = btn.classList.toggle('saved');
-            const icon = btn.querySelector('.iconify');
-            if (isSaved) {
-                icon.setAttribute('data-icon', 'lucide:bookmark-check');
-                icon.style.color = '#f97316';
-                if (postId) BookmarksStore.toggle(postId);
-                else showToast('تم الحفظ ✓');
-            } else {
-                icon.setAttribute('data-icon', 'lucide:bookmark');
-                icon.style.color = '';
-                if (postId) BookmarksStore.toggle(postId);
-                else showToast('تم إلغاء الحفظ');
-            }
-        }
+        // ⚡ نستخدم toggleBookmark الأصلي من posts-comments.js
+        // ونحفظ الـ postId عبر event listener في الأسفل
 
         // ===== G. CONNECTIONS PAGE =====
         function renderConnectionsPage() {
@@ -126,13 +111,15 @@
         }
 
         // ===== I. ENHANCED BOOKMARK BUTTON =====
-        // Override the bookmark click to save post ID
+        // ⚡ لا نعيد تعريف toggleBookmark — نستخدم الموجود في posts-comments.js
+        // فقط نضيف event listener لحفظ الـ postId
         document.addEventListener('click', function(e) {
             const bookmarkBtn = e.target.closest('.bookmark-btn');
             if (!bookmarkBtn) return;
+            // ⚡ لا نفعل شي إذا الـ button له onclick موجود (معرّف في HTML)
+            if (bookmarkBtn.hasAttribute('onclick')) return;
             const article = bookmarkBtn.closest('article');
             if (!article) return;
-            // Find post ID from the article's like button or comment section
             const likeBtn = article.querySelector('.like-btn');
             if (likeBtn) {
                 const onclick = likeBtn.getAttribute('onclick') || '';

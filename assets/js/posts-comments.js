@@ -375,6 +375,17 @@
             const icon = btn.querySelector('.iconify');
             if (isSaved) { icon.setAttribute('data-icon','lucide:bookmark-check'); icon.style.color='#f97316'; showToast('تم الحفظ ✓'); }
             else { icon.setAttribute('data-icon','lucide:bookmark'); icon.style.color=''; showToast('تم إلغاء الحفظ'); }
+            // ⚡ احفظ الـ postId في BookmarksStore
+            const article = btn.closest('article');
+            if (article) {
+                const commentSection = article.querySelector('[id^="comments-"]');
+                if (commentSection) {
+                    const postId = commentSection.id.replace('comments-', '');
+                    if (postId && typeof BookmarksStore !== 'undefined') {
+                        BookmarksStore.toggle(postId);
+                    }
+                }
+            }
         }
 
         // ===== Comment Submit (from post card) =====
@@ -409,7 +420,7 @@
         // ===== Tabs =====
         function switchTab(btn) { document.querySelectorAll('.feed-tab').forEach(t=>{t.classList.remove('active','bg-dark-800','text-white');t.classList.add('text-dark-400')}); btn.classList.add('active','bg-dark-800','text-white');btn.classList.remove('text-dark-400'); }
         function switchProfileTab(btn) { document.querySelectorAll('.profile-tab').forEach(t=>{t.classList.remove('active','bg-dark-800','text-white');t.classList.add('text-dark-400')}); btn.classList.add('active','bg-dark-800','text-white');btn.classList.remove('text-dark-400'); const tn=btn.textContent.trim(); const isLib=tn.includes('المكتبة'); document.getElementById('profilePostsList').style.display=isLib?'none':''; document.getElementById('profileEmptyState').style.display=isLib?'none':''; document.getElementById('profileLibraries').classList.toggle('hidden',!isLib); if(isLib){if(_visitingProfile&&typeof Library!=='undefined'){_renderVisitedProfileLibraries(_visitingProfile.id)}else if(typeof Library!=='undefined')Library.renderProfileLibraries(sbUser?.id||'local')} else if(tn==='المنشورات'){if(_visitingProfile)_renderVisitedProfilePosts(_visitingProfile.id);else renderProfilePosts()} else if(tn==='الردود'){if(!_visitingProfile)renderProfileReplies()} else if(tn==='الإعجابات'){if(!_visitingProfile)renderProfileLikes()} }
-        function switchConnTab(btn) { document.querySelectorAll('.conn-tab').forEach(t=>{t.classList.remove('active','bg-dark-800','text-white');t.classList.add('text-dark-400')}); btn.classList.add('active','bg-dark-800','text-white');btn.classList.remove('text-dark-400'); }
+        // ⚡ switchConnTab is defined in bookmarks-connections.js — no duplicate here
         function switchBottomNav(btn) { document.querySelectorAll('.bottom-nav-item').forEach(b=>{b.classList.remove('active');b.classList.add('text-dark-400')}); btn.classList.add('active');btn.classList.remove('text-dark-400'); }
 
         // ===== Modals =====

@@ -290,21 +290,4 @@
             if (ppWeb) ppWeb.textContent = p.website || '';
         }
 
-        // ===== Connect Button =====
-        function toggleConnect(btn) {
-            if (btn.classList.contains('connected')) {
-                btn.classList.remove('connected');
-                btn.textContent = 'متابعة';
-                btn.style.borderColor = '';
-                btn.style.color = '';
-                btn.style.background = '';
-                showToast('تم إلغاء المتابعة');
-            } else {
-                btn.classList.add('connected');
-                btn.textContent = 'متابَع ✓';
-                btn.style.borderColor = 'rgba(34,197,94,0.5)';
-                btn.style.color = '#22c55e';
-                btn.style.background = 'rgba(34,197,94,0.1)';
-                showToast('متابَع ✓');
-            }
-        }
+        // ⚡ toggleConnect is defined in features.js — no duplicate here

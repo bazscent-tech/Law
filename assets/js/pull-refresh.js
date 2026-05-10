@@ -241,31 +241,28 @@
                 if (this._initialized) return;
                 this._initialized = true;
 
-                // Override showPage to use history
-                const originalShowPage = window.showPage;
-                window.showPage = (page) => {
-                    // Save current state before navigating
-                    AppState.save();
-                    // Push new state
-                    history.pushState({ page }, '', '#' + page);
-                    // Call original (but we override scroll behavior)
-                    _silentShowPage(page);
-                    window.scrollTo({ top: 0, behavior: 'instant' });
-                };
-
+                // ⚡ لا ن_override showPage — نستخدم history API فقط
                 // Handle back/forward
                 window.addEventListener('popstate', (e) => {
                     const page = (e.state && e.state.page) || this._getHashPage() || 'feed';
-                    _silentShowPage(page);
-                    // Restore scroll for this page
-                    requestAnimationFrame(() => {
-                        AppState._restoreScrollPosition(page);
-                    });
+                    // ⚡ استخدم showPage الأصلي (اللي في ui.js)
+                    if (typeof showPage === 'function') {
+                        showPage(page);
+                    }
                 });
 
                 // Set initial hash if none
                 if (!window.location.hash) {
                     history.replaceState({ page: 'feed' }, '', '#feed');
+                }
+
+                // ⚡ أضف history push عند التنقل
+                const origShowPage = window.showPage;
+                if (typeof origShowPage === 'function') {
+                    window.showPage = function(page) {
+                        history.pushState({ page }, '', '#' + page);
+                        origShowPage(page);
+                    };
                 }
             },
 
