@@ -265,15 +265,25 @@
         let _visitingProfile = null; // null = viewing own profile
         async function openUserProfile(authorName) {
             if (!authorName) return;
-            // Find profile from Supabase
+            // Find profile from Supabase — search by name first, then username
             let profile = null;
             if (sbOnline) {
                 try {
+                    // ⚡ ابحث بالاسم أولاً (أكثر شيوعاً)
                     const { data } = await sb.from('profiles')
                         .select('*')
                         .eq('name', authorName)
                         .limit(1);
-                    if (data && data.length > 0) profile = data[0];
+                    if (data && data.length > 0) {
+                        profile = data[0];
+                    } else {
+                        // ⚡ جرب بالـ username
+                        const { data: byUser } = await sb.from('profiles')
+                            .select('*')
+                            .eq('username', authorName)
+                            .limit(1);
+                        if (byUser && byUser.length > 0) profile = byUser[0];
+                    }
                 } catch(e) { console.warn('Profile fetch failed:', e); }
             }
             if (!profile) {
@@ -493,7 +503,25 @@
 
         function openEditProfile() { if (!requireAuth()) return; const p=getProfile(); document.getElementById('editName').value=p.name; document.getElementById('editUsername').value=p.username; document.getElementById('editTitle').value=p.title; document.getElementById('editBio').value=p.bio; document.getElementById('editLocation').value=p.location; document.getElementById('editWebsite').value=p.website; document.getElementById('editProfileModal').classList.add('active'); document.body.style.overflow='hidden'; }
         function closeEditProfile(e) { if(e&&e.target!==e.currentTarget)return; document.getElementById('editProfileModal').classList.remove('active'); document.body.style.overflow=''; }
-        function saveProfile() { if (!requireAuth()) return; const p={name:document.getElementById('editName').value.trim()||defaultProfile.name,username:document.getElementById('editUsername').value.trim()||defaultProfile.username,title:document.getElementById('editTitle').value.trim()||defaultProfile.title,bio:document.getElementById('editBio').value.trim()||defaultProfile.bio,location:document.getElementById('editLocation').value.trim()||defaultProfile.location,website:document.getElementById('editWebsite').value.trim()||defaultProfile.website}; UserStore.setJSON('userProfile', p); applyProfile(p); closeEditProfile(); showToast('تم حفظ الملف الشخصي ✓'); }
+        function saveProfile() {
+            if (!requireAuth()) return;
+            const p={
+                name:document.getElementById('editName').value.trim()||defaultProfile.name,
+                username:document.getElementById('editUsername').value.trim()||defaultProfile.username,
+                title:document.getElementById('editTitle').value.trim()||defaultProfile.title,
+                bio:document.getElementById('editBio').value.trim()||defaultProfile.bio,
+                location:document.getElementById('editLocation').value.trim()||defaultProfile.location,
+                website:document.getElementById('editWebsite').value.trim()||defaultProfile.website
+            };
+            UserStore.setJSON('userProfile', p);
+            applyProfile(p);
+            // ⚡ مزامنة مع Supabase
+            if (sbOnline && sbUser) {
+                SB.updateProfile(p).catch(err => console.warn('Profile sync failed:', err));
+            }
+            closeEditProfile();
+            showToast('تم حفظ الملف الشخصي ✓');
+        }
 
         // ===== Show/Hide Profile Edit Controls =====
         function _setProfileEditMode(isOwn) {

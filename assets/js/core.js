@@ -349,7 +349,7 @@
                 if (!sbOnline) return null;
                 const { data } = await sb.from('profiles')
                     .select('*')
-                    .or(`display_name.ilike.%${query}%,username.ilike.%${query}%,name.ilike.%${query}%`)
+                    .or(`name.ilike.%${query}%,username.ilike.%${query}%`)
                     .limit(10);
                 return data;
             },

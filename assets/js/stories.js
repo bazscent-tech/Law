@@ -465,27 +465,23 @@
             document.getElementById('storyViewersModal').classList.remove('active');
         }
 
-        // Update renderStoryContent to show view count and reaction state
+        // ⚡ أضف view count و reaction state داخل renderStoryContent مباشرة
+        // (بدلاً من wrapper منفصل)
         const _origRenderStoryContent = renderStoryContent;
-        if (typeof renderStoryContent === 'function') {
-            const _origFn = renderStoryContent;
-            renderStoryContent = function() {
-                _origFn();
-                // Update view count after rendering
-                setTimeout(() => {
-                    updateStoryViewCount();
-                    // Restore reaction button state
-                    const user = storiesData[currentStoryUserIndex];
-                    if (!user) return;
-                    const story = user.stories[currentStoryIndex];
-                    if (!story) return;
-                    const myReact = myStoryReactions[story.id];
-                    document.querySelectorAll('.story-react-btn').forEach(btn => {
-                        btn.classList.toggle('reacted', btn.textContent.trim() === myReact);
-                    });
-                }, 100);
-            };
-        }
+        renderStoryContent = function() {
+            _origRenderStoryContent();
+            setTimeout(() => {
+                updateStoryViewCount();
+                const user = storiesData[currentStoryUserIndex];
+                if (!user) return;
+                const story = user.stories[currentStoryIndex];
+                if (!story) return;
+                const myReact = myStoryReactions[story.id];
+                document.querySelectorAll('.story-react-btn').forEach(btn => {
+                    btn.classList.toggle('reacted', btn.textContent.trim() === myReact);
+                });
+            }, 100);
+        };
 
         // ============================================================
         // ===== END STORIES ==========================================

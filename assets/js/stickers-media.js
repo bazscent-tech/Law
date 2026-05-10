@@ -42,9 +42,11 @@
             if (currentStickerTarget === 'detail') {
                 input = document.getElementById('detailCommentInput');
             } else {
-                // Find the comment input in the post's comment section
+                // ⚡ ابحث بـ id أولاً، ثم بالكلاس
                 const section = document.getElementById('comments-' + currentStickerTarget);
-                if (section) input = section.querySelector('.comment-input');
+                if (section) {
+                    input = section.querySelector('.comment-input-field') || section.querySelector('.comment-input');
+                }
             }
             if (input) {
                 input.value += sticker;
