@@ -297,9 +297,16 @@
             // Hide library create buttons when visiting another profile
             const libCreateBtns = document.querySelectorAll('#page-profile .lib-btn-primary, #librariesGrid button[onclick*="openMenu"]');
             libCreateBtns.forEach(b => b.style.display = 'none');
-            // Hide "إنشاء مكتبة" button
-            const createLibBtn = document.querySelector('#libraryEmptyState button, [onclick="Library.openCreateLibraryModal()"]');
-            if (createLibBtn) createLibBtn.style.display = 'none';
+            // Hide "إنشاء مكتبة" button (multiple selectors for reliability)
+            document.querySelectorAll('#libraryEmptyState button, [onclick*="openCreateLibraryModal"]').forEach(b => b.style.display = 'none');
+            // Change library empty state text for visited profile
+            const libEmptyTitle = document.querySelector('#libraryEmptyState h3');
+            if (libEmptyTitle) libEmptyTitle.textContent = 'لا توجد مكتبات';
+            const libEmptyDesc = document.querySelector('#libraryEmptyState p.text-dark-400');
+            if (libEmptyDesc) libEmptyDesc.textContent = 'لم ينشئ هذا المستخدم أي مكتبة بعد';
+            // Hide library features card
+            const libFeatures = document.querySelector('#libraryEmptyState .bg-dark-900');
+            if (libFeatures) libFeatures.style.display = 'none';
             // Hide empty state publish button
             const emptyStateBtn = document.querySelector('#profileEmptyState button');
             if (emptyStateBtn) emptyStateBtn.style.display = 'none';
@@ -338,8 +345,14 @@
             const emptyBtn = document.querySelector('#profileEmptyState button');
             if (emptyBtn) { emptyBtn.style.display = ''; emptyBtn.textContent = 'اكتب أول منشور'; emptyBtn.setAttribute('onclick', 'showPostModal()'); }
             // Restore library create button
-            const createLibBtn = document.querySelector('[onclick="Library.openCreateLibraryModal()"]');
-            if (createLibBtn) createLibBtn.style.display = '';
+            document.querySelectorAll('#libraryEmptyState button, [onclick*="openCreateLibraryModal"]').forEach(b => b.style.display = '');
+            // Restore library empty state text
+            const libEmptyTitle = document.querySelector('#libraryEmptyState h3');
+            if (libEmptyTitle) libEmptyTitle.textContent = 'مكتبتك الشخصية';
+            const libEmptyDesc = document.querySelector('#libraryEmptyState p.text-dark-400');
+            if (libEmptyDesc) libEmptyDesc.textContent = 'نظم مراجعك القانونية، ووثائقك، وأبحاثك في مكان واحد';
+            const libFeatures = document.querySelector('#libraryEmptyState .bg-dark-900');
+            if (libFeatures) libFeatures.style.display = '';
             const backBtn = document.getElementById('backToMyProfile');
             if (backBtn) backBtn.style.display = 'none';
             renderProfilePosts();
