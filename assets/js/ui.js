@@ -55,7 +55,7 @@
             document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
             const target = document.getElementById('page-' + page);
             if (target) target.classList.remove('hidden');
-            if (page === 'profile') renderProfilePosts();
+            if (page === 'profile') { renderProfilePosts(); if (!_visitingProfile) _setProfileEditMode(true); }
             document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
             document.querySelectorAll('.sidebar-link').forEach(l => { if (l.textContent.includes(getPageLabel(page))) l.classList.add('active'); });
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -294,6 +294,8 @@
             // Hide edit buttons, show back button
             const editBtns = document.querySelectorAll('#page-profile .bg-dark-800');
             editBtns.forEach(b => { if (b.textContent.includes('تعديل') || b.querySelector('[data-icon="lucide:share-2"]')) b.style.display = 'none'; });
+            // Hide ALL edit controls for visited profile
+            _setProfileEditMode(false);
             // Hide library create buttons when visiting another profile
             const libCreateBtns = document.querySelectorAll('#page-profile .lib-btn-primary, #librariesGrid button[onclick*="openMenu"]');
             libCreateBtns.forEach(b => b.style.display = 'none');
@@ -341,7 +343,8 @@
             if (coverEl) coverEl.onclick = () => document.getElementById('coverUpload').click();
             const editBtns = document.querySelectorAll('#page-profile .bg-dark-800');
             editBtns.forEach(b => b.style.display = '');
-            // Restore empty state publish button
+            // Restore all edit controls for own profile
+            _setProfileEditMode(true);
             const emptyBtn = document.querySelector('#profileEmptyState button');
             if (emptyBtn) { emptyBtn.style.display = ''; emptyBtn.textContent = 'اكتب أول منشور'; emptyBtn.setAttribute('onclick', 'showPostModal()'); }
             // Restore library create button
@@ -438,8 +441,35 @@
             } catch(e) { console.warn('Libraries fetch failed:', e); }
         }
 
-        function openEditProfile() { const p=getProfile(); document.getElementById('editName').value=p.name; document.getElementById('editUsername').value=p.username; document.getElementById('editTitle').value=p.title; document.getElementById('editBio').value=p.bio; document.getElementById('editLocation').value=p.location; document.getElementById('editWebsite').value=p.website; document.getElementById('editProfileModal').classList.add('active'); document.body.style.overflow='hidden'; }
+        function openEditProfile() { if (!requireAuth()) return; const p=getProfile(); document.getElementById('editName').value=p.name; document.getElementById('editUsername').value=p.username; document.getElementById('editTitle').value=p.title; document.getElementById('editBio').value=p.bio; document.getElementById('editLocation').value=p.location; document.getElementById('editWebsite').value=p.website; document.getElementById('editProfileModal').classList.add('active'); document.body.style.overflow='hidden'; }
         function closeEditProfile(e) { if(e&&e.target!==e.currentTarget)return; document.getElementById('editProfileModal').classList.remove('active'); document.body.style.overflow=''; }
         function saveProfile() { if (!requireAuth()) return; const p={name:document.getElementById('editName').value.trim()||defaultProfile.name,username:document.getElementById('editUsername').value.trim()||defaultProfile.username,title:document.getElementById('editTitle').value.trim()||defaultProfile.title,bio:document.getElementById('editBio').value.trim()||defaultProfile.bio,location:document.getElementById('editLocation').value.trim()||defaultProfile.location,website:document.getElementById('editWebsite').value.trim()||defaultProfile.website}; UserStore.setJSON('userProfile', p); applyProfile(p); closeEditProfile(); showToast('تم حفظ الملف الشخصي ✓'); }
+
+        // ===== Show/Hide Profile Edit Controls =====
+        function _setProfileEditMode(isOwn) {
+            // Edit profile button
+            const editBtn = document.getElementById('editProfileBtn');
+            if (editBtn) editBtn.classList.toggle('hidden', !isOwn);
+            // Cover photo click-to-upload
+            const coverWrap = document.getElementById('profileCoverWrap');
+            if (coverWrap) coverWrap.style.cursor = isOwn ? 'pointer' : 'default';
+            const coverOverlay = document.getElementById('coverHoverOverlay');
+            if (coverOverlay) coverOverlay.classList.toggle('hidden', !isOwn);
+            if (isOwn && coverWrap) {
+                coverWrap.onclick = () => document.getElementById('coverUpload').click();
+            } else if (coverWrap) {
+                coverWrap.onclick = null;
+            }
+            // Avatar click-to-upload
+            const avatarOverlay = document.getElementById('avatarEditOverlay');
+            if (avatarOverlay) avatarOverlay.classList.toggle('hidden', !isOwn);
+            // Profile tabs: hide "الردود" and "الإعجابات" for other users
+            const profileTabs = document.querySelectorAll('#page-profile .profile-tab');
+            profileTabs.forEach((tab, i) => {
+                if (i === 1 || i === 2) { // الردود, الإعجابات
+                    tab.style.display = isOwn ? '' : 'none';
+                }
+            });
+        }
 
         // ====================================================
