@@ -338,7 +338,8 @@ const Library = {
         document.body.style.overflow = 'hidden';
     },
 
-    closeLibrary() {
+    closeLibrary(e) {
+        if (e && e.target && e.target !== e.currentTarget) return;
         const modal = document.getElementById('libraryDetailModal');
         if (modal) modal.classList.remove('active');
         document.body.style.overflow = '';
@@ -411,7 +412,7 @@ const Library = {
     },
 
     closeCreateLibraryModal(e) {
-        if (e && e.target !== e.currentTarget) return;
+        if (e && e.target && e.target !== e.currentTarget) return;
         document.getElementById('createLibraryModal')?.classList.remove('active');
         document.body.style.overflow = '';
     },
@@ -458,7 +459,7 @@ const Library = {
     },
 
     closeAddItemModal(e) {
-        if (e && e.target !== e.currentTarget) return;
+        if (e && e.target && e.target !== e.currentTarget) return;
         document.getElementById('addItemModal')?.classList.remove('active');
         document.body.style.overflow = '';
     },
@@ -524,7 +525,7 @@ const Library = {
     },
 
     closeEditItemModal(e) {
-        if (e && e.target !== e.currentTarget) return;
+        if (e && e.target && e.target !== e.currentTarget) return;
         document.getElementById('editItemModal')?.classList.remove('active');
         document.body.style.overflow = '';
     },

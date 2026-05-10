@@ -812,7 +812,7 @@
                         <button class="profile-tab active flex-1 text-sm font-medium py-2 rounded-lg transition-all bg-dark-800 text-white" onclick="switchProfileTab(this)">المنشورات</button>
                         <button class="profile-tab flex-1 text-sm font-medium py-2 rounded-lg transition-all text-dark-400 hover:text-dark-200" onclick="switchProfileTab(this)">الردود</button>
                         <button class="profile-tab flex-1 text-sm font-medium py-2 rounded-lg transition-all text-dark-400 hover:text-dark-200" onclick="switchProfileTab(this)">الإعجابات</button>
-                        <button class="profile-tab flex-1 text-sm font-medium py-2 rounded-lg transition-all text-dark-400 hover:text-dark-200" onclick="switchProfileTab(this);Library.renderProfileLibraries(sbUser?.id||'local')">
+                        <button class="profile-tab flex-1 text-sm font-medium py-2 rounded-lg transition-all text-dark-400 hover:text-dark-200" onclick="switchProfileTab(this)">
                             <span class="iconify inline" data-icon="lucide:library" style="font-size:14px"></span> المكتبة
                         </button>
                     </div>
@@ -2023,7 +2023,7 @@
         <div class="bg-dark-900 border border-dark-800 rounded-2xl w-[95%] max-w-md max-h-[90vh] overflow-y-auto p-6" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-6">
                 <h3 class="font-bold text-lg">إنشاء مكتبة جديدة</h3>
-                <button onclick="Library.closeCreateLibraryModal(event)" class="p-2 rounded-lg hover:bg-dark-800 transition-colors">
+                <button onclick="Library.closeCreateLibraryModal()" class="p-2 rounded-lg hover:bg-dark-800 transition-colors">
                     <span class="iconify text-dark-400" data-icon="lucide:x"></span>
                 </button>
             </div>
@@ -2113,7 +2113,7 @@
         <div class="bg-dark-900 border border-dark-800 rounded-2xl w-[95%] max-w-md max-h-[90vh] overflow-y-auto p-6" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-6">
                 <h3 class="font-bold text-lg">إضافة عنصر جديد</h3>
-                <button onclick="Library.closeAddItemModal(event)" class="p-2 rounded-lg hover:bg-dark-800 transition-colors">
+                <button onclick="Library.closeAddItemModal()" class="p-2 rounded-lg hover:bg-dark-800 transition-colors">
                     <span class="iconify text-dark-400" data-icon="lucide:x"></span>
                 </button>
             </div>
@@ -2168,7 +2168,7 @@
         <div class="bg-dark-900 border border-dark-800 rounded-2xl w-[95%] max-w-md max-h-[90vh] overflow-y-auto p-6" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-6">
                 <h3 class="font-bold text-lg">تعديل العنصر</h3>
-                <button onclick="Library.closeEditItemModal(event)" class="p-2 rounded-lg hover:bg-dark-800 transition-colors">
+                <button onclick="Library.closeEditItemModal()" class="p-2 rounded-lg hover:bg-dark-800 transition-colors">
                     <span class="iconify text-dark-400" data-icon="lucide:x"></span>
                 </button>
             </div>
