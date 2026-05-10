@@ -82,6 +82,53 @@
             }
         }
 
+        // ===== Infinite Scroll =====
+        let feedPage = 0;
+        const feedPageSize = 5;
+
+        function setupInfiniteScroll() {
+            const loader = document.getElementById('infiniteLoader');
+            if (!loader) return;
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) loadMoreFeedPosts();
+                });
+            }, { threshold: 0.5 });
+            observer.observe(loader);
+        }
+
+        function loadMoreFeedPosts() {
+            const container = document.getElementById('page-feed');
+            const searchActive = container?.querySelector('.search-results-section');
+            if (searchActive) return;
+            const existingPosts = container?.querySelectorAll('.post-card, .dynamic-post');
+            const totalAvailable = allPosts.length + (typeof userPosts !== 'undefined' ? userPosts.length : 0);
+            if (!existingPosts || existingPosts.length >= totalAvailable) {
+                const loader = document.getElementById('infiniteLoader');
+                if (loader) loader.style.display = 'none';
+                const feedEnd = document.getElementById('feedEnd');
+                if (feedEnd) feedEnd.style.display = '';
+                return;
+            }
+            const loader = document.getElementById('infiniteLoader');
+            if (loader) loader.style.display = 'flex';
+            setTimeout(() => {
+                const shownCount = existingPosts.length;
+                const morePosts = allPosts.slice(shownCount, shownCount + feedPageSize);
+                morePosts.forEach((post, i) => {
+                    const div = document.createElement('div');
+                    div.className = 'dynamic-post';
+                    div.innerHTML = buildPlatformPostHTML(post, shownCount + i);
+                    container.insertBefore(div.firstElementChild || div, loader);
+                });
+                if (shownCount + morePosts.length >= allPosts.length) {
+                    if (loader) loader.style.display = 'none';
+                    const feedEnd = document.getElementById('feedEnd');
+                    if (feedEnd) feedEnd.style.display = '';
+                }
+            }, 800);
+        }
+
         // ===== Update UI with real profile data =====
         function updateUIWithRealProfile() {
             const p = window.sbProfile;
