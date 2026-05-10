@@ -556,40 +556,9 @@
             background: #171717; border: 1px solid #404040; border-radius: 20px;
             width: 95%; max-width: 620px; max-height: 90vh; overflow-y: auto;
             box-shadow: 0 30px 80px rgba(0,0,0,0.6);
-            display: flex; flex-direction: column;
         }
         @media (max-width: 640px) {
-            .post-detail-modal {
-                max-width: 100%;
-                max-height: 92vh;
-                border-radius: 16px 16px 0 0;
-                height: auto;
-                margin-top: auto;
-            }
-            .post-detail-overlay.active {
-                align-items: flex-end;
-            }
-            .post-detail-modal #postDetailContent {
-                flex: 1;
-                overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-            .post-detail-modal .sticky.bottom-0 {
-                padding: 8px 12px !important;
-                padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
-            }
-            .post-detail-modal .sticky.bottom-0 input[type="text"] {
-                padding: 8px 12px !important;
-                font-size: 13px !important;
-                border-radius: 10px !important;
-            }
-            .post-detail-modal .sticky.bottom-0 button {
-                padding: 8px 12px !important;
-                font-size: 12px !important;
-            }
-            .post-detail-modal .sticky.bottom-0 button:first-child {
-                padding: 6px !important;
-            }
+            .post-detail-modal { max-width: 100%; max-height: 100vh; border-radius: 0; height: 100%; }
         }
 
         /* ===== Media Grid ===== */
@@ -1479,38 +1448,25 @@
 
     /* Comment section - better mobile spacing */
     .comment-section {
-        padding-left: 10px !important;
-        padding-right: 10px !important;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
     }
 
     .comment-section.open {
-        max-height: 350px !important;
+        max-height: 400px !important;
     }
 
     .comment-section input[type="text"] {
-        font-size: 12px !important;
-        padding: 7px 10px !important;
-        border-radius: 8px !important;
-    }
-
-    .comment-section button.bg-brand-500 {
-        padding: 7px 10px !important;
-        font-size: 11px !important;
-        border-radius: 8px !important;
+        font-size: 13px !important;
+        padding: 8px 12px !important;
     }
 
     .comment-section .bg-dark-850 {
-        padding: 6px 8px !important;
-        border-radius: 8px !important;
+        padding: 8px 10px !important;
     }
 
     .comment-section .text-xs {
         font-size: 11px !important;
-    }
-
-    .comment-section .w-8 {
-        width: 24px !important;
-        height: 24px !important;
     }
 
     /* Hashtags - smaller on mobile */
