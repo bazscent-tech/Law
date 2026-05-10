@@ -180,13 +180,24 @@
         const defaultProfile = { name:'د. أحمد الخالدي', username:'@ahmed_alkhalidi', title:'محامي دولي', bio:'محامي دولي متخصص في التحكيم التجاري وقانون الشركات. خبرة +15 عاماً في القضايا المعقدة عابرة الحدود.', location:'دبي، الإمارات', website:'ahmed-law.com' };
         function getProfile() { const s = UserStore.getString('userProfile'); return s ? JSON.parse(s) : { ...defaultProfile }; }
         function applyProfile(p) {
-            const pn=document.querySelector('#page-profile .text-xl.font-bold'); if(pn)pn.textContent=p.name||p.display_name||'';
-            const ps=document.querySelector('#page-profile .text-dark-400.text-sm.mb-3'); if(ps)ps.textContent=(p.username?'@'+p.username:'')+' • '+(p.title||'')+' • '+(p.location||'');
-            const pb=document.querySelector('#page-profile .text-dark-300.text-sm.mb-4'); if(pb)pb.textContent=p.bio||'';
-            const pl=document.querySelector('#page-profile .flex.flex-wrap.gap-4 span:first-child'); if(pl)pl.innerHTML='<span class="iconify" data-icon="lucide:map-pin" style="font-size:14px"></span>'+(p.location||'');
-            const pw=document.querySelector('#page-profile .text-brand-400.cursor-pointer'); if(pw)pw.textContent=p.website||'';
-            const sn=document.querySelector('.desktop-sidebar .font-semibold.text-sm'); if(sn)sn.textContent=p.name||p.display_name||'';
-            const dn=document.querySelector('#mobileDrawer h3'); if(dn)dn.textContent=p.name||p.display_name||'';
+            const name = p.name || p.display_name || '';
+            const username = p.username || '';
+            const fullUsername = username.startsWith('@') ? username : '@' + username;
+            const subtitle = fullUsername + (p.title ? ' • ' + p.title : '') + (p.location ? ' • ' + p.location : '');
+
+            // Profile page
+            const pn=document.getElementById('profileDisplayName'); if(pn)pn.textContent=name;
+            const ps=document.getElementById('profileSubtitle'); if(ps)ps.textContent=subtitle;
+            const pb=document.getElementById('profileBio'); if(pb)pb.textContent=p.bio||'';
+            const pl=document.getElementById('profileLocation'); if(pl)pl.textContent=p.location||'';
+            const pw=document.getElementById('profileWebsite'); if(pw)pw.textContent=p.website||'';
+            // Legacy selectors as fallback
+            const pn2=document.querySelector('#page-profile .text-xl.font-bold'); if(pn2&&!pn)pn2.textContent=name;
+            const ps2=document.querySelector('#page-profile .text-dark-400.text-sm.mb-3'); if(ps2&&!ps)ps2.textContent=subtitle;
+            const pb2=document.querySelector('#page-profile .text-dark-300.text-sm.mb-4'); if(pb2&&!pb)pb2.textContent=p.bio||'';
+            // Sidebar
+            const sn=document.querySelector('.desktop-sidebar .font-semibold.text-sm'); if(sn)sn.textContent=name;
+            const dn=document.querySelector('#mobileDrawer h3'); if(dn)dn.textContent=name;
         }
         async function loadProfile() {
             // Try localStorage first

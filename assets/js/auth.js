@@ -399,7 +399,7 @@ const AuthUI = {
         // Create overlay
         const overlay = document.createElement('div');
         overlay.id = 'authOverlay';
-        overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:20px;';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0a0a0a;display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:20px;';
         overlay.innerHTML = this._buildHTML();
         document.body.appendChild(overlay);
         document.body.style.overflow = 'hidden';

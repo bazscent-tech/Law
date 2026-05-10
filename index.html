@@ -19,13 +19,13 @@
     <link rel="dns-prefetch" href="https://wxokmokxehssnchtmjke.supabase.co">
 
     <!-- ===== Preload Critical Resources ===== -->
-    <link rel="preload" href="assets/css/styles.css?v=99" as="style">
-    <link rel="preload" href="assets/js/safe.js?v=201" as="script">
-    <link rel="preload" href="assets/js/core.js?v=201" as="script">
+    <link rel="preload" href="assets/css/styles.css?v=103" as="style">
+    <link rel="preload" href="assets/js/safe.js?v=203" as="script">
+    <link rel="preload" href="assets/js/core.js?v=203" as="script">
     <link rel="preload" href="https://fonts.gstatic.com/s/notokufiarabic/v23/qFdb35qfg4qRVGakaG9yZjh0P-cH4fVqJQ.woff2" as="font" type="font/woff2" crossorigin>
 
     <!-- ===== Styles ===== -->
-    <link rel="stylesheet" href="assets/css/styles.css?v=99">
+    <link rel="stylesheet" href="assets/css/styles.css?v=103">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- ===== External Scripts (render-blocking — needed for Tailwind JIT) ===== -->
@@ -47,7 +47,7 @@
             }
         }
     </script>
-    <link rel="stylesheet" href="assets/css/styles.css?v=99">
+    <link rel="stylesheet" href="assets/css/styles.css?v=103">
     <!-- Auth UI handled by auth.js AuthUI module -->
 </head>
 <body class="bg-dark-950 text-white font-sans min-h-screen">
@@ -782,14 +782,14 @@
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 mb-1">
-                                <h2 class="text-xl font-bold">د. أحمد الخالدي</h2>
+                                <h2 id="profileDisplayName" class="text-xl font-bold">مستخدم</h2>
                                 <span class="iconify text-brand-500" data-icon="lucide:badge-check"></span>
                             </div>
-                            <p class="text-dark-400 text-sm mb-3">@ahmed_alkhalidi • محامي دولي • الإمارات 🇦🇪</p>
-                            <p class="text-dark-300 text-sm mb-4 leading-relaxed">محامي دولي متخصص في التحكيم التجاري وقانون الشركات. خبرة +15 عاماً في القضايا المعقدة عابرة الحدود. أشارك المعرفة القانونية مع المجتمع.</p>
+                            <p id="profileSubtitle" class="text-dark-400 text-sm mb-3"></p>
+                            <p id="profileBio" class="text-dark-300 text-sm mb-4 leading-relaxed"></p>
                             <div class="flex flex-wrap gap-4 mb-4 text-sm text-dark-400">
-                                <span class="flex items-center gap-1"><span class="iconify" data-icon="lucide:map-pin" style="font-size:14px"></span>دبي، الإمارات</span>
-                                <span class="flex items-center gap-1"><span class="iconify" data-icon="lucide:link" style="font-size:14px"></span><span class="text-brand-400 cursor-pointer">ahmed-law.com</span></span>
+                                <span class="flex items-center gap-1"><span class="iconify" data-icon="lucide:map-pin" style="font-size:14px"></span><span id="profileLocation"></span></span>
+                                <span class="flex items-center gap-1"><span class="iconify" data-icon="lucide:link" style="font-size:14px"></span><span id="profileWebsite" class="text-brand-400 cursor-pointer"></span></span>
                                 <span class="flex items-center gap-1"><span class="iconify" data-icon="lucide:calendar" style="font-size:14px"></span>انضم في مارس 2022</span>
                             </div>
                             <div class="profile-stats-grid">
@@ -1294,11 +1294,11 @@
                                 <div class="space-y-3">
                                     <div class="flex items-center justify-between">
                                         <span class="text-sm text-dark-300">الاسم</span>
-                                        <span class="text-sm text-dark-400">د. أحمد الخالدي</span>
+                                        <span id="settingsName" class="text-sm text-dark-400">مستخدم</span>
                                     </div>
                                     <div class="flex items-center justify-between">
                                         <span class="text-sm text-dark-300">البريد الإلكتروني</span>
-                                        <span class="text-sm text-dark-400">ahmed@law.com</span>
+                                        <span id="settingsEmail" class="text-sm text-dark-400">-</span>
                                     </div>
                                     <div class="flex items-center justify-between">
                                         <span class="text-sm text-dark-300">المسمى الوظيفي</span>
@@ -2009,21 +2009,21 @@
     </div>
 
     <!-- Modular JS Architecture -->
-    <script src="assets/js/safe.js?v=202"></script>
-    <script src="assets/js/auth.js?v=202"></script>
-    <script src="assets/js/user-store.js?v=202"></script>
-    <script src="assets/js/core.js?v=202"></script>
-    <script src="assets/js/state.js?v=200"></script>
-    <script src="assets/js/pull-refresh.js?v=200"></script>
-    <script src="assets/js/ui.js?v=200"></script>
-    <script src="assets/js/stickers-media.js?v=200"></script>
-    <script src="assets/js/posts-comments.js?v=200"></script>
-    <script src="assets/js/feed-render.js?v=200"></script>
-    <script src="assets/js/stories.js?v=200"></script>
-    <script src="assets/js/features.js?v=200"></script>
-    <script src="assets/js/bookmarks-connections.js?v=200"></script>
-    <script src="assets/js/init.js?v=200"></script>
-    <script src="assets/js/library.js?v=201"></script>
+    <script src="assets/js/safe.js?v=203"></script>
+    <script src="assets/js/auth.js?v=203"></script>
+    <script src="assets/js/user-store.js?v=203"></script>
+    <script src="assets/js/core.js?v=203"></script>
+    <script src="assets/js/state.js?v=203"></script>
+    <script src="assets/js/pull-refresh.js?v=203"></script>
+    <script src="assets/js/ui.js?v=203"></script>
+    <script src="assets/js/stickers-media.js?v=203"></script>
+    <script src="assets/js/posts-comments.js?v=203"></script>
+    <script src="assets/js/feed-render.js?v=203"></script>
+    <script src="assets/js/stories.js?v=203"></script>
+    <script src="assets/js/features.js?v=203"></script>
+    <script src="assets/js/bookmarks-connections.js?v=203"></script>
+    <script src="assets/js/init.js?v=203"></script>
+    <script src="assets/js/library.js?v=203"></script>
 
     <!-- ===== LIBRARY MODALS (Premium Grade) ===== -->
 

@@ -127,6 +127,12 @@
             if (mdUser) mdUser.textContent = username;
             if (mdFoll) mdFoll.textContent = (sbProfile.followers_count || 0).toLocaleString('ar');
             if (mdFing) mdFing.textContent = (sbProfile.following_count || 0).toLocaleString('ar');
+
+            // Update settings page
+            const sName = document.getElementById('settingsName');
+            const sEmail = document.getElementById('settingsEmail');
+            if (sName) sName.textContent = name;
+            if (sEmail) sEmail.textContent = sbUser?.email || '-';
         }
 
         // ===== Connect Button =====

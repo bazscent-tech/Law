@@ -45,25 +45,6 @@
             return data;
         }
 
-        // Legacy compatibility — now delegates to Auth system
-        async function signInAnonymously() {
-            // This is now handled by Auth.init() and Auth.signIn()
-            // Kept for backward compatibility
-            if (!sb) return null;
-            try {
-                // Check if we already have a session via Auth
-                const { data: { session } } = await sb.auth.getSession();
-                if (session) {
-                    sbUser = { id: session.user.id };
-                    await loadUserProfile();
-                    return sbUser;
-                }
-            } catch(e) {
-                console.warn('Session check failed:', e.message);
-            }
-            return null;
-        }
-
         // ============================================================
         // SUPABASE CRUD OPERATIONS — كل عملية مرتبطة بالمستخدم الحالي
         // ============================================================
