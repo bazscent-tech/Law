@@ -7,7 +7,7 @@
             const hasSession = await Auth.init();
 
             if (hasSession && Auth.isLoggedIn()) {
-                console.log('✅ Authenticated:', sbProfile?.display_name || sbUser?.id);
+                console.log('✅ Authenticated:', sbProfile?.name || sbProfile?.display_name || sbUser?.id);
                 await initAppForUser();
             } else {
                 // لا توجد جلسة — إظهار شاشة تسجيل الدخول
@@ -87,7 +87,7 @@
         function updateUIWithRealProfile() {
             if (!sbProfile) return;
 
-            const name = sbProfile.display_name || 'مستخدم';
+            const name = sbProfile.name || sbProfile.display_name || 'مستخدم';
             const username = sbProfile.username ? '@' + sbProfile.username : '';
             const avatar = sbProfile.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=f97316&textColor=ffffff`;
             const title = sbProfile.title || '';

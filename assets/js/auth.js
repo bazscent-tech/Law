@@ -293,7 +293,7 @@ const Auth = {
         const newProfile = {
             id: user.id,
             username: uniqueUsername,
-            display_name: name,
+            name: name,
             bio: '',
             title: '',
             location: '',
@@ -303,7 +303,7 @@ const Auth = {
             followers_count: 0,
             following_count: 0,
             posts_count: 0,
-            is_verified: false
+            verified: false
         };
 
         const { data: created, error } = await sb.from('profiles')

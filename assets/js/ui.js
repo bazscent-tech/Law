@@ -195,7 +195,7 @@
             // Also load from Supabase profile if available
             if(sbProfile){
                 applyProfile({
-                    name: sbProfile.display_name,
+                    name: sbProfile.name || sbProfile.display_name,
                     username: sbProfile.username,
                     title: sbProfile.title,
                     bio: sbProfile.bio,
@@ -204,7 +204,7 @@
                 });
                 // Sync to localStorage for offline use
                 UserStore.setJSON('userProfile',{
-                    name: sbProfile.display_name,
+                    name: sbProfile.name || sbProfile.display_name,
                     username: '@'+(sbProfile.username||''),
                     title: sbProfile.title||'',
                     bio: sbProfile.bio||'',
