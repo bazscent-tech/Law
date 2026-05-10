@@ -17,7 +17,12 @@
 }
 
 /* Auto-hide header + bottom nav on scroll (mobile) */
+/* Prevent browser swipe-back/forward navigation on mobile */
 @media (max-width: 1023px) {
+    html, body {
+        overscroll-behavior-x: none !important;
+        -webkit-overflow-scrolling: touch;
+    }
     #mainHeader {
         transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
@@ -29,6 +34,24 @@
     }
     .mobile-bottom-nav.hide-on-scroll {
         transform: translateY(100%);
+    }
+    /* Swipe edge hint — visual indicator on right edge */
+    .swipe-edge-hint {
+        position: fixed;
+        top: 50%;
+        right: 0;
+        transform: translateY(-50%);
+        width: 6px;
+        height: 60px;
+        background: linear-gradient(to left, rgba(249,115,22,0.3), transparent);
+        border-radius: 6px 0 0 6px;
+        z-index: 999;
+        pointer-events: none;
+        animation: swipeHintPulse 3s ease-in-out infinite;
+    }
+    @keyframes swipeHintPulse {
+        0%, 100% { opacity: 0.4; }
+        50% { opacity: 0.8; }
     }
 }
 
@@ -91,6 +114,9 @@
     .mobile-drawer-overlay { display: none !important; }
     .swipe-edge-hint { display: none !important; }
 }
+/* Hide edge hint when drawer is open */
+.mobile-drawer-overlay.open ~ .swipe-edge-hint,
+.mobile-drawer-overlay.open .swipe-edge-hint { display: none !important; }
 
 /* Trending Dropdown */
 .trending-dropdown {

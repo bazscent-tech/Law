@@ -64,9 +64,112 @@
         function doSearch() { const q = document.getElementById('searchInput').value.trim(); if (q) showToast('بحث عن: ' + q); }
 
         // ===== Mobile Menu =====
-        function openMobileMenu() { document.getElementById('mobileMenuOverlay').classList.add('open'); document.body.style.overflow = 'hidden'; }
-        function closeMobileMenu() { document.getElementById('mobileMenuOverlay').classList.remove('open'); document.body.style.overflow = ''; }
-        (function(){let sx=0,sy=0,cx=0,cy=0,drag=false,dt=null,mv=false;const E=50,OT=40,CT=50,DZ=15;const ov=()=>document.getElementById('mobileMenuOverlay'),dr=()=>document.getElementById('mobileDrawer');const io=()=>ov()?.classList.contains('open'),im=()=>window.innerWidth<1024;document.addEventListener('touchstart',function(e){if(!im())return;const t=e.touches[0];sx=t.clientX;sy=t.clientY;cx=sx;cy=sy;mv=false;if(!io()&&sx>window.innerWidth-E){drag=true;dt='open';dr().style.transition='none'}else if(io()){drag=true;dt='close';dr().style.transition='none'}},{passive:true});document.addEventListener('touchmove',function(e){if(!drag||!im())return;const t=e.touches[0];cx=t.clientX;cy=t.clientY;mv=true;const dx=cx-sx,dy=Math.abs(cy-sy);if(dt==='open'&&dy>Math.abs(dx)&&dy>DZ){drag=false;dr().style.transition='';ov().style.opacity='';ov().style.visibility='';return}if(dt==='open'&&dx<0){const w=dr().offsetWidth||280;dr().style.transform=`translateX(${Math.max(0,w+dx)}px)`;const p=Math.min(1,Math.abs(dx)/w);ov().style.opacity=String(p*0.5);if(p>0.02)ov().style.visibility='visible'}else if(dt==='close'&&dx>0){const w=dr().offsetWidth||280;dr().style.transform=`translateX(${dx}px)`;const p=Math.min(1,dx/w);ov().style.opacity=String(0.5-p*0.5)}},{passive:true});document.addEventListener('touchend',function(){if(!drag||!im())return;dr().style.transition='';ov().style.opacity='';ov().style.visibility='';const dx=cx-sx;if(dt==='open'){if(mv&&dx<-OT)openMobileMenu();else{dr().style.transform='';ov().style.visibility='hidden'}}else if(dt==='close'){if(mv&&dx>CT)closeMobileMenu();else openMobileMenu()}drag=false;dt=null},{passive:true})})();
+        function openMobileMenu() { document.getElementById('mobileMenuOverlay').classList.add('open'); document.body.style.overflow = 'hidden'; const h=document.getElementById('swipeEdgeHint'); if(h)h.style.display='none'; }
+        function closeMobileMenu() { document.getElementById('mobileMenuOverlay').classList.remove('open'); document.body.style.overflow = ''; const h=document.getElementById('swipeEdgeHint'); if(h)h.style.display=''; }
+
+        // ===== MOBILE SWIPE-TO-OPEN DRAWER (X/Twitter style) =====
+        (function() {
+            let sx = 0, sy = 0, cx = 0, cy = 0;
+            let drag = false, dt = null, mv = false;
+            const EDGE = 30;       // edge zone width (px)
+            const OPEN_THRESH = 40; // min swipe to open
+            const CLOSE_THRESH = 50; // min swipe to close
+            const ov = () => document.getElementById('mobileMenuOverlay');
+            const dr = () => document.getElementById('mobileDrawer');
+            const isOpen = () => ov()?.classList.contains('open');
+            const isMobile = () => window.innerWidth < 1024;
+
+            // Create edge hint
+            function addEdgeHint() {
+                if (!isMobile() || document.getElementById('swipeEdgeHint')) return;
+                const hint = document.createElement('div');
+                hint.id = 'swipeEdgeHint';
+                hint.className = 'swipe-edge-hint';
+                document.body.appendChild(hint);
+            }
+            function removeEdgeHint() {
+                const h = document.getElementById('swipeEdgeHint');
+                if (h) h.remove();
+            }
+
+            // Init
+            if (isMobile()) addEdgeHint();
+            window.addEventListener('resize', () => {
+                if (isMobile()) addEdgeHint();
+                else removeEdgeHint();
+            });
+
+            document.addEventListener('touchstart', function(e) {
+                if (!isMobile()) return;
+                const t = e.touches[0];
+                sx = t.clientX; sy = t.clientY;
+                cx = sx; cy = sy;
+                mv = false;
+
+                if (!isOpen() && sx > window.innerWidth - EDGE) {
+                    // Swipe from right edge → open drawer
+                    drag = true; dt = 'open';
+                    dr().style.transition = 'none';
+                    // Prevent browser back gesture
+                    e.preventDefault();
+                } else if (isOpen()) {
+                    // Swipe anywhere when drawer is open → close
+                    drag = true; dt = 'close';
+                    dr().style.transition = 'none';
+                }
+            }, { passive: false });
+
+            document.addEventListener('touchmove', function(e) {
+                if (!drag || !isMobile()) return;
+                const t = e.touches[0];
+                cx = t.clientX; cy = t.clientY;
+                mv = true;
+                const dx = cx - sx;
+                const dy = Math.abs(cy - sy);
+
+                // If vertical scroll dominates, cancel drag
+                if (dy > Math.abs(dx) && dy > 15) {
+                    drag = false;
+                    dr().style.transition = '';
+                    ov().style.opacity = '';
+                    ov().style.visibility = '';
+                    return;
+                }
+
+                // Prevent page scroll while dragging
+                e.preventDefault();
+
+                if (dt === 'open' && dx < 0) {
+                    const w = dr().offsetWidth || 280;
+                    dr().style.transform = `translateX(${Math.max(0, w + dx)}px)`;
+                    const p = Math.min(1, Math.abs(dx) / w);
+                    ov().style.opacity = String(p * 0.5);
+                    if (p > 0.02) ov().style.visibility = 'visible';
+                } else if (dt === 'close' && dx > 0) {
+                    const w = dr().offsetWidth || 280;
+                    dr().style.transform = `translateX(${dx}px)`;
+                    const p = Math.min(1, dx / w);
+                    ov().style.opacity = String(0.5 - p * 0.5);
+                }
+            }, { passive: false });
+
+            document.addEventListener('touchend', function() {
+                if (!drag || !isMobile()) return;
+                dr().style.transition = '';
+                ov().style.opacity = '';
+                ov().style.visibility = '';
+                const dx = cx - sx;
+
+                if (dt === 'open') {
+                    if (mv && dx < -OPEN_THRESH) openMobileMenu();
+                    else { dr().style.transform = ''; ov().style.visibility = 'hidden'; }
+                } else if (dt === 'close') {
+                    if (mv && dx > CLOSE_THRESH) closeMobileMenu();
+                    else openMobileMenu();
+                }
+                drag = false; dt = null;
+            }, { passive: true });
+        })();
 
         // ===== Post Input =====
         function handlePostInput(el) { el.style.color = el.textContent.trim() === '' ? '' : '#fff'; }
