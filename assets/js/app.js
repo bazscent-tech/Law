@@ -79,7 +79,7 @@
                 const profile = {
                     id: sbUser.id,
                     username: 'user_' + Date.now().toString(36),
-                    display_name: 'د. أحمد الخالدي',
+                    name: 'د. أحمد الخالدي',
                     bio: 'محامي دولي متخصص في التحكيم التجاري',
                     title: 'محامي دولي',
                     location: 'دبي، الإمارات',
@@ -282,7 +282,7 @@
                 if (!sbOnline || !sbUser) return null;
                 const { data } = await sb.from('stories').insert({
                     author_id: sbUser.id, content,
-                    story_type: type, media_url: mediaUrl, bg_color: bgColor
+                    type: type, media_url: mediaUrl, bg_color: bgColor
                 }).select().single();
                 return data;
             },
@@ -309,7 +309,7 @@
             async getNotifications() {
                 if (!sbOnline || !sbUser) return null;
                 const { data } = await sb.from('notifications')
-                    .select('*, from_user:profiles!from_user_id(*)')
+                    .select('*, from_user:profiles!actor_id(*)')
                     .eq('user_id', sbUser.id)
                     .order('created_at', { ascending: false })
                     .limit(50);
@@ -349,7 +349,7 @@
                 if (!sbOnline) return null;
                 const { data } = await sb.from('posts')
                     .select('*, profiles(*)')
-                    .or(`content.ilike.%${query}%,title.ilike.%${query}%`)
+                    .or(`content.ilike.%${query}%,name.ilike.%${query}%`)
                     .order('created_at', { ascending: false })
                     .limit(20);
                 return data;
@@ -359,7 +359,7 @@
                 if (!sbOnline) return null;
                 const { data } = await sb.from('profiles')
                     .select('*')
-                    .or(`display_name.ilike.%${query}%,username.ilike.%${query}%,title.ilike.%${query}%`)
+                    .or(`display_name.ilike.%${query}%,username.ilike.%${query}%,name.ilike.%${query}%`)
                     .limit(10);
                 return data;
             },
