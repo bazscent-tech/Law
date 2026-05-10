@@ -14,6 +14,42 @@
         }
 
         // ====================================================
+        // ===== PIN POST FEATURE ============================
+        // ====================================================
+        let pinnedPostId = Safe.getString('pinnedPostId', '');
+
+        function isPinned(postId) { return pinnedPostId === postId; }
+
+        function pinPost(postId) {
+            pinnedPostId = postId;
+            Safe.setString('pinnedPostId', postId);
+            showToast('تم تثبيت المنشور 📌');
+            // Re-render profile if on profile page
+            const profilePage = document.getElementById('page-profile');
+            if (profilePage && !profilePage.classList.contains('hidden')) {
+                renderProfilePosts();
+            }
+        }
+
+        function unpinPost() {
+            pinnedPostId = '';
+            Safe.setString('pinnedPostId', '');
+            showToast('تم إلغاء تثبيت المنشور');
+            const profilePage = document.getElementById('page-profile');
+            if (profilePage && !profilePage.classList.contains('hidden')) {
+                renderProfilePosts();
+            }
+        }
+
+        function togglePin(postId) {
+            if (isPinned(postId)) {
+                unpinPost();
+            } else {
+                pinPost(postId);
+            }
+        }
+
+        // ====================================================
         // ===== EDIT / DELETE POST ===========================
         // ====================================================
         function openEditPost(postId) {
@@ -409,6 +445,17 @@
         // ====================================================
         // ===== BUILD POST HTML ==============================
         // ====================================================
+        function buildRepostHTML(post) {
+            const profile = getProfile();
+            const pinBtn = isPinned(post.id) ? `<div class="flex items-center gap-1 text-brand-400 text-[10px] mb-1"><span class="iconify text-xs" data-icon="lucide:pin"></span>مثبت</div>` : '';
+            return `<article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up overflow-hidden">
+                ${pinBtn}
+                <div class="flex items-center gap-2 px-5 pt-3 pb-0 text-dark-500 text-xs"><span class="iconify text-sm" data-icon="lucide:repeat-2"></span><span>${profile.name} أعاد النشر</span></div>
+                <div class="p-5 pb-0"><div class="flex items-start justify-between mb-3"><div class="flex items-center gap-3"><div class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold border border-dark-700 shrink-0">${(post.originalAuthor||'').charAt(0)}</div><div><h3 class="font-semibold text-sm">${post.originalAuthor}</h3><p class="text-dark-400 text-xs">${post.time}</p></div></div></div>${post.title?`<h2 class="font-bold text-base mb-2">${post.title}</h2>`:''}<div class="mb-3 cursor-pointer" onclick="openPostDetail('${post.repostOf||post.id}')"><p class="text-dark-200 text-sm leading-relaxed">${post.displayText}</p></div></div>
+                <div class="border-t border-dark-800/50 px-2 py-1"><div class="flex items-center justify-around"><button class="like-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleLike(this,${post.likes},'pf-likes-${post.id}','${post.id}',this.closest('article'))"><span class="iconify text-lg text-dark-400 group-hover:text-red-400" data-icon="lucide:heart"></span><span class="text-sm text-dark-400 like-count">${post.likes}</span></button><button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="openPostDetail('${post.id}')"><span class="iconify text-lg text-dark-400 group-hover:text-blue-400" data-icon="lucide:message-circle"></span><span class="text-sm text-dark-400">${post.comments}</span></button><button class="repost-btn reposted flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleRepost('${post.id}',this,this.closest('article'))"><span class="iconify text-lg text-green-400" data-icon="lucide:repeat-2"></span><span class="text-sm text-green-400">${post.shares}</span></button><button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleBookmark(this)"><span class="iconify text-lg text-dark-400 group-hover:text-brand-400" data-icon="lucide:bookmark"></span></button></div></div>
+            </article>`;
+        }
+
         function buildOwnPostHTML(post) {
             const profile = getProfile();
             const tagsHTML = (post.tags||[]).map(t => { const colors=['brand','blue','purple','green','cyan','pink','yellow']; const c=colors[Math.abs(t.charCodeAt(1))%colors.length]; return `<span class="hashtag bg-${c}-500/10 text-${c}-400 text-xs font-medium px-3 py-1 rounded-full cursor-pointer transition-all" onclick="showToast('تصفية: ${t}')">${t}</span>`; }).join('');
@@ -433,6 +480,7 @@
                                 <span class="iconify text-lg text-dark-400 group-hover:text-dark-200 transition-colors" data-icon="lucide:more-horizontal"></span>
                             </button>
                             <div class="post-options-menu">
+                                <button onclick="togglePin('${post.id}');this.closest('.post-options-menu').classList.remove('open')"><span class="iconify text-brand-400" data-icon="${isPinned(post.id) ? 'lucide:pin-off' : 'lucide:pin'}" style="font-size:16px"></span>${isPinned(post.id) ? 'إلغاء التثبيت' : 'تثبيت المنشور'}</button>
                                 <button onclick="openEditPost('${post.id}')"><span class="iconify text-blue-400" data-icon="lucide:pencil" style="font-size:16px"></span>تعديل المنشور</button>
                                 <button class="danger" onclick="deletePost('${post.id}')"><span class="iconify" data-icon="lucide:trash-2" style="font-size:16px"></span>حذف المنشور</button>
                             </div>
@@ -518,12 +566,41 @@
 
             if(allUserPostsLocal.length===0){c.innerHTML='';if(e){e.style.display='';e.querySelector('p').textContent='لم تنشر أي شيء بعد';e.querySelector('button').textContent='اكتب أول منشور';e.querySelector('button').setAttribute('onclick','showPostModal()');}return;}
             if(e)e.style.display='none';
-            c.innerHTML=allUserPostsLocal.map(post=>{
+
+            // Separate pinned post from rest
+            let pinnedPost = null;
+            let otherPosts = allUserPostsLocal;
+            if (pinnedPostId) {
+                const pinnedIdx = allUserPostsLocal.findIndex(p => p.id === pinnedPostId);
+                if (pinnedIdx !== -1) {
+                    pinnedPost = allUserPostsLocal[pinnedIdx];
+                    otherPosts = [...allUserPostsLocal.slice(0, pinnedIdx), ...allUserPostsLocal.slice(pinnedIdx + 1)];
+                }
+            }
+
+            let html = '';
+
+            // Render pinned post at top with indicator
+            if (pinnedPost) {
+                const pinnedHTML = pinnedPost.isRepost ? buildRepostHTML(pinnedPost) : buildOwnPostHTML(pinnedPost);
+                html += `<div class="pinned-post-wrapper mb-5">
+                    <div class="flex items-center gap-2 px-4 py-2 text-brand-400 text-xs font-medium">
+                        <span class="iconify text-sm" data-icon="lucide:pin"></span>
+                        <span>منشور مثبت</span>
+                    </div>
+                    ${pinnedHTML}
+                </div>`;
+            }
+
+            // Render rest of posts
+            html += otherPosts.map(post => {
                 if(post.isRepost){
-                    return `<article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up overflow-hidden"><div class="flex items-center gap-2 px-5 pt-3 pb-0 text-dark-500 text-xs"><span class="iconify text-sm" data-icon="lucide:repeat-2"></span><span>${getProfile().name} أعاد النشر</span></div><div class="p-5 pb-0"><div class="flex items-start justify-between mb-3"><div class="flex items-center gap-3"><div class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold border border-dark-700 shrink-0">${(post.originalAuthor||'').charAt(0)}</div><div><h3 class="font-semibold text-sm">${post.originalAuthor}</h3><p class="text-dark-400 text-xs">${post.time}</p></div></div></div>${post.title?`<h2 class="font-bold text-base mb-2">${post.title}</h2>`:''}<div class="mb-3 cursor-pointer" onclick="openPostDetail('${post.repostOf||post.id}')"><p class="text-dark-200 text-sm leading-relaxed">${post.displayText}</p></div></div><div class="border-t border-dark-800/50 px-2 py-1"><div class="flex items-center justify-around"><button class="like-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleLike(this,${post.likes},'pf-likes-${post.id}','${post.id}',this.closest('article'))"><span class="iconify text-lg text-dark-400 group-hover:text-red-400" data-icon="lucide:heart"></span><span class="text-sm text-dark-400 like-count">${post.likes}</span></button><button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="openPostDetail('${post.id}')"><span class="iconify text-lg text-dark-400 group-hover:text-blue-400" data-icon="lucide:message-circle"></span><span class="text-sm text-dark-400">${post.comments}</span></button><button class="repost-btn reposted flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleRepost('${post.id}',this,this.closest('article'))"><span class="iconify text-lg text-green-400" data-icon="lucide:repeat-2"></span><span class="text-sm text-green-400">${post.shares}</span></button><button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleBookmark(this)"><span class="iconify text-lg text-dark-400 group-hover:text-brand-400" data-icon="lucide:bookmark"></span></button></div></div></article>`;
+                    return buildRepostHTML(post);
                 }
                 return buildOwnPostHTML(post);
             }).join('');
+
+            c.innerHTML = html;
         }
 
         async function renderProfileReplies() {
