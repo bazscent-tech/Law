@@ -718,6 +718,10 @@
     justify-content: center;
 }
 .lib-modal.active { display: flex; }
+/* Stacking: nested modals appear above parent */
+#addItemModal, #editItemModal, #confirmModal { z-index: 2100; }
+#itemDetailModal { z-index: 2050; }
+#libMenuModal, #editLibraryModal { z-index: 2050; }
 .lib-modal-overlay {
     position: absolute;
     inset: 0;
@@ -839,6 +843,44 @@
 .lib-upload-zone:hover { border-color: #f97316; background: rgba(249,115,22,0.04); }
 .lib-upload-zone.dragover { border-color: #f97316; background: rgba(249,115,22,0.08); transform: scale(1.01); }
 
+/* --- Upload Progress --- */
+.lib-upload-progress {
+    margin-top: 12px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: none;
+}
+.lib-upload-progress.active { display: block; }
+.lib-upload-progress-bar-track {
+    width: 100%;
+    height: 6px;
+    background: #262626;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+.lib-upload-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #f97316, #fb923c);
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+.lib-upload-progress-bar.error { background: #ef4444; }
+.lib-upload-progress-bar.complete { background: #22c55e; }
+.lib-upload-progress-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+}
+.lib-upload-progress-info .status { color: #a3a3a3; }
+.lib-upload-progress-info .status.error { color: #ef4444; }
+.lib-upload-progress-info .status.complete { color: #22c55e; }
+.lib-upload-progress-info .pct { color: #d4d4d4; font-weight: 600; }
+
 /* --- Confirm Modal --- */
 .lib-confirm-icon {
     width: 56px;
@@ -886,6 +928,43 @@
     .emoji-grid { grid-template-columns: repeat(6, 1fr); }
     .lib-modal-sheet { max-height: 95vh; }
     .lib-modal-body { padding: 16px; }
+    /* Ensure close button is always visible on mobile */
+    .lib-modal-close {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        min-height: 40px;
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        flex-shrink: 0;
+    }
+    /* Upload modal responsive on mobile */
+    #addItemModal .lib-modal-sheet,
+    #editItemModal .lib-modal-sheet {
+        max-height: 90vh;
+        border-radius: 20px 20px 0 0;
+    }
+    #addItemModal .lib-modal-body,
+    #editItemModal .lib-modal-body {
+        padding: 14px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    /* Upload zone compact on mobile */
+    .lib-upload-zone {
+        padding: 16px;
+        border-radius: 14px;
+    }
+    .lib-upload-zone .text-3xl { font-size: 1.5rem; }
+    /* File preview compact on mobile */
+    #addItemFilePreview .flex.items-center.gap-3 {
+        gap: 8px;
+        padding: 10px;
+    }
+    #addItemFilePreview .w-12 { width: 40px; height: 40px; }
+    /* Progress bar mobile */
+    .lib-upload-progress { padding: 12px; }
 }
 
 /* --- Pinned Post --- */

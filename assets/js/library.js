@@ -217,6 +217,9 @@ const Library = {
             preview.classList.remove('hidden');
         }
 
+        // Hide any previous progress
+        Library._hideUploadProgress();
+
         // Auto-fill title if empty
         const titleInput = document.getElementById('addItemTitle');
         if (titleInput && !titleInput.value.trim()) {
@@ -232,6 +235,28 @@ const Library = {
         Library._cache.currentFile = null;
         const preview = document.getElementById('addItemFilePreview');
         if (preview) { preview.classList.add('hidden'); preview.innerHTML = ''; }
+        Library._hideUploadProgress();
+    },
+
+    // ===== UPLOAD PROGRESS =====
+    _showUploadProgress(pct, status, isError, isComplete) {
+        const container = document.getElementById('addItemUploadProgress');
+        const bar = document.getElementById('addItemUploadBar');
+        const statusEl = document.getElementById('addItemUploadStatus');
+        const pctEl = document.getElementById('addItemUploadPct');
+        if (!container) return;
+
+        container.classList.add('active');
+        bar.style.width = pct + '%';
+        bar.className = 'lib-upload-progress-bar' + (isError ? ' error' : isComplete ? ' complete' : '');
+        statusEl.className = 'status' + (isError ? ' error' : isComplete ? ' complete' : '');
+        statusEl.textContent = status;
+        pctEl.textContent = pct + '%';
+    },
+
+    _hideUploadProgress() {
+        const container = document.getElementById('addItemUploadProgress');
+        if (container) container.classList.remove('active');
     },
 
     // ===== RENDER: PROFILE TAB =====
@@ -560,23 +585,42 @@ const Library = {
             tags: document.getElementById('addItemTags').value.trim().split(',').map(t => t.trim()).filter(t => t)
         };
 
-        // Handle file upload
+        // Handle file upload with progress
         if (Library._cache.currentFile) {
             const file = Library._cache.currentFile;
-            // Convert to base64 data URL for local storage
+            const btn = document.getElementById('addItemSubmitBtn');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<span class="lib-spinner"></span> جاري الرفع...'; }
+
+            // Show progress
+            Library._showUploadProgress(0, 'جاري تحضير الملف...', false, false);
+
             try {
+                // Simulate progress stages for base64 conversion
+                Library._showUploadProgress(20, 'جاري قراءة الملف...', false, false);
+
                 const dataUrl = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = reject;
+                    reader.onload = () => {
+                        Library._showUploadProgress(80, 'جاري المعالجة...', false, false);
+                        resolve(reader.result);
+                    };
+                    reader.onerror = () => reject(new Error('فشل قراءة الملف'));
                     reader.readAsDataURL(file);
                 });
+
+                Library._showUploadProgress(100, 'تم الرفع بنجاح ✓', false, true);
                 itemData.file_url = dataUrl;
                 itemData.file_name = file.name;
                 itemData.file_size = file.size;
                 if (file.type.startsWith('image/')) itemData.cover_image = dataUrl;
+
+                // Short delay to show success state
+                await new Promise(r => setTimeout(r, 600));
             } catch (e) {
-                console.warn('File read failed:', e);
+                Library._showUploadProgress(100, 'فشل رفع الملف: ' + e.message, true, false);
+                showToast('فشل رفع الملف');
+                if (btn) { btn.disabled = false; btn.innerHTML = '<span class="iconify" data-icon="lucide:plus"></span> إضافة العنصر'; }
+                return;
             }
         }
 

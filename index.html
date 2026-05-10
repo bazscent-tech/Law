@@ -2144,6 +2144,16 @@
                             onchange="Library._handleFileUpload(this.files[0])">
                     </div>
                     <div id="addItemFilePreview" class="hidden mt-3"></div>
+                    <!-- Upload Progress -->
+                    <div id="addItemUploadProgress" class="lib-upload-progress">
+                        <div class="lib-upload-progress-bar-track">
+                            <div id="addItemUploadBar" class="lib-upload-progress-bar"></div>
+                        </div>
+                        <div class="lib-upload-progress-info">
+                            <span id="addItemUploadStatus" class="status">جاري الرفع...</span>
+                            <span id="addItemUploadPct" class="pct">0%</span>
+                        </div>
+                    </div>
                 </div>
                 <!-- Content -->
                 <div id="addItemContentRow" class="mb-4">
