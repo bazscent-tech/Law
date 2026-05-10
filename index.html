@@ -1820,10 +1820,44 @@
             <!-- Navigation Hints -->
             <div class="story-nav-prev" onclick="storyPrev(event)"></div>
             <div class="story-nav-next" onclick="storyNext(event)"></div>
-            <!-- Reply Bar -->
+            <!-- Story Viewers Count -->
+            <div class="story-viewers-bar" id="storyViewersBar" onclick="showStoryViewersList()">
+                <span class="iconify text-white/70 text-xs" data-icon="lucide:eye"></span>
+                <span id="storyViewCount">0</span>
+            </div>
+            <!-- Reply Bar (Facebook-style) -->
             <div class="story-reply-bar">
-                <input type="text" id="storyReplyInput" placeholder="أرسل رسالة..." class="story-reply-input" onkeydown="if(event.key==='Enter')sendStoryReply()">
-                <button onclick="sendStoryReply()" class="story-reply-send"><span class="iconify text-white" data-icon="lucide:send"></span></button>
+                <div class="story-reply-input-wrap">
+                    <input type="text" id="storyReplyInput" placeholder="إرسال رسالة..." class="story-reply-input" onkeydown="if(event.key==='Enter')sendStoryReply()">
+                    <button onclick="sendStoryReply()" class="story-reply-send-icon"><span class="iconify text-white/60 text-lg" data-icon="lucide:send"></span></button>
+                </div>
+                <div class="story-reactions">
+                    <button class="story-react-btn" onclick="reactToStory('❤️')" title="أعجبني">❤️</button>
+                    <button class="story-react-btn" onclick="reactToStory('👍')" title="أوافق">👍</button>
+                    <button class="story-react-btn" onclick="reactToStory('😍')" title="أحببت">😍</button>
+                    <button class="story-react-btn" onclick="reactToStory('😮')" title="مندهش">😮</button>
+                    <button class="story-react-btn" onclick="reactToStory('😢')" title="حزين">😢</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ STORY VIEWERS LIST MODAL ============ -->
+    <div id="storyViewersModal" class="story-viewers-modal" onclick="closeStoryViewersModal(event)">
+        <div class="story-viewers-content" onclick="event.stopPropagation()">
+            <div class="story-viewers-header">
+                <h3>المشاهدون</h3>
+                <button onclick="closeStoryViewersModalDirect()"><span class="iconify text-white text-xl" data-icon="lucide:x"></span></button>
+            </div>
+            <!-- Tabs -->
+            <div class="story-viewers-tabs">
+                <button class="story-viewers-tab active" onclick="switchStoryViewersTab(this,'all')">الكل <span id="svCountAll">0</span></button>
+                <button class="story-viewers-tab" onclick="switchStoryViewersTab(this,'reacted')">تفاعل <span id="svCountReacted">0</span></button>
+                <button class="story-viewers-tab" onclick="switchStoryViewersTab(this,'viewed')">شاهد <span id="svCountViewed">0</span></button>
+            </div>
+            <!-- Viewers List -->
+            <div class="story-viewers-list" id="storyViewersList">
+                <!-- Injected by JS -->
             </div>
         </div>
     </div>

@@ -2076,6 +2076,181 @@
             input.value = '';
         }
 
+        // ===== STORY REACTIONS & VIEWERS (Facebook-style) =====
+        const storyReactionsMap = {}; // { storyId: { emoji: count } }
+        const storyViewersMap = {};   // { storyId: [{ name, avatar, time, reaction }] }
+        const myStoryReactions = {};  // { storyId: emoji }
+
+        // Generate mock viewers for demo
+        function generateMockViewers(storyId) {
+            if (storyViewersMap[storyId]) return storyViewersMap[storyId];
+            const names = [
+                { name: 'سارة المنصوري', avatar: 'https://picsum.photos/seed/sara-legal/40/40.jpg' },
+                { name: 'خالد العمري', avatar: 'https://picsum.photos/seed/kali-jordan/40/40.jpg' },
+                { name: 'فاطمة الحربي', avatar: 'https://picsum.photos/seed/fatima-h/40/40.jpg' },
+                { name: 'محمد الشعيبي', avatar: 'https://picsum.photos/seed/mohammed-ali/40/40.jpg' },
+                { name: 'نورة القحطاني', avatar: 'https://picsum.photos/seed/noura-q/40/40.jpg' },
+                { name: 'عبدالله السعيد', avatar: 'https://picsum.photos/seed/abdullah-s/40/40.jpg' },
+                { name: 'ريم العتيبي', avatar: 'https://picsum.photos/seed/reem-o/40/40.jpg' },
+                { name: 'يوسف الدوسري', avatar: 'https://picsum.photos/seed/yusuf-d/40/40.jpg' },
+            ];
+            const emojis = ['❤️', '👍', '😍', '😮', '😢', '', '', ''];
+            const times = ['منذ دقيقتين', 'منذ 5 دقائق', 'منذ 10 دقائق', 'منذ 15 دقيقة', 'منذ 20 دقيقة', 'منذ 30 دقيقة', 'منذ ساعة', 'منذ ساعتين'];
+            const shuffled = names.sort(() => Math.random() - 0.5);
+            const count = Math.floor(Math.random() * 5) + 3;
+            storyViewersMap[storyId] = shuffled.slice(0, count).map((u, i) => ({
+                ...u,
+                time: times[i] || 'منذ ساعة',
+                reaction: emojis[Math.floor(Math.random() * emojis.length)]
+            }));
+            return storyViewersMap[storyId];
+        }
+
+        function updateStoryViewCount() {
+            const user = storiesData[currentStoryUserIndex];
+            if (!user) return;
+            const story = user.stories[currentStoryIndex];
+            if (!story) return;
+            const viewers = generateMockViewers(story.id);
+            const el = document.getElementById('storyViewCount');
+            if (el) el.textContent = viewers.length;
+        }
+
+        function reactToStory(emoji) {
+            const user = storiesData[currentStoryUserIndex];
+            if (!user) return;
+            const story = user.stories[currentStoryIndex];
+            if (!story) return;
+
+            // Toggle reaction
+            const prevEmoji = myStoryReactions[story.id];
+            if (prevEmoji === emoji) {
+                // Remove reaction
+                delete myStoryReactions[story.id];
+                showToast('تم إزالة التفاعل');
+            } else {
+                myStoryReactions[story.id] = emoji;
+                showToast(`تفاعل بـ ${emoji}`);
+            }
+
+            // Update button states
+            document.querySelectorAll('.story-react-btn').forEach(btn => {
+                if (btn.textContent.trim() === emoji && myStoryReactions[story.id] === emoji) {
+                    btn.classList.add('reacted');
+                } else {
+                    btn.classList.remove('reacted');
+                }
+            });
+
+            // Update mock viewers reaction
+            const viewers = generateMockViewers(story.id);
+            if (myStoryReactions[story.id]) {
+                // Add/update "me" in viewers
+                const meIdx = viewers.findIndex(v => v.name === 'أنت');
+                if (meIdx >= 0) {
+                    viewers[meIdx].reaction = myStoryReactions[story.id];
+                } else {
+                    viewers.unshift({
+                        name: 'أنت',
+                        avatar: 'https://picsum.photos/seed/lawyer-me/40/40.jpg',
+                        time: 'الآن',
+                        reaction: myStoryReactions[story.id]
+                    });
+                }
+            } else {
+                // Remove "me" from viewers
+                const meIdx = viewers.findIndex(v => v.name === 'أنت');
+                if (meIdx >= 0) viewers.splice(meIdx, 1);
+            }
+            updateStoryViewCount();
+        }
+
+        function showStoryViewersList() {
+            const user = storiesData[currentStoryUserIndex];
+            if (!user) return;
+            const story = user.stories[currentStoryIndex];
+            if (!story) return;
+
+            const viewers = generateMockViewers(story.id);
+            const reacted = viewers.filter(v => v.reaction);
+            const allCount = viewers.length;
+            const reactedCount = reacted.length;
+
+            document.getElementById('svCountAll').textContent = allCount;
+            document.getElementById('svCountReacted').textContent = reactedCount;
+            document.getElementById('svCountViewed').textContent = allCount - reactedCount;
+
+            renderStoryViewers(viewers, 'all');
+            document.getElementById('storyViewersModal').classList.add('active');
+        }
+
+        function renderStoryViewers(viewers, tab) {
+            const list = document.getElementById('storyViewersList');
+            let filtered = viewers;
+            if (tab === 'reacted') filtered = viewers.filter(v => v.reaction);
+            if (tab === 'viewed') filtered = viewers.filter(v => !v.reaction);
+
+            if (filtered.length === 0) {
+                list.innerHTML = `<div style="text-align:center;padding:40px 20px;color:#737373">
+                    <span class="iconify" data-icon="lucide:eye-off" style="font-size:32px;margin-bottom:8px;display:block"></span>
+                    <p style="font-size:13px">لا يوجد ${tab === 'reacted' ? 'متفاعلون' : 'مشاهدون'} بعد</p>
+                </div>`;
+                return;
+            }
+
+            list.innerHTML = filtered.map(v => `
+                <div class="story-viewer-item">
+                    <img src="${v.avatar}" alt="${v.name}">
+                    <div class="story-viewer-info">
+                        <div class="story-viewer-name">${v.name}</div>
+                        <div class="story-viewer-time">${v.time}</div>
+                    </div>
+                    ${v.reaction ? `<div class="story-viewer-reaction">${v.reaction}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function switchStoryViewersTab(btn, tab) {
+            document.querySelectorAll('.story-viewers-tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            const user = storiesData[currentStoryUserIndex];
+            if (!user) return;
+            const story = user.stories[currentStoryIndex];
+            if (!story) return;
+            const viewers = generateMockViewers(story.id);
+            renderStoryViewers(viewers, tab);
+        }
+
+        function closeStoryViewersModal(e) {
+            if (e && e.target !== e.currentTarget) return;
+            document.getElementById('storyViewersModal').classList.remove('active');
+        }
+        function closeStoryViewersModalDirect() {
+            document.getElementById('storyViewersModal').classList.remove('active');
+        }
+
+        // Update renderStoryContent to show view count and reaction state
+        const _origRenderStoryContent = renderStoryContent;
+        if (typeof renderStoryContent === 'function') {
+            const _origFn = renderStoryContent;
+            renderStoryContent = function() {
+                _origFn();
+                // Update view count after rendering
+                setTimeout(() => {
+                    updateStoryViewCount();
+                    // Restore reaction button state
+                    const user = storiesData[currentStoryUserIndex];
+                    if (!user) return;
+                    const story = user.stories[currentStoryIndex];
+                    if (!story) return;
+                    const myReact = myStoryReactions[story.id];
+                    document.querySelectorAll('.story-react-btn').forEach(btn => {
+                        btn.classList.toggle('reacted', btn.textContent.trim() === myReact);
+                    });
+                }, 100);
+            };
+        }
+
         // ============================================================
         // ===== END STORIES ==========================================
         // ============================================================
