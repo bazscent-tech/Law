@@ -85,13 +85,14 @@
 
         // ===== Update UI with real profile data =====
         function updateUIWithRealProfile() {
-            if (!sbProfile) return;
+            const p = window.sbProfile;
+            if (!p) return;
 
-            const name = sbProfile.name || sbProfile.display_name || 'مستخدم';
-            const username = sbProfile.username ? '@' + sbProfile.username : '';
-            const avatar = sbProfile.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=f97316&textColor=ffffff`;
-            const title = sbProfile.title || '';
-            const location = sbProfile.location || '';
+            const name = p.name || p.display_name || 'مستخدم';
+            const username = p.username ? '@' + p.username : '';
+            const avatar = p.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=f97316&textColor=ffffff`;
+            const title = p.title || '';
+            const location = p.location || '';
             const subtitle = (title || location) ? `${title}${title && location ? ' • ' : ''}${location}` : username;
 
             // Update all avatars
@@ -114,9 +115,9 @@
             const sF = document.getElementById('sidebarFollowers');
             const sG = document.getElementById('sidebarFollowing');
             const sP = document.getElementById('sidebarPosts');
-            if (sF) sF.textContent = (sbProfile.followers_count || 0).toLocaleString('ar');
-            if (sG) sG.textContent = (sbProfile.following_count || 0).toLocaleString('ar');
-            if (sP) sP.textContent = (sbProfile.posts_count || 0).toLocaleString('ar');
+            if (sF) sF.textContent = (p.followers_count || 0).toLocaleString('ar');
+            if (sG) sG.textContent = (p.following_count || 0).toLocaleString('ar');
+            if (sP) sP.textContent = (p.posts_count || 0).toLocaleString('ar');
 
             // Update mobile drawer
             const mdName = document.getElementById('mobileDrawerName');
@@ -125,8 +126,8 @@
             const mdFing = document.getElementById('mobileDrawerFollowing');
             if (mdName) mdName.textContent = name;
             if (mdUser) mdUser.textContent = username;
-            if (mdFoll) mdFoll.textContent = (sbProfile.followers_count || 0).toLocaleString('ar');
-            if (mdFing) mdFing.textContent = (sbProfile.following_count || 0).toLocaleString('ar');
+            if (mdFoll) mdFoll.textContent = (p.followers_count || 0).toLocaleString('ar');
+            if (mdFing) mdFing.textContent = (p.following_count || 0).toLocaleString('ar');
 
             // Update settings page
             const sName = document.getElementById('settingsName');

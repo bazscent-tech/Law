@@ -180,15 +180,16 @@
         const defaultProfile = { name:'مستخدم', username:'', title:'', bio:'', location:'', website:'' };
         function getProfile() {
             // Prefer real Supabase profile
-            if (sbProfile) {
+            const p = window.sbProfile;
+            if (p) {
                 return {
-                    name: sbProfile.name || sbProfile.display_name || 'مستخدم',
-                    username: sbProfile.username ? '@' + sbProfile.username : '',
-                    title: sbProfile.title || '',
-                    bio: sbProfile.bio || '',
-                    location: sbProfile.location || '',
-                    website: sbProfile.website || '',
-                    avatar: sbProfile.avatar_url || ''
+                    name: p.name || p.display_name || 'مستخدم',
+                    username: p.username ? '@' + p.username : '',
+                    title: p.title || '',
+                    bio: p.bio || '',
+                    location: p.location || '',
+                    website: p.website || '',
+                    avatar: p.avatar_url || ''
                 };
             }
             // Fallback to localStorage
