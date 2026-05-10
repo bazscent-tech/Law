@@ -75,7 +75,8 @@
             }
             document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
             document.querySelectorAll('.sidebar-link').forEach(l => { if (l.textContent.includes(getPageLabel(page))) l.classList.add('active'); });
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // ⚡ سرعة: انتقال فوري بدون animation بطيء
+            window.scrollTo(0, 0);
         }
         function getPageLabel(page) { const m = { 'feed':'الرئيسية','profile':'ملفي الشخصي','connections':'الروابط','bookmarks':'المحفوظات','articles':'مقالاتي','events':'الفعاليات','certificates':'الشهادات','notifications':'الإشعارات','messages':'الرسائل','settings':'الإعدادات','following':'أتابع','audio-spaces':'المساحات الصوتية','trending':'المواضيع الرائجة' }; return m[page] || ''; }
         function doSearch() { const q = document.getElementById('searchInput').value.trim(); if (q) showToast('بحث عن: ' + q); }
@@ -313,9 +314,10 @@
             editBtns.forEach(b => { if (b.textContent.includes('تعديل') || b.querySelector('[data-icon="lucide:share-2"]')) b.style.display = 'none'; });
             // Hide ALL edit controls for visited profile
             _setProfileEditMode(false);
-            // Hide library create buttons when visiting another profile
-            const libCreateBtns = document.querySelectorAll('#page-profile .lib-btn-primary, #librariesGrid button[onclick*="openMenu"]');
-            libCreateBtns.forEach(b => b.style.display = 'none');
+            // Hide library create buttons when visiting another profile (but KEEP menu buttons)
+            document.querySelectorAll('#libraryEmptyState button, [onclick*="openCreateLibraryModal"], #librariesGrid .lib-btn-primary').forEach(b => b.style.display = 'none');
+            // ⚡ أزل إخفاء أزرار القائمة (الثلاث نقاط) — نريدها تعمل للزوار
+            document.querySelectorAll('#librariesGrid button[onclick*="openMenu"]').forEach(b => b.style.display = '');
             // Hide "إنشاء مكتبة" button (multiple selectors for reliability)
             document.querySelectorAll('#libraryEmptyState button, [onclick*="openCreateLibraryModal"]').forEach(b => b.style.display = 'none');
             // Change library empty state text for visited profile
@@ -363,10 +365,24 @@
 
         function closeUserProfile() {
             _visitingProfile = null;
-            // Restore own profile
+            // ⚡ استعد البروفايل من الكاش فوراً
+            const cachedProfile = (() => {
+                try {
+                    const allKeys = Object.keys(localStorage);
+                    const profileKey = allKeys.find(k => k.startsWith('auth_profile_'));
+                    return profileKey ? Safe.getJSON(profileKey, null) : null;
+                } catch(e) { return null; }
+            })();
+            const avatarUrl = cachedProfile?.avatar_url || 'https://api.dicebear.com/7.x/initials/svg?seed=User&backgroundColor=f97316&textColor=ffffff';
+            const userName = cachedProfile?.name || 'مستخدم';
+
             loadProfile();
             const pa = document.querySelector('#desktopAvatar');
-            if (pa) { pa.src = 'https://picsum.photos/seed/lawyer-me/120/120.jpg'; pa.onclick = () => document.getElementById('profileAvatarUpload').click(); }
+            if (pa) { pa.src = avatarUrl; pa.onclick = () => document.getElementById('profileAvatarUpload').click(); }
+            // حدّث الاسم أيضاً
+            const ppName = document.getElementById('profileDisplayName');
+            if (ppName) ppName.textContent = userName;
+
             const cv = document.querySelector('#coverPhoto');
             if (cv) { cv.classList.add('hidden'); }
             const coverEl = document.querySelector('#page-profile .h-48');
@@ -458,7 +474,10 @@
                 const { data: libs } = await sb.from('libraries')
                     .select('*')
                     .eq('owner_id', profileId)
+                    .eq('visibility', 'public')  // ⚡ فقط المكتبات العامة
                     .order('created_at', { ascending: false });
+                // ⚡ خزن مكتبات الزوار لاستخدامها في openLibrary و openMenu
+                Library._visitorLibraries = libs || [];
                 if (!libs || libs.length === 0) {
                     if (grid) grid.classList.add('hidden');
                     if (emptyState) emptyState.classList.remove('hidden');

@@ -4,6 +4,7 @@
 
 const Library = {
     _cache: { libraries: [], items: {}, currentLib: null, currentFile: null },
+    _visitorLibraries: [],  // ⚡ مكتبات الزوار
     _initialized: false,
 
     // ===== INITIALIZATION =====
@@ -318,8 +319,21 @@ const Library = {
 
     // ===== RENDER: LIBRARY DETAIL =====
     async openLibrary(libId) {
-        const lib = this._cache.libraries.find(l => l.id === libId);
-        if (!lib) return;
+        // ⚡ ابحث في الكاش أولاً، ثم في مكتبات الزوار
+        let lib = this._cache.libraries.find(l => l.id === libId);
+        if (!lib && this._visitorLibraries) {
+            lib = this._visitorLibraries.find(l => l.id === libId);
+        }
+        if (!lib) {
+            // ⚡ محاولة أخيرة: جلب المكتبة من Supabase مباشرة
+            if (sbOnline) {
+                try {
+                    const { data } = await sb.from('libraries').select('*').eq('id', libId).single();
+                    if (data) lib = data;
+                } catch(e) { console.warn('Library fetch failed:', e); }
+            }
+            if (!lib) { showToast('لا يمكن فتح المكتبة'); return; }
+        }
 
         this._cache.currentLib = lib;
         const items = await this.fetchItems(libId);
@@ -369,6 +383,11 @@ const Library = {
         // Footer buttons
         document.getElementById('libDetailAddBtn').onclick = () => Library.openAddItemModal(libId);
         document.getElementById('libDetailDeleteBtn').onclick = () => Library.confirmDeleteLibrary(libId);
+
+        // ⚡ زائر: أزرار المالك مخفية
+        const isOwner = this._cache.libraries.some(l => l.id === libId);
+        document.getElementById('libDetailAddBtn').style.display = isOwner ? '' : 'none';
+        document.getElementById('libDetailDeleteBtn').style.display = isOwner ? '' : 'none';
 
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
@@ -840,7 +859,12 @@ const Library = {
 
     // ===== LIBRARY CONTEXT MENU =====
     openMenu(libId) {
-        const lib = this._cache.libraries.find(l => l.id === libId);
+        // ⚡ ابحث في كاش المستخدم أولاً، ثم في مكتبات الزوار
+        let lib = this._cache.libraries.find(l => l.id === libId);
+        const isVisitor = !lib && this._visitorLibraries;
+        if (!lib && isVisitor) {
+            lib = this._visitorLibraries.find(l => l.id === libId);
+        }
         if (!lib) return;
 
         const modal = document.getElementById('libMenuModal');
@@ -851,20 +875,35 @@ const Library = {
         document.getElementById('libMenuIcon').style.background = lib.color + '15';
         document.getElementById('libMenuIcon').style.color = lib.color;
 
-        // Buttons
-        document.getElementById('libMenuEdit').onclick = () => { modal.classList.remove('active'); Library._editLibraryPrompt(libId); };
-        document.getElementById('libMenuAdd').onclick = () => { modal.classList.remove('active'); Library.openAddItemModal(libId); };
-        document.getElementById('libMenuVisibility').innerHTML = lib.visibility === 'public'
-            ? '<span class="iconify" data-icon="lucide:lock"></span> جعلها خاصة'
-            : '<span class="iconify" data-icon="lucide:globe"></span> جعلها عامة';
-        document.getElementById('libMenuVisibility').onclick = async () => {
-            const newVis = lib.visibility === 'public' ? 'private' : 'public';
-            await Library.updateLibrary(libId, { visibility: newVis });
-            Library.renderProfileLibraries(sbUser?.id || 'local');
-            modal.classList.remove('active');
-            showToast('تم تحديث الخصوصية');
-        };
-        document.getElementById('libMenuDelete').onclick = () => { modal.classList.remove('active'); Library.confirmDeleteLibrary(libId); };
+        // ⚡ زائر: أظهر خيارات المشاهدة فقط
+        if (isVisitor) {
+            document.getElementById('libMenuEdit').style.display = 'none';
+            document.getElementById('libMenuVisibility').style.display = 'none';
+            document.getElementById('libMenuDelete').style.display = 'none';
+            document.getElementById('libMenuAdd').innerHTML = '<span class="iconify" data-icon="lucide:eye"></span> عرض المحتوى';
+            document.getElementById('libMenuAdd').onclick = () => { modal.classList.remove('active'); Library.openLibrary(libId); };
+        } else {
+            // المالك: أظهر كل الخيارات
+            document.getElementById('libMenuEdit').style.display = '';
+            document.getElementById('libMenuVisibility').style.display = '';
+            document.getElementById('libMenuDelete').style.display = '';
+            document.getElementById('libMenuAdd').innerHTML = '<span class="iconify" data-icon="lucide:plus-circle"></span> إضافة عنصر';
+
+            // Buttons
+            document.getElementById('libMenuEdit').onclick = () => { modal.classList.remove('active'); Library._editLibraryPrompt(libId); };
+            document.getElementById('libMenuAdd').onclick = () => { modal.classList.remove('active'); Library.openAddItemModal(libId); };
+            document.getElementById('libMenuVisibility').innerHTML = lib.visibility === 'public'
+                ? '<span class="iconify" data-icon="lucide:lock"></span> جعلها خاصة'
+                : '<span class="iconify" data-icon="lucide:globe"></span> جعلها عامة';
+            document.getElementById('libMenuVisibility').onclick = async () => {
+                const newVis = lib.visibility === 'public' ? 'private' : 'public';
+                await Library.updateLibrary(libId, { visibility: newVis });
+                Library.renderProfileLibraries(sbUser?.id || 'local');
+                modal.classList.remove('active');
+                showToast('تم تحديث الخصوصية');
+            };
+            document.getElementById('libMenuDelete').onclick = () => { modal.classList.remove('active'); Library.confirmDeleteLibrary(libId); };
+        }
 
         modal.classList.add('active');
     },
