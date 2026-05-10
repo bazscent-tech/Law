@@ -200,10 +200,7 @@
             const dn=document.querySelector('#mobileDrawer h3'); if(dn)dn.textContent=name;
         }
         async function loadProfile() {
-            // Try localStorage first
-            const s=UserStore.getString('userProfile');
-            if(s){try{applyProfile(JSON.parse(s));}catch(e){}}
-            // Also load from Supabase profile if available
+            // Load from Supabase profile first (real data)
             if(sbProfile){
                 applyProfile({
                     name: sbProfile.name || sbProfile.display_name,
@@ -213,7 +210,6 @@
                     location: sbProfile.location,
                     website: sbProfile.website
                 });
-                // Sync to localStorage for offline use
                 UserStore.setJSON('userProfile',{
                     name: sbProfile.name || sbProfile.display_name,
                     username: '@'+(sbProfile.username||''),
@@ -222,6 +218,10 @@
                     location: sbProfile.location||'',
                     website: sbProfile.website||''
                 });
+            } else {
+                // Fallback to localStorage if no Supabase profile
+                const s=UserStore.getString('userProfile');
+                if(s){try{applyProfile(JSON.parse(s));}catch(e){}}
             }
         }
 
