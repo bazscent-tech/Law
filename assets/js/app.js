@@ -2341,18 +2341,18 @@
         function toggleConnect(btn) {
             if (btn.classList.contains('connected')) {
                 btn.classList.remove('connected');
-                btn.textContent = 'ربط';
+                btn.textContent = 'متابعة';
                 btn.style.borderColor = '';
                 btn.style.color = '';
                 btn.style.background = '';
-                showToast('تم إلغاء الربط');
+                showToast('تم إلغاء المتابعة');
             } else {
                 btn.classList.add('connected');
-                btn.textContent = 'تم الربط ✓';
+                btn.textContent = 'متابَع ✓';
                 btn.style.borderColor = 'rgba(34,197,94,0.5)';
                 btn.style.color = '#22c55e';
                 btn.style.background = 'rgba(34,197,94,0.1)';
-                showToast('تم الربط ✓');
+                showToast('متابَع ✓');
             }
         }
 
