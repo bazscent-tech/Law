@@ -1057,3 +1057,102 @@
         }
         .story-upload-progress .spinner { width: 18px; height: 18px; border-width: 2px; }
     </style>
+
+/* ===== NEW FEATURES CSS ===== */
+
+/* Message Badge */
+.msg-badge {
+    animation: pulse-dot 2s infinite;
+    font-family: 'Noto Kufi Arabic', sans-serif;
+}
+
+/* Search Results */
+.search-results-section .post-card {
+    border-right: 3px solid rgba(249,115,22,0.3);
+}
+
+/* Article Editor */
+#articleEditorModal .modal-overlay {
+    z-index: 1100;
+}
+
+/* Enhanced connection buttons */
+.conn-msg-btn {
+    font-size: 11px;
+    font-weight: 600;
+    color: #f97316;
+    border: 1px solid rgba(249,115,22,0.3);
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.conn-msg-btn:hover {
+    background: rgba(249,115,22,0.1);
+}
+
+/* Loading skeleton for messages */
+.msg-skeleton {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+}
+.msg-skeleton .avatar-skel {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+}
+.msg-skeleton .lines-skel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.msg-skeleton .line-skel {
+    height: 12px;
+    border-radius: 6px;
+}
+.msg-skeleton .line-skel.short { width: 40%; }
+.msg-skeleton .line-skel.medium { width: 70%; }
+
+/* Event registration confirmed */
+.event-registered {
+    border-color: rgba(34,197,94,0.3) !important;
+}
+.event-registered:hover {
+    border-color: rgba(34,197,94,0.5) !important;
+}
+
+/* Bookmark saved animation */
+@keyframes bookmarkSave {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+.bookmark-btn.saved .iconify {
+    animation: bookmarkSave 0.3s ease;
+}
+
+/* Infinite scroll fade-in for new posts */
+.dynamic-post .post-card {
+    animation: fadeInUp 0.4s ease-out forwards;
+}
+
+/* Chat message bubbles */
+#chatMessages .flex {
+    margin-bottom: 4px;
+}
+
+/* Responsive messages page */
+@media (max-width: 768px) {
+    #page-messages .flex {
+        flex-direction: column;
+    }
+    #page-messages .w-80 {
+        width: 100%;
+        border-left: none;
+        border-bottom: 1px solid rgba(64,64,64,0.5);
+        max-height: 200px;
+    }
+}

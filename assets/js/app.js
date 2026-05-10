@@ -769,7 +769,7 @@
                         <div class="flex items-center gap-4 mt-1.5">
                             <span class="text-[10px] text-dark-500 cursor-pointer hover:text-brand-400">إعجاب</span>
                             <span class="text-[10px] text-dark-500 cursor-pointer hover:text-brand-400">رد</span>
-                            <span class="share-comment-btn" onclick="shareCommentAsPost('${postId}', ${JSON.stringify(c).replace(/"/g, '&quot;')})">مشاركة</span>
+                            <span class="share-comment-btn" onclick='shareCommentAsPost(\"${postId}\", ${JSON.stringify(c).replace(/'/g, "\\'").replace(/"/g, '&quot;')})'>مشاركة</span>
                         </div>
                     </div>
                 </div>
@@ -876,8 +876,18 @@
             return post || null;
         }
 
-        function shareCommentAsPost(postId, comment) {
-            const c = typeof comment === 'string' ? JSON.parse(comment) : comment;
+        function shareCommentAsPost(postId, commentOrId) {
+            let c;
+            if (typeof commentOrId === 'object') {
+                c = commentOrId;
+            } else if (typeof commentOrId === 'string' && commentOrId.startsWith('{')) {
+                c = JSON.parse(commentOrId);
+            } else {
+                // Look up by ID from platformComments
+                const comments = platformComments[postId] || [];
+                c = comments.find(x => x.id === commentOrId);
+                if (!c) { showToast('التعليق غير موجود'); return; }
+            }
             userPostCounter++;
             const repostId = 'user-' + userPostCounter;
             userPosts.unshift({
@@ -887,6 +897,8 @@
             });
             saveUserPosts();
             closePostDetail();
+            renderFeedPosts();
+            renderProfilePosts();
             showToast('تم نشر التعليق كمنشور ✓');
         }
 
@@ -980,7 +992,7 @@
                 section.classList.add('open');
                 const area = section.querySelector('.space-y-3');
                 const div = document.createElement('div'); div.className = 'flex gap-3';
-                div.innerHTML = `<img src="https://picsum.photos/seed/lawyer-me/40/40.jpg" class="w-8 h-8 rounded-lg object-cover shrink-0" alt=""><div class="flex-1 bg-dark-850 rounded-xl px-3 py-2"><p class="text-xs font-semibold mb-1">${profile.name}</p>${isStickerOnly ? `<div class="comment-sticker-sm">${text}</div>` : `<p class="text-xs text-dark-300">${text.replace(/</g,'&lt;')}</p>`}<p class="text-[10px] text-dark-500 mt-1">الآن • <span class="cursor-pointer hover:text-brand-400">إعجاب</span> • <span class="cursor-pointer hover:text-brand-400">رد</span> • <span class="share-comment-btn" onclick="shareCommentAsPost('${postId}',${JSON.stringify(comment).replace(/"/g,'&quot;')">مشاركة</span></p></div>`;
+                div.innerHTML = `<img src="https://picsum.photos/seed/lawyer-me/40/40.jpg" class="w-8 h-8 rounded-lg object-cover shrink-0" alt=""><div class="flex-1 bg-dark-850 rounded-xl px-3 py-2"><p class="text-xs font-semibold mb-1">${profile.name}</p>${isStickerOnly ? `<div class="comment-sticker-sm">${text}</div>` : `<p class="text-xs text-dark-300">${text.replace(/</g,'&lt;')}</p>`}<p class="text-[10px] text-dark-500 mt-1">الآن • <span class="cursor-pointer hover:text-brand-400">إعجاب</span> • <span class="cursor-pointer hover:text-brand-400">رد</span> • <span class="share-comment-btn" onclick="shareCommentAsPost('${postId}',comment.id)">مشاركة</span></p></div>`;
                 area.insertBefore(div, area.lastElementChild);
             }
             inputEl.value = '';
@@ -1079,7 +1091,7 @@
                     <button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleBookmark(this)"><span class="iconify text-lg text-dark-400 group-hover:text-brand-400 transition-colors" data-icon="lucide:bookmark"></span></button>
                 </div></div>
                 <div class="comment-section px-5 pb-4" id="comments-${post.id}"><div class="border-t border-dark-800/50 pt-3 space-y-3">
-                    ${comments.map(c=>`<div class="flex gap-3"><img src="${c.avatar||'https://picsum.photos/seed/default/40/40.jpg'}" class="w-8 h-8 rounded-lg object-cover shrink-0" alt=""><div class="flex-1 bg-dark-850 rounded-xl px-3 py-2"><p class="text-xs font-semibold mb-1">${c.author}</p>${c.isSticker?`<div class="comment-sticker-sm">${c.text}</div>`:`<p class="text-xs text-dark-300">${c.text}</p>`}<p class="text-[10px] text-dark-500 mt-1">${c.time} • <span class="cursor-pointer hover:text-brand-400">إعجاب</span> • <span class="cursor-pointer hover:text-brand-400">رد</span> • <span class="share-comment-btn" onclick="shareCommentAsPost('${post.id}',${JSON.stringify(c).replace(/"/g,'&quot;')">مشاركة</span></p></div></div>`).join('')}
+                    ${comments.map(c=>`<div class="flex gap-3"><img src="${c.avatar||'https://picsum.photos/seed/default/40/40.jpg'}" class="w-8 h-8 rounded-lg object-cover shrink-0" alt=""><div class="flex-1 bg-dark-850 rounded-xl px-3 py-2"><p class="text-xs font-semibold mb-1">${c.author}</p>${c.isSticker?`<div class="comment-sticker-sm">${c.text}</div>`:`<p class="text-xs text-dark-300">${c.text}</p>`}<p class="text-[10px] text-dark-500 mt-1">${c.time} • <span class="cursor-pointer hover:text-brand-400">إعجاب</span> • <span class="cursor-pointer hover:text-brand-400">رد</span> • <span class="share-comment-btn" onclick="shareCommentAsPost('${post.id}',c.id)">مشاركة</span></p></div></div>`).join('')}
                     <div class="flex gap-2 relative">
                         <button onclick="event.stopPropagation();toggleStickerPicker('${post.id}')" class="p-2 rounded-lg hover:bg-dark-800 transition-colors shrink-0"><span class="iconify text-dark-400 text-lg" data-icon="lucide:smile"></span></button>
                         <div id="stickerPicker-${post.id}" class="sticker-picker"></div>
@@ -1098,7 +1110,7 @@
             const fb = `<button class="follow-btn${alreadyFollowing ? ' following' : ''} flex items-center gap-1.5 bg-dark-800 hover:bg-dark-700 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all shrink-0" style="${alreadyFollowing ? 'color:#a3a3a3;border-color:#525252;' : 'color:#f97316;border-color:rgba(249,115,22,0.3);'}" data-author="${post.author}" onclick="toggleFollow(this)"><span class="iconify text-sm" data-icon="${alreadyFollowing ? 'lucide:check' : 'lucide:user-plus'}"></span><span class="follow-text">${alreadyFollowing ? 'يتابع' : 'متابعة'}</span><span class="unfollow-text">إلغاء</span></button>`;
             const comments = getPostComments(post.id);
 
-            return `<article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up overflow-hidden" style="animation-delay:${index*80}ms"><div class="p-5 pb-0"><div class="flex items-start justify-between mb-3"><div class="flex items-center gap-3"><div class="w-11 h-11 rounded-xl bg-gradient-to-br ${post.gradient} flex items-center justify-center text-white font-bold border border-dark-700 shrink-0">${post.avatar}</div><div><div class="flex items-center gap-2"><h3 class="font-semibold text-sm">${post.author}</h3>${vb}</div><p class="text-dark-400 text-xs">${post.role} • ${post.time}</p></div></div>${fb}</div><div class="mb-3 cursor-pointer" onclick="openPostDetail('${post.id}')">${th}<p class="text-dark-200 text-sm leading-relaxed">${post.content.replace(/\n/g,'<br>')}</p></div><div class="flex flex-wrap gap-2 mb-4">${tagsHTML}</div></div><div class="px-5 pb-2"><div class="flex items-center justify-between text-dark-400 text-xs mb-2"><span id="likes-inf-${index}">${post.likes} إعجاب</span><span class="cursor-pointer hover:text-brand-400" onclick="openPostDetail('${post.id}')">${comments.length} تعليق • ${post.shares} مشاركة</span></div></div><div class="border-t border-dark-800/50 px-2 py-1"><div class="flex items-center justify-around"><button class="like-btn${isLiked(post.id)?' liked':''} flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleLike(this,${post.likes},'likes-inf-${index}','${post.id}',this.closest('article'))"><span class="iconify text-lg ${isLiked(post.id)?'text-red-400':'text-dark-400'} group-hover:text-red-400 transition-colors" data-icon="lucide:heart"></span><span class="text-sm ${isLiked(post.id)?'text-red-400':'text-dark-400'} group-hover:text-red-400 transition-colors like-count">${post.likes}</span></button><button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="openPostDetail('${post.id}')"><span class="iconify text-lg text-dark-400 group-hover:text-blue-400 transition-colors" data-icon="lucide:message-circle"></span><span class="text-sm text-dark-400 group-hover:text-blue-400 transition-colors">${comments.length}</span></button><button class="repost-btn${isReposted(post.id)?' reposted':''} flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleRepost('${post.id}',this,this.closest('article'))"><span class="iconify text-lg ${isReposted(post.id)?'text-green-400':'text-dark-400'} group-hover:text-green-400 transition-colors" data-icon="lucide:repeat-2"></span><span class="text-sm ${isReposted(post.id)?'text-green-400':'text-dark-400'} group-hover:text-green-400 transition-colors">${post.shares}</span></button><button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleBookmark(this)"><span class="iconify text-lg text-dark-400 group-hover:text-brand-400 transition-colors" data-icon="lucide:bookmark"></span></button></div></div><div class="comment-section px-5 pb-4" id="comments-${post.id}"><div class="border-t border-dark-800/50 pt-3 space-y-3">${comments.map(c=>`<div class="flex gap-3"><img src="${c.avatar||'https://picsum.photos/seed/default/40/40.jpg'}" class="w-8 h-8 rounded-lg object-cover shrink-0" alt=""><div class="flex-1 bg-dark-850 rounded-xl px-3 py-2"><p class="text-xs font-semibold mb-1">${c.author}</p>${c.isSticker?`<div class="comment-sticker-sm">${c.text}</div>`:`<p class="text-xs text-dark-300">${c.text}</p>`}<p class="text-[10px] text-dark-500 mt-1">${c.time} • <span class="cursor-pointer hover:text-brand-400">إعجاب</span> • <span class="cursor-pointer hover:text-brand-400">رد</span> • <span class="share-comment-btn" onclick="shareCommentAsPost('${post.id}',${JSON.stringify(c).replace(/"/g,'&quot;')">مشاركة</span></p></div></div>`).join('')}<div class="flex gap-2 relative"><button onclick="event.stopPropagation();toggleStickerPicker('${post.id}')" class="p-2 rounded-lg hover:bg-dark-800 transition-colors shrink-0"><span class="iconify text-dark-400 text-lg" data-icon="lucide:smile"></span></button><div id="stickerPicker-${post.id}" class="sticker-picker"></div><input type="text" placeholder="اكتب تعليقاً أو اختر ملصق..." class="comment-input flex-1 bg-dark-800 border border-dark-700/50 rounded-lg px-3 py-2 text-xs text-white placeholder-dark-400 focus:outline-none focus:border-brand-500/50 transition-all" onkeydown="if(event.key==='Enter'){submitComment(this,'${post.id}')}"><button class="bg-brand-500 hover:bg-brand-600 text-white text-xs px-3 py-2 rounded-lg transition-all" onclick="submitComment(this.previousElementSibling,'${post.id}')"><span class="iconify text-sm" data-icon="lucide:send"></span></button></div></div></div></article>`;
+            return `<article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 transition-all duration-300 animate-fade-in-up overflow-hidden" style="animation-delay:${index*80}ms"><div class="p-5 pb-0"><div class="flex items-start justify-between mb-3"><div class="flex items-center gap-3"><div class="w-11 h-11 rounded-xl bg-gradient-to-br ${post.gradient} flex items-center justify-center text-white font-bold border border-dark-700 shrink-0">${post.avatar}</div><div><div class="flex items-center gap-2"><h3 class="font-semibold text-sm">${post.author}</h3>${vb}</div><p class="text-dark-400 text-xs">${post.role} • ${post.time}</p></div></div>${fb}</div><div class="mb-3 cursor-pointer" onclick="openPostDetail('${post.id}')">${th}<p class="text-dark-200 text-sm leading-relaxed">${post.content.replace(/\n/g,'<br>')}</p></div><div class="flex flex-wrap gap-2 mb-4">${tagsHTML}</div></div><div class="px-5 pb-2"><div class="flex items-center justify-between text-dark-400 text-xs mb-2"><span id="likes-inf-${index}">${post.likes} إعجاب</span><span class="cursor-pointer hover:text-brand-400" onclick="openPostDetail('${post.id}')">${comments.length} تعليق • ${post.shares} مشاركة</span></div></div><div class="border-t border-dark-800/50 px-2 py-1"><div class="flex items-center justify-around"><button class="like-btn${isLiked(post.id)?' liked':''} flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleLike(this,${post.likes},'likes-inf-${index}','${post.id}',this.closest('article'))"><span class="iconify text-lg ${isLiked(post.id)?'text-red-400':'text-dark-400'} group-hover:text-red-400 transition-colors" data-icon="lucide:heart"></span><span class="text-sm ${isLiked(post.id)?'text-red-400':'text-dark-400'} group-hover:text-red-400 transition-colors like-count">${post.likes}</span></button><button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="openPostDetail('${post.id}')"><span class="iconify text-lg text-dark-400 group-hover:text-blue-400 transition-colors" data-icon="lucide:message-circle"></span><span class="text-sm text-dark-400 group-hover:text-blue-400 transition-colors">${comments.length}</span></button><button class="repost-btn${isReposted(post.id)?' reposted':''} flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleRepost('${post.id}',this,this.closest('article'))"><span class="iconify text-lg ${isReposted(post.id)?'text-green-400':'text-dark-400'} group-hover:text-green-400 transition-colors" data-icon="lucide:repeat-2"></span><span class="text-sm ${isReposted(post.id)?'text-green-400':'text-dark-400'} group-hover:text-green-400 transition-colors">${post.shares}</span></button><button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" onclick="toggleBookmark(this)"><span class="iconify text-lg text-dark-400 group-hover:text-brand-400 transition-colors" data-icon="lucide:bookmark"></span></button></div></div><div class="comment-section px-5 pb-4" id="comments-${post.id}"><div class="border-t border-dark-800/50 pt-3 space-y-3">${comments.map(c=>`<div class="flex gap-3"><img src="${c.avatar||'https://picsum.photos/seed/default/40/40.jpg'}" class="w-8 h-8 rounded-lg object-cover shrink-0" alt=""><div class="flex-1 bg-dark-850 rounded-xl px-3 py-2"><p class="text-xs font-semibold mb-1">${c.author}</p>${c.isSticker?`<div class="comment-sticker-sm">${c.text}</div>`:`<p class="text-xs text-dark-300">${c.text}</p>`}<p class="text-[10px] text-dark-500 mt-1">${c.time} • <span class="cursor-pointer hover:text-brand-400">إعجاب</span> • <span class="cursor-pointer hover:text-brand-400">رد</span> • <span class="share-comment-btn" onclick="shareCommentAsPost('${post.id}',c.id)">مشاركة</span></p></div></div>`).join('')}<div class="flex gap-2 relative"><button onclick="event.stopPropagation();toggleStickerPicker('${post.id}')" class="p-2 rounded-lg hover:bg-dark-800 transition-colors shrink-0"><span class="iconify text-dark-400 text-lg" data-icon="lucide:smile"></span></button><div id="stickerPicker-${post.id}" class="sticker-picker"></div><input type="text" placeholder="اكتب تعليقاً أو اختر ملصق..." class="comment-input flex-1 bg-dark-800 border border-dark-700/50 rounded-lg px-3 py-2 text-xs text-white placeholder-dark-400 focus:outline-none focus:border-brand-500/50 transition-all" onkeydown="if(event.key==='Enter'){submitComment(this,'${post.id}')}"><button class="bg-brand-500 hover:bg-brand-600 text-white text-xs px-3 py-2 rounded-lg transition-all" onclick="submitComment(this.previousElementSibling,'${post.id}')"><span class="iconify text-sm" data-icon="lucide:send"></span></button></div></div></div></article>`;
         }
 
         // ====================================================
@@ -1651,4 +1663,773 @@
                 btn.style.background = 'rgba(34,197,94,0.1)';
                 showToast('تم الربط ✓');
             }
+        }
+
+        // ============================================================
+        // ===== ENHANCED FEATURES - ALL FUNCTIONAL ===================
+        // ============================================================
+
+        // ===== A. MESSAGING SYSTEM =====
+        const MsgStore = {
+            _key: 'lawbook_conversations',
+            _activeId: null,
+
+            getAll() {
+                return JSON.parse(localStorage.getItem(this._key) || '[]');
+            },
+
+            save(list) {
+                localStorage.setItem(this._key, JSON.stringify(list));
+            },
+
+            getOrCreate(userId, userName, userAvatar) {
+                let list = this.getAll();
+                let conv = list.find(c => c.userId === userId);
+                if (!conv) {
+                    conv = {
+                        id: 'conv-' + Date.now(),
+                        userId, userName, userAvatar,
+                        messages: [], unread: 0, lastActivity: Date.now()
+                    };
+                    list.unshift(conv);
+                    this.save(list);
+                }
+                return conv;
+            },
+
+            sendMessage(convId, text, fromMe) {
+                let list = this.getAll();
+                const conv = list.find(c => c.id === convId);
+                if (!conv) return;
+                const msg = {
+                    id: 'msg-' + Date.now(),
+                    text, fromMe,
+                    time: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+                    timestamp: Date.now()
+                };
+                conv.messages.push(msg);
+                conv.lastActivity = Date.now();
+                if (!fromMe) conv.unread = (conv.unread || 0) + 1;
+                this.save(list);
+                return msg;
+            },
+
+            markRead(convId) {
+                let list = this.getAll();
+                const conv = list.find(c => c.id === convId);
+                if (conv) { conv.unread = 0; this.save(list); }
+            },
+
+            getTotalUnread() {
+                return this.getAll().reduce((sum, c) => sum + (c.unread || 0), 0);
+            },
+
+            deleteConversation(convId) {
+                let list = this.getAll().filter(c => c.id !== convId);
+                this.save(list);
+            }
+        };
+
+        // Initialize default conversations if empty
+        function initDefaultConversations() {
+            if (MsgStore.getAll().length > 0) return;
+            const defaults = [
+                { userId: 'sara', userName: 'سارة المنصوري', userAvatar: 'https://picsum.photos/seed/sara-legal/40/40.jpg',
+                  messages: [
+                    { id: 'm1', text: 'السلام عليكم د. أحمد! هل رأيت قانون التحكيم الجديد؟ 📋', fromMe: false, time: '2:30 م', timestamp: Date.now()-3600000 },
+                    { id: 'm2', text: 'وعليكم السلام! نعم، تابعته. تحديثات ممتازة 👍', fromMe: true, time: '2:32 م', timestamp: Date.now()-3500000 },
+                    { id: 'm3', text: 'هل يمكنك مشاركة ملاحظاتك على البنود الجديدة؟', fromMe: false, time: '2:33 م', timestamp: Date.now()-3400000 },
+                    { id: 'm4', text: 'بالتأكيد! سأرسل لك ملخصاً شاملاً اليوم 📝', fromMe: true, time: '2:35 م', timestamp: Date.now()-3300000 }
+                  ], unread: 0, lastActivity: Date.now()-3300000 },
+                { userId: 'khalid', userName: 'خالد العمري', userAvatar: 'https://picsum.photos/seed/khalid-jordan/40/40.jpg',
+                  messages: [
+                    { id: 'm5', text: 'ممتاز! سأراجع العقد غداً', fromMe: false, time: '1:15 م', timestamp: Date.now()-7200000 }
+                  ], unread: 1, lastActivity: Date.now()-7200000 },
+                { userId: 'nora', userName: 'نورة القحطاني', userAvatar: 'https://picsum.photos/seed/nora-lawyer/40/40.jpg',
+                  messages: [
+                    { id: 'm6', text: 'شكراً على المساعدة! 🙏', fromMe: false, time: '11:00 ص', timestamp: Date.now()-14400000 }
+                  ], unread: 0, lastActivity: Date.now()-14400000 },
+                { userId: 'omar', userName: 'عمر الحسيني', userAvatar: 'https://picsum.photos/seed/omar-judge/40/40.jpg',
+                  messages: [
+                    { id: 'm7', text: 'نلتقي في المؤتمر إن شاء الله', fromMe: false, time: 'أمس', timestamp: Date.now()-86400000 }
+                  ], unread: 0, lastActivity: Date.now()-86400000 }
+            ];
+            MsgStore.save(defaults);
+        }
+
+        function renderMessagesPage() {
+            const container = document.getElementById('page-messages');
+            if (!container) return;
+            const conversations = MsgStore.getAll();
+            if (conversations.length === 0) {
+                container.innerHTML = '<div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-12 text-center"><span class="iconify text-4xl text-dark-500 mb-3 block" data-icon="lucide:message-circle"></span><p class="text-dark-400 text-sm">لا توجد محادثات بعد</p><button class="mt-3 bg-brand-500 text-white text-sm px-5 py-2 rounded-xl" onclick="showToast(\'ابحث عن مستخدم لبدء محادثة\')">بدء محادثة</button></div>';
+                return;
+            }
+
+            const activeConv = MsgStore._activeId ? conversations.find(c => c.id === MsgStore._activeId) : conversations[0];
+            if (!MsgStore._activeId && activeConv) MsgStore._activeId = activeConv.id;
+
+            const convListHTML = conversations.map(conv => {
+                const lastMsg = conv.messages.length > 0 ? conv.messages[conv.messages.length - 1] : null;
+                const isActive = conv.id === MsgStore._activeId;
+                return `<div class="msg-item${isActive ? ' active' : ''} flex items-center gap-3 p-3 cursor-pointer transition-all${isActive ? ' border-r-3 border-brand-500' : ''}" onclick="openConversation('${conv.id}')">
+                    <img src="${conv.userAvatar}" class="w-10 h-10 rounded-xl object-cover shrink-0" alt="">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-medium text-sm truncate">${conv.userName}</h4>
+                            <span class="text-[10px] text-dark-500">${lastMsg ? lastMsg.time : ''}</span>
+                        </div>
+                        <p class="text-dark-400 text-xs truncate">${lastMsg ? (lastMsg.fromMe ? 'أنت: ' : '') + lastMsg.text : 'ابدأ المحادثة'}</p>
+                    </div>
+                    ${conv.unread > 0 ? `<div class="w-5 h-5 bg-brand-500 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0">${conv.unread}</div>` : ''}
+                </div>`;
+            }).join('');
+
+            const chatMessagesHTML = activeConv ? activeConv.messages.map(msg =>
+                `<div class="flex justify-${msg.fromMe ? 'end' : 'start'}">
+                    <div class="${msg.fromMe ? 'bg-brand-500/20 rounded-xl rounded-tl-none' : 'bg-dark-800 rounded-xl rounded-tr-none'} px-4 py-2 max-w-[70%]">
+                        <p class="text-sm">${msg.text.replace(/</g, '&lt;')}</p>
+                        <p class="text-[10px] text-dark-500 mt-1">${msg.time}</p>
+                    </div>
+                </div>`
+            ).join('') : '';
+
+            const chatHeaderHTML = activeConv ? `<div class="p-4 border-b border-dark-800/50 flex items-center gap-3">
+                <img src="${activeConv.userAvatar}" class="w-9 h-9 rounded-xl object-cover" alt="">
+                <div><h4 class="font-medium text-sm">${activeConv.userName}</h4><p class="text-green-400 text-[10px]">متصلة الآن</p></div>
+                <button class="mr-auto p-2 rounded-lg hover:bg-dark-800" onclick="if(confirm('حذف المحادثة؟')){MsgStore.deleteConversation('${activeConv.id}');MsgStore._activeId=null;renderMessagesPage();showToast('تم حذف المحادثة')}"><span class="iconify text-dark-400" data-icon="lucide:trash-2"></span></button>
+            </div>` : '';
+
+            container.innerHTML = `<div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl overflow-hidden animate-fade-in-up flex" style="height: 500px;">
+                <div class="w-80 border-l border-dark-800/50 flex flex-col shrink-0">
+                    <div class="p-4 border-b border-dark-800/50">
+                        <h2 class="font-bold text-base mb-3">الرسائل</h2>
+                        <div class="relative">
+                            <span class="iconify absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 text-sm" data-icon="lucide:search"></span>
+                            <input type="text" placeholder="بحث في الرسائل..." class="w-full bg-dark-850 border border-dark-700/50 rounded-lg pr-9 pl-3 py-2 text-xs text-white placeholder-dark-400 focus:outline-none focus:border-brand-500/50 transition-all" oninput="filterConversations(this.value)">
+                        </div>
+                    </div>
+                    <div class="flex-1 overflow-y-auto" id="convList">${convListHTML}</div>
+                </div>
+                <div class="flex-1 flex flex-col">
+                    ${chatHeaderHTML}
+                    <div class="flex-1 overflow-y-auto p-4 space-y-3" id="chatMessages">${chatMessagesHTML}</div>
+                    <div class="p-3 border-t border-dark-800/50">
+                        <div class="flex gap-2">
+                            <button class="p-2 rounded-lg hover:bg-dark-800 transition-colors"><span class="iconify text-dark-400 text-lg" data-icon="lucide:paperclip"></span></button>
+                            <input type="text" id="chatInput" placeholder="اكتب رسالة..." class="flex-1 bg-dark-850 border border-dark-700/50 rounded-xl px-4 py-2 text-sm text-white placeholder-dark-400 focus:outline-none focus:border-brand-500/50 transition-all" onkeydown="if(event.key==='Enter')sendChatMessage()">
+                            <button class="bg-brand-500 hover:bg-brand-600 text-white p-2 rounded-xl transition-all" onclick="sendChatMessage()"><span class="iconify text-lg" data-icon="lucide:send"></span></button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+
+            // Scroll to bottom
+            setTimeout(() => {
+                const chatDiv = document.getElementById('chatMessages');
+                if (chatDiv) chatDiv.scrollTop = chatDiv.scrollHeight;
+            }, 100);
+        }
+
+        function openConversation(convId) {
+            MsgStore._activeId = convId;
+            MsgStore.markRead(convId);
+            renderMessagesPage();
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            if (!input) return;
+            const text = input.value.trim();
+            if (!text) return;
+            if (!MsgStore._activeId) { showToast('اختر محادثة أولاً'); return; }
+
+            MsgStore.sendMessage(MsgStore._activeId, text, true);
+            input.value = '';
+            renderMessagesPage();
+
+            // Simulate reply after 2-5 seconds
+            const conv = MsgStore.getAll().find(c => c.id === MsgStore._activeId);
+            if (conv) {
+                const replies = [
+                    'شكراً على المعلومة! 👍', 'ممتاز، سأراجع ذلك',
+                    'هل يمكنك التوسع أكثر؟', 'اتفق معك تماماً 🤝',
+                    'ملاحظة قيمة! شكراً 📝', 'سأرسل لك التفاصيل لاحقاً',
+                    'رائع! 🎉', 'مفهوم، شكراً للتوضيح'
+                ];
+                setTimeout(() => {
+                    MsgStore.sendMessage(MsgStore._activeId, replies[Math.floor(Math.random() * replies.length)], false);
+                    renderMessagesPage();
+                }, 2000 + Math.random() * 3000);
+            }
+        }
+
+        function filterConversations(q) {
+            const items = document.querySelectorAll('#convList .msg-item');
+            items.forEach(item => {
+                const name = item.querySelector('h4')?.textContent || '';
+                const msg = item.querySelector('p')?.textContent || '';
+                item.style.display = (name + msg).toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+            });
+        }
+
+        // ===== B. SEARCH SYSTEM =====
+        function doSearch() {
+            const q = document.getElementById('searchInput').value.trim();
+            if (!q) return;
+            showPage('feed');
+
+            // Remove existing search results
+            document.querySelectorAll('.search-results-section').forEach(el => el.remove());
+
+            const fp = document.getElementById('page-feed');
+            const firstPost = fp.querySelector('.post-card, .dynamic-post');
+
+            // Search posts
+            const matchedPosts = allPosts.filter(p =>
+                p.content.includes(q) || p.author.includes(q) || (p.title && p.title.includes(q)) ||
+                p.tags.some(t => t.includes(q))
+            );
+
+            // Search user posts
+            const matchedUserPosts = userPosts.filter(p =>
+                (p.text && p.text.includes(q)) || (p.displayText && p.displayText.includes(q)) ||
+                (p.tags && p.tags.some(t => t.includes(q)))
+            );
+
+            const section = document.createElement('div');
+            section.className = 'search-results-section mb-6';
+            section.innerHTML = `<div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-5 mb-5 animate-fade-in-up">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-bold text-base">نتائج البحث: "${q.replace(/</g, '&lt;')}"</h3>
+                    <button class="text-dark-400 text-xs hover:text-brand-400" onclick="this.closest('.search-results-section').remove();renderFeedPosts();">✕ إغلاق</button>
+                </div>
+                <p class="text-dark-400 text-xs">${matchedPosts.length + matchedUserPosts.length} نتيجة</p>
+            </div>`;
+
+            fp.insertBefore(section, firstPost);
+
+            // Hide regular posts, show search results
+            fp.querySelectorAll('.post-card:not(.search-result), .dynamic-post').forEach(el => el.style.display = 'none');
+            document.getElementById('infiniteLoader').style.display = 'none';
+
+            if (matchedPosts.length + matchedUserPosts.length === 0) {
+                section.innerHTML += '<div class="text-center py-12 text-dark-400"><span class="iconify text-4xl mb-3 block" data-icon="lucide:search-x"></span><p class="text-sm">لا توجد نتائج</p></div>';
+            } else {
+                [...matchedUserPosts, ...matchedPosts].forEach((post, i) => {
+                    const div = document.createElement('div');
+                    div.className = 'search-result';
+                    if (post.id && post.id.startsWith('user-')) {
+                        div.innerHTML = buildOwnPostHTML(post);
+                    } else {
+                        div.innerHTML = buildPlatformPostHTML(post, i);
+                    }
+                    section.appendChild(div.firstElementChild || div);
+                });
+            }
+
+            showToast(`تم العثور على ${matchedPosts.length + matchedUserPosts.length} نتيجة`);
+        }
+
+        // ===== C. SETTINGS PERSISTENCE =====
+        const SettingsStore = {
+            _key: 'lawbook_settings',
+            _defaults: {
+                profileVisible: true,
+                emailNotifs: true,
+                darkMode: true,
+                twoFactor: false,
+                language: 'ar'
+            },
+            get() {
+                const saved = JSON.parse(localStorage.getItem(this._key) || '{}');
+                return { ...this._defaults, ...saved };
+            },
+            update(key, value) {
+                const s = this.get();
+                s[key] = value;
+                localStorage.setItem(this._key, JSON.stringify(s));
+            }
+        };
+
+        function initSettings() {
+            const settings = SettingsStore.get();
+            document.querySelectorAll('#page-settings .toggle-switch').forEach((toggle, i) => {
+                const keys = ['profileVisible', 'emailNotifs', 'darkMode', 'twoFactor'];
+                if (settings[keys[i]]) toggle.classList.add('on');
+                else toggle.classList.remove('on');
+
+                // Replace the inline onclick with a proper handler
+                toggle.onclick = function() {
+                    this.classList.toggle('on');
+                    SettingsStore.update(keys[i], this.classList.contains('on'));
+                    showToast('تم الحفظ ✓');
+                };
+            });
+
+            // Logout button
+            const logoutBtn = document.querySelector('#page-settings .text-red-400:first-of-type');
+            if (logoutBtn && logoutBtn.textContent.includes('تسجيل الخروج')) {
+                logoutBtn.onclick = function() {
+                    if (confirm('هل تريد تسجيل الخروج؟')) {
+                        localStorage.clear();
+                        sessionStorage.clear();
+                        location.reload();
+                    }
+                };
+            }
+
+            // Delete account
+            const deleteBtn = document.querySelectorAll('#page-settings .text-red-400')[1];
+            if (deleteBtn && deleteBtn.textContent.includes('حذف الحساب')) {
+                deleteBtn.onclick = function() {
+                    if (confirm('تحذير: سيتم حذف جميع بياناتك نهائياً! هل أنت متأكد؟')) {
+                        localStorage.clear();
+                        sessionStorage.clear();
+                        showToast('تم حذف الحساب');
+                        setTimeout(() => location.reload(), 1000);
+                    }
+                };
+            }
+        }
+
+        // ===== D. EVENTS REGISTRATION =====
+        const EventsStore = {
+            _key: 'lawbook_registered_events',
+            getRegistered() { return JSON.parse(localStorage.getItem(this._key) || '[]'); },
+            toggle(eventId) {
+                let reg = this.getRegistered();
+                if (reg.includes(eventId)) {
+                    reg = reg.filter(id => id !== eventId);
+                    showToast('تم إلغاء التسجيل');
+                } else {
+                    reg.push(eventId);
+                    showToast('تم التسجيل بنجاح ✓');
+                }
+                localStorage.setItem(this._key, JSON.stringify(reg));
+                return reg.includes(eventId);
+            },
+            isRegistered(eventId) { return this.getRegistered().includes(eventId); }
+        };
+
+        function initEvents() {
+            const eventCards = document.querySelectorAll('#page-events .p-4');
+            eventCards.forEach((card, i) => {
+                const eventId = 'event-' + i;
+                const btn = card.querySelector('button');
+                if (btn) {
+                    if (EventsStore.isRegistered(eventId)) {
+                        btn.textContent = 'مسجل ✓';
+                        btn.classList.remove('bg-brand-500', 'bg-blue-500', 'bg-purple-500');
+                        btn.classList.add('bg-green-500');
+                    }
+                    btn.onclick = function(e) {
+                        e.stopPropagation();
+                        const isNow = EventsStore.toggle(eventId);
+                        this.textContent = isNow ? 'مسجل ✓' : 'تسجيل';
+                        this.classList.toggle('bg-green-500', isNow);
+                        this.classList.toggle('bg-brand-500', !isNow);
+                    };
+                }
+            });
+        }
+
+        // ===== E. ARTICLES MANAGEMENT =====
+        const ArticlesStore = {
+            _key: 'lawbook_articles',
+            getAll() { return JSON.parse(localStorage.getItem(this._key) || '[]'); },
+            save(list) { localStorage.setItem(this._key, JSON.stringify(list)); },
+            add(article) {
+                const list = this.getAll();
+                list.unshift(article);
+                this.save(list);
+            },
+            delete(articleId) {
+                const list = this.getAll().filter(a => a.id !== articleId);
+                this.save(list);
+            },
+            update(articleId, data) {
+                const list = this.getAll();
+                const idx = list.findIndex(a => a.id === articleId);
+                if (idx !== -1) { Object.assign(list[idx], data); this.save(list); }
+            }
+        };
+
+        function showArticleEditor() {
+            // Create modal if it doesn't exist
+            let modal = document.getElementById('articleEditorModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'articleEditorModal';
+                modal.className = 'modal-overlay';
+                modal.onclick = function(e) { if (e.target === this) this.classList.remove('active'); };
+                modal.innerHTML = `<div class="bg-dark-900 border border-dark-700/50 rounded-2xl w-[95%] max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+                    <div class="flex items-center justify-between p-5 border-b border-dark-800/50 sticky top-0 bg-dark-900 z-10">
+                        <h3 class="font-bold text-base">مقال جديد</h3>
+                        <button onclick="document.getElementById('articleEditorModal').classList.remove('active')" class="p-1.5 rounded-lg hover:bg-dark-800"><span class="iconify text-dark-400 text-xl" data-icon="lucide:x"></span></button>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <div><label class="text-xs text-dark-400 block mb-1.5">عنوان المقال</label><input type="text" id="articleTitle" class="w-full bg-dark-850 border border-dark-700/50 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50" placeholder="عنوان المقال"></div>
+                        <div><label class="text-xs text-dark-400 block mb-1.5">الوسوم (مفصولة بمسافة)</label><input type="text" id="articleTags" class="w-full bg-dark-850 border border-dark-700/50 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50" placeholder="#قانون #تحكيم"></div>
+                        <div><label class="text-xs text-dark-400 block mb-1.5">محتوى المقال</label><textarea id="articleContent" rows="8" class="w-full bg-dark-850 border border-dark-700/50 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-500/50 resize-none" placeholder="اكتب مقالك هنا..."></textarea></div>
+                    </div>
+                    <div class="flex gap-3 p-5 border-t border-dark-800/50 sticky bottom-0 bg-dark-900">
+                        <button onclick="document.getElementById('articleEditorModal').classList.remove('active')" class="flex-1 bg-dark-800 text-sm py-2.5 rounded-xl border border-dark-700">إلغاء</button>
+                        <button onclick="publishArticle()" class="flex-1 bg-brand-500 text-white text-sm font-semibold py-2.5 rounded-xl">نشر المقال</button>
+                    </div>
+                </div>`;
+                document.body.appendChild(modal);
+            }
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function publishArticle() {
+            const title = document.getElementById('articleTitle').value.trim();
+            const content = document.getElementById('articleContent').value.trim();
+            const tagsStr = document.getElementById('articleTags').value.trim();
+            if (!title || !content) { showToast('أكمل العنوان والمحتوى'); return; }
+
+            const tags = tagsStr.match(/#[\u0600-\u06FFa-zA-Z0-9_]+/g) || [];
+            ArticlesStore.add({
+                id: 'article-' + Date.now(),
+                title, content, tags,
+                time: 'الآن',
+                views: 0, likes: 0, comments: 0
+            });
+
+            document.getElementById('articleEditorModal').classList.remove('active');
+            document.body.style.overflow = '';
+            renderArticlesPage();
+            showToast('تم نشر المقال ✓');
+        }
+
+        function renderArticlesPage() {
+            const container = document.querySelector('#page-articles .divide-y');
+            if (!container) return;
+            const articles = ArticlesStore.getAll();
+
+            if (articles.length === 0) {
+                container.innerHTML = '<div class="p-8 text-center text-dark-400"><span class="iconify text-3xl mb-2 block" data-icon="lucide:file-plus"></span><p class="text-sm">لم تنشر أي مقال بعد</p></div>';
+                return;
+            }
+
+            container.innerHTML = articles.map(a => `<div class="p-4 hover:bg-dark-850 cursor-pointer transition-all">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="bg-green-500/10 text-green-400 text-[10px] font-bold px-2 py-0.5 rounded-md">منشور</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-dark-500 text-[10px]">${a.time}</span>
+                        <button class="text-dark-500 hover:text-red-400 text-xs" onclick="event.stopPropagation();if(confirm('حذف المقال؟')){ArticlesStore.delete('${a.id}');renderArticlesPage();showToast('تم الحذف')}">🗑️</button>
+                    </div>
+                </div>
+                <h3 class="font-semibold text-sm mb-1">${a.title.replace(/</g, '&lt;')}</h3>
+                <p class="text-dark-400 text-xs mb-2">${a.content.substring(0, 120).replace(/</g, '&lt;')}...</p>
+                <div class="flex flex-wrap gap-1 mb-2">${(a.tags || []).map(t => `<span class="text-brand-400 text-[10px]">${t}</span>`).join(' ')}</div>
+                <div class="flex gap-4 text-dark-500 text-[10px]"><span>👁 ${a.views || 0}</span><span>❤️ ${a.likes || 0}</span><span>💬 ${a.comments || 0}</span></div>
+            </div>`).join('');
+
+            // Update article count
+            const countEl = document.querySelector('#page-articles .text-dark-400.text-xs');
+            if (countEl) countEl.textContent = `${articles.length} مقالة منشورة`;
+        }
+
+        // ===== F. BOOKMARKS SYSTEM =====
+        const BookmarksStore = {
+            _key: 'lawbook_bookmarks',
+            getIds() { return JSON.parse(localStorage.getItem(this._key) || '[]'); },
+            toggle(postId) {
+                let ids = this.getIds();
+                if (ids.includes(postId)) {
+                    ids = ids.filter(id => id !== postId);
+                    showToast('تم إلغاء الحفظ');
+                } else {
+                    ids.push(postId);
+                    showToast('تم الحفظ ✓');
+                }
+                localStorage.setItem(this._key, JSON.stringify(ids));
+                return ids.includes(postId);
+            },
+            isBookmarked(postId) { return this.getIds().includes(postId); }
+        };
+
+        function renderBookmarksPage() {
+            const container = document.querySelector('#page-bookmarks .divide-y');
+            if (!container) return;
+            const bookmarkedIds = BookmarksStore.getIds();
+
+            if (bookmarkedIds.length === 0) {
+                container.innerHTML = '<div class="p-8 text-center text-dark-400"><span class="iconify text-3xl mb-2 block" data-icon="lucide:bookmark"></span><p class="text-sm">لم تحفظ أي منشور بعد</p></div>';
+                return;
+            }
+
+            const bookmarkedPosts = bookmarkedIds.map(id => findPostById(id)).filter(Boolean);
+            container.innerHTML = bookmarkedPosts.map(post => {
+                const isOwn = isOwnPost(post.id);
+                const authorName = isOwn ? getProfile().name : (post.author || 'مستخدم');
+                return `<div class="p-4 hover:bg-dark-850 cursor-pointer transition-all" onclick="openPostDetail('${post.id}')">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br ${post.gradient || 'from-blue-500 to-purple-600'} flex items-center justify-center text-white text-xs font-bold">${(authorName).charAt(0)}</div>
+                        <div><h4 class="font-medium text-sm">${authorName}</h4><p class="text-dark-400 text-[10px]">${post.time || ''}</p></div>
+                        <button class="mr-auto text-dark-500 hover:text-red-400" onclick="event.stopPropagation();BookmarksStore.toggle('${post.id}');renderBookmarksPage();">✕</button>
+                    </div>
+                    <h3 class="font-semibold text-sm mb-1">${(post.title || '').replace(/</g, '&lt;')}</h3>
+                    <p class="text-dark-400 text-xs">${(post.displayText || post.content || '').replace(/<[^>]*>/g, '').substring(0, 100)}...</p>
+                </div>`;
+            }).join('');
+        }
+
+        // Enhanced toggleBookmark to save actual post data
+        const _origToggleBookmark = typeof toggleBookmark === 'function' ? toggleBookmark : null;
+        function toggleBookmark(btn, postId) {
+            const isSaved = btn.classList.toggle('saved');
+            const icon = btn.querySelector('.iconify');
+            if (isSaved) {
+                icon.setAttribute('data-icon', 'lucide:bookmark-check');
+                icon.style.color = '#f97316';
+                if (postId) BookmarksStore.toggle(postId);
+                else showToast('تم الحفظ ✓');
+            } else {
+                icon.setAttribute('data-icon', 'lucide:bookmark');
+                icon.style.color = '';
+                if (postId) BookmarksStore.toggle(postId);
+                else showToast('تم إلغاء الحفظ');
+            }
+        }
+
+        // ===== G. CONNECTIONS PAGE =====
+        function renderConnectionsPage() {
+            const container = document.querySelector('#page-connections .space-y-3');
+            if (!container) return;
+
+            const connTabs = document.querySelectorAll('#page-connections .conn-tab');
+            const activeTab = document.querySelector('#page-connections .conn-tab.active');
+            const activeText = activeTab ? activeTab.textContent.trim() : 'المتابعون';
+
+            let html = '';
+            if (activeText === 'المتابعون' || activeText === 'يتابع') {
+                const users = [
+                    { name: 'سارة المنصوري', role: 'مستشارة قانونية • الإمارات', avatar: 'https://picsum.photos/seed/sara-legal/40/40.jpg', gradient: 'from-pink-500 to-yellow-500' },
+                    { name: 'خالد العمري', role: 'أستاذ القانون الدولي • الأردن', avatar: 'https://picsum.photos/seed/khalid-jordan/40/40.jpg', gradient: 'from-cyan-500 to-purple-500' },
+                    { name: 'نورة القحطاني', role: 'محامية عقود • السعودية', avatar: 'https://picsum.photos/seed/nora-lawyer/40/40.jpg', gradient: 'from-purple-500 to-red-500' },
+                    { name: 'فاطمة الحربي', role: 'خبيرة تقنية مالية', avatar: 'https://picsum.photos/seed/fatima-fintech/40/40.jpg', gradient: 'from-green-500 to-cyan-500' },
+                    { name: 'عمر الحسيني', role: 'قاضي متقاعد • العراق', avatar: 'https://picsum.photos/seed/omar-judge/40/40.jpg', gradient: 'from-yellow-500 to-green-500' }
+                ];
+
+                html = users.map(u => `<div class="flex items-center gap-3 p-3 bg-dark-850 rounded-xl">
+                    <img src="${u.avatar}" class="w-10 h-10 rounded-xl object-cover" alt="">
+                    <div class="flex-1"><h4 class="font-medium text-sm">${u.name}</h4><p class="text-dark-400 text-[10px]">${u.role}</p></div>
+                    <button class="text-xs text-dark-400 border border-dark-700 px-3 py-1 rounded-lg hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-all" onclick="this.textContent='تم الإلغاء ✓';this.disabled=true;showToast('تم إلغاء المتابعة')">متابَع</button>
+                    <button class="text-xs text-brand-400 border border-brand-500/30 px-3 py-1 rounded-lg hover:bg-brand-500/10 transition-all" onclick="MsgStore.getOrCreate('${u.name}','${u.name}','${u.avatar}');renderMessagesPage();showPage('messages');showToast('فتح المحادثة')">رسالة</button>
+                </div>`).join('');
+            } else {
+                // Connection requests (simulated)
+                html = `<div class="flex items-center gap-3 p-3 bg-dark-850 rounded-xl">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">أ</div>
+                    <div class="flex-1"><h4 class="font-medium text-sm">أحمد المنصور</h4><p class="text-dark-400 text-[10px]">أستاذ قانون دستوري</p></div>
+                    <button class="text-xs bg-brand-500 text-white px-3 py-1 rounded-lg" onclick="this.textContent='تم ✓';this.disabled=true;showToast('تم قبول الطلب')">قبول</button>
+                    <button class="text-xs text-dark-400 border border-dark-700 px-3 py-1 rounded-lg" onclick="this.closest('.flex').remove();showToast('تم الرفض')">رفض</button>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-dark-850 rounded-xl">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center text-white font-bold">ر</div>
+                    <div class="flex-1"><h4 class="font-medium text-sm">رنا السعيد</h4><p class="text-dark-400 text-[10px]">محامية جنائية</p></div>
+                    <button class="text-xs bg-brand-500 text-white px-3 py-1 rounded-lg" onclick="this.textContent='تم ✓';this.disabled=true;showToast('تم قبول الطلب')">قبول</button>
+                    <button class="text-xs text-dark-400 border border-dark-700 px-3 py-1 rounded-lg" onclick="this.closest('.flex').remove();showToast('تم الرفض')">رفض</button>
+                </div>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // Fix switchConnTab to actually render
+        function switchConnTab(btn) {
+            document.querySelectorAll('.conn-tab').forEach(t => { t.classList.remove('active', 'bg-dark-800', 'text-white'); t.classList.add('text-dark-400') });
+            btn.classList.add('active', 'bg-dark-800', 'text-white');
+            btn.classList.remove('text-dark-400');
+            renderConnectionsPage();
+        }
+
+        // ===== H. ENHANCED NOTIFICATIONS =====
+        function initNotifications() {
+            // Make notification items clickable
+            document.addEventListener('click', function(e) {
+                const notifItem = e.target.closest('.notif-item-row');
+                if (!notifItem) return;
+                const id = parseInt(notifItem.dataset?.id);
+                if (id) clickNotif(id);
+            });
+        }
+
+        // ===== I. ENHANCED BOOKMARK BUTTON =====
+        // Override the bookmark click to save post ID
+        document.addEventListener('click', function(e) {
+            const bookmarkBtn = e.target.closest('.bookmark-btn');
+            if (!bookmarkBtn) return;
+            const article = bookmarkBtn.closest('article');
+            if (!article) return;
+            // Find post ID from the article's like button or comment section
+            const likeBtn = article.querySelector('.like-btn');
+            if (likeBtn) {
+                const onclick = likeBtn.getAttribute('onclick') || '';
+                const match = onclick.match(/'([^']+)'/g);
+                if (match && match.length >= 2) {
+                    const postId = match[match.length - 1].replace(/'/g, '');
+                    BookmarksStore.toggle(postId);
+                }
+            }
+        });
+
+        // ===== J. INFINITE SCROLL =====
+        let feedPage = 0;
+        const feedPageSize = 5;
+
+        function setupInfiniteScroll() {
+            const loader = document.getElementById('infiniteLoader');
+            if (!loader) return;
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) loadMoreFeedPosts();
+                });
+            }, { threshold: 0.5 });
+
+            observer.observe(loader);
+        }
+
+        function loadMoreFeedPosts() {
+            const container = document.getElementById('page-feed');
+            const searchActive = container.querySelector('.search-results-section');
+            if (searchActive) return;
+
+            const existingPosts = container.querySelectorAll('.post-card, .dynamic-post');
+            const totalAvailable = allPosts.length + userPosts.length;
+
+            if (existingPosts.length >= totalAvailable) {
+                document.getElementById('infiniteLoader').style.display = 'none';
+                document.getElementById('feedEnd').style.display = '';
+                return;
+            }
+
+            document.getElementById('infiniteLoader').style.display = 'flex';
+
+            // Simulate loading delay
+            setTimeout(() => {
+                // Load more platform posts that haven't been shown yet
+                const shownCount = existingPosts.length;
+                const morePosts = allPosts.slice(shownCount, shownCount + feedPageSize);
+
+                morePosts.forEach((post, i) => {
+                    const div = document.createElement('div');
+                    div.className = 'dynamic-post';
+                    div.innerHTML = buildPlatformPostHTML(post, shownCount + i);
+                    container.insertBefore(div.firstElementChild || div, document.getElementById('infiniteLoader'));
+                });
+
+                if (shownCount + morePosts.length >= allPosts.length) {
+                    document.getElementById('infiniteLoader').style.display = 'none';
+                    document.getElementById('feedEnd').style.display = '';
+                }
+            }, 800);
+        }
+
+        // ===== K. ENHANCED INIT =====
+        // Override the DOMContentLoaded to include new features
+        document.addEventListener('DOMContentLoaded', function() {
+            initDefaultConversations();
+            initSettings();
+            initEvents();
+            initNotifications();
+
+            // Render enhanced pages
+            renderMessagesPage();
+            renderArticlesPage();
+            renderBookmarksPage();
+            renderConnectionsPage();
+
+            // Setup infinite scroll
+            setupInfiniteScroll();
+
+            // Fix article editor button
+            const newArticleBtn = document.querySelector('#page-articles button');
+            if (newArticleBtn) {
+                newArticleBtn.onclick = showArticleEditor;
+            }
+
+            // Fix search input
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.onkeydown = function(e) { if (e.key === 'Enter') doSearch(); };
+            }
+        });
+
+        // ===== L. ENHANCED LIKE WITH BOOKMARK TRACKING =====
+        const _origToggleLike = toggleLike;
+        toggleLike = function(btn, count, likesId, postId, articleEl) {
+            _origToggleLike(btn, count, likesId, postId, articleEl);
+            // Track likes for profile
+            if (btn.classList.contains('liked')) {
+                const pd = extractPostDataFromDOM(articleEl, postId);
+                if (pd && !userLikes.some(p => p.id === postId)) {
+                    userLikes.unshift(pd);
+                    saveUserLikes();
+                }
+            }
+        };
+
+        // ===== M. ENHANCED FOLLOW - MOVE POSTS =====
+        const _origToggleFollow = toggleFollow;
+        toggleFollow = function(btn) {
+            const author = btn.dataset.author;
+            _origToggleFollow(btn);
+            // Re-render feed and following
+            setTimeout(() => {
+                renderFeedPosts();
+                renderFollowingPosts();
+            }, 100);
+        };
+
+        // ===== N. AUTO-REFRESH MESSAGES BADGE =====
+        setInterval(() => {
+            const unread = MsgStore.getTotalUnread();
+            // Update any message badge indicators
+            const msgBtns = document.querySelectorAll('[onclick*="showPage(\'messages\')"]');
+            msgBtns.forEach(btn => {
+                let badge = btn.querySelector('.msg-badge');
+                if (unread > 0) {
+                    if (!badge) {
+                        badge = document.createElement('span');
+                        badge.className = 'msg-badge absolute -top-1 -left-1 w-4 h-4 bg-brand-500 rounded-full text-[9px] flex items-center justify-center font-bold';
+                        btn.style.position = 'relative';
+                        btn.appendChild(badge);
+                    }
+                    badge.textContent = unread;
+                } else if (badge) {
+                    badge.remove();
+                }
+            });
+        }, 5000);
+
+        // ===== O. ENHANCED STORIES - FIX PUBLISH =====
+        function publishTextStory() {
+            const text = document.getElementById('textStoryInput').value.trim();
+            if (!text) { showToast('اكتب شيئاً أولاً'); return; }
+
+            let myUser = storiesData.find(u => u.isOwn);
+            if (!myUser) {
+                myUser = { id: 'user-me', name: getProfile().name, avatar: localStorage.getItem('profileAvatar') || 'https://picsum.photos/seed/lawyer-me/80/80.jpg', isOwn: true, stories: [] };
+                storiesData.unshift(myUser);
+            }
+
+            myUser.stories.push({
+                id: 'story-' + Date.now(),
+                type: 'text',
+                text: text,
+                bg: textStoryColor,
+                time: 'الآن',
+                duration: 5000,
+                data: null
+            });
+            saveStories();
+            closeTextStoryEditor();
+            renderStoriesBar();
+            showToast('تم نشر الحالة ✓');
         }
