@@ -19,25 +19,9 @@
                     if (!error) {
                         sbOnline = true;
                         console.log('✅ Supabase connected');
-                        // Check auth state
-                        const { data: { session } } = await sb.auth.getSession();
-                        if (session) {
-                            sbUser = session.user;
-                            await loadUserProfile();
-                        }
-                        // Listen for auth changes
-                        sb.auth.onAuthStateChange(async (event, session) => {
-                            if (event === 'SIGNED_IN' && session) {
-                                sbUser = session.user;
-                                await loadUserProfile();
-                            } else if (event === 'SIGNED_OUT') {
-                                sbUser = null;
-                                sbProfile = null;
-                            }
-                        });
                         return true;
                     } else {
-                        console.warn('Supabase tables not found. Run supabase-schema.sql first.');
+                        console.warn('Supabase tables not found.');
                         sbOnline = false;
                     }
                 }
