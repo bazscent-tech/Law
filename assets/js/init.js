@@ -53,42 +53,9 @@
         }
 
         // ===== K. ENHANCED INIT =====
-        // Override the DOMContentLoaded to include new features
-        document.addEventListener('DOMContentLoaded', function() {
-            initDefaultConversations();
-            initSettings();
-            initEvents();
-            initNotifications();
-
-            // Render enhanced pages
-            renderMessagesPage();
-            renderArticlesPage();
-            renderBookmarksPage();
-            renderConnectionsPage();
-
-            // Setup infinite scroll
-            setupInfiniteScroll();
-
-            // Fix article editor button
-            const newArticleBtn = document.querySelector('#page-articles button');
-            if (newArticleBtn) {
-                newArticleBtn.onclick = showArticleEditor;
-            }
-
-            // Fix search input
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.onkeydown = function(e) { if (e.key === 'Enter') doSearch(); };
-            }
-
-            // Initialize Library module
-            if (typeof Library !== 'undefined') {
-                Library.init();
-                // Pre-fetch libraries for current user
-                const uid = sbUser?.id || 'local';
-                Library.fetchLibraries(uid);
-            }
-        });
+        // الآن يتم التهيئة عبر Auth system في features.js → initAppForUser()
+        // بعد تسجيل الدخول بنجاح يتم استدعاء onAuthSuccess() → initAppForUser()
+        // هذا يضمن عزل كامل للبيانات بين الحسابات
 
         // ===== L. ENHANCED LIKE WITH BOOKMARK TRACKING =====
         const _origToggleLike = toggleLike;
@@ -175,7 +142,7 @@
 
             let myUser = storiesData.find(u => u.isOwn);
             if (!myUser) {
-                myUser = { id: 'user-me', name: getProfile().name, avatar: Safe.getString('profileAvatar') || 'https://picsum.photos/seed/lawyer-me/80/80.jpg', isOwn: true, stories: [] };
+                myUser = { id: 'user-me', name: getProfile().name, avatar: UserStore.getString('profileAvatar') || 'https://picsum.photos/seed/lawyer-me/80/80.jpg', isOwn: true, stories: [] };
                 storiesData.unshift(myUser);
             }
 

@@ -5,7 +5,7 @@
             reader.onload = function(e) {
                 let myUser = storiesData.find(u => u.isOwn);
                 if (!myUser) {
-                    myUser = { id: 'user-me', name: getProfile().name, avatar: Safe.getString('profileAvatar') || 'https://picsum.photos/seed/lawyer-me/80/80.jpg', isOwn: true, stories: [] };
+                    myUser = { id: 'user-me', name: getProfile().name, avatar: UserStore.getString('profileAvatar') || 'https://picsum.photos/seed/lawyer-me/80/80.jpg', isOwn: true, stories: [] };
                     storiesData.unshift(myUser);
                 }
                 myUser.stories.push({
@@ -33,7 +33,7 @@
             reader.onload = function(e) {
                 let myUser = storiesData.find(u => u.isOwn);
                 if (!myUser) {
-                    myUser = { id: 'user-me', name: getProfile().name, avatar: Safe.getString('profileAvatar') || 'https://picsum.photos/seed/lawyer-me/80/80.jpg', isOwn: true, stories: [] };
+                    myUser = { id: 'user-me', name: getProfile().name, avatar: UserStore.getString('profileAvatar') || 'https://picsum.photos/seed/lawyer-me/80/80.jpg', isOwn: true, stories: [] };
                     storiesData.unshift(myUser);
                 }
                 myUser.stories.push({

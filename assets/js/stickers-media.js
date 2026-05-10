@@ -119,12 +119,12 @@
         }
 
         // ====================================================
-        // ===== POST DATA STORE ==============================
+        // ===== POST DATA STORE — معزول لكل حساب ==========
         // ====================================================
-        let userPostCounter = parseInt(Safe.getString('userPostCounter') || '0');
-        let userPosts = Safe.getJSON('userPosts', []);
-        let userReplies = Safe.getJSON('userReplies', []);
-        let userLikes = Safe.getJSON('userLikes', []);
-        let platformComments = Safe.getJSON('platformComments', {}); // { postId: [comments] }
+        let userPostCounter = parseInt(UserStore.getString('userPostCounter') || '0');
+        let userPosts = UserStore.getJSON('userPosts', []);
+        let userReplies = UserStore.getJSON('userReplies', []);
+        let userLikes = UserStore.getJSON('userLikes', []);
+        let platformComments = UserStore.getJSON('platformComments', {}); // { postId: [comments] }
 
-        function saveUserPosts() { Safe.setJSON('userPosts', userPosts); Safe.setString('userPostCounter', String(userPostCounter)); }
+        function saveUserPosts() { UserStore.setJSON('userPosts', userPosts); UserStore.setString('userPostCounter', String(userPostCounter)); }

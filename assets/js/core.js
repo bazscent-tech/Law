@@ -2,10 +2,11 @@
         // ===== SUPABASE INTEGRATION MODULE ========================
         // ============================================================
         const SB_URL = 'https://wxokmokxehssnchtmjke.supabase.co';
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4b2ttb2t4ZWhzc25jaHRtamtlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODMxODgyNCwiZXhwIjoyMDkzODk0ODI0fQ.AN5SkazpJVm4R-6Pdh2ZqvzqhNIM-Mu2XHCbrCmqs3g';
+        // استخدام anon key فقط (ليس service_role) — RLS يحمي البيانات
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4b2ttb2t4ZWhzc25jaHRtamtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMTg4MjQsImV4cCI6MjA5Mzg5NDgyNH0.6RRUCXnX7IdExnirAr4Uz3Y-PmJbMMB00JVDr1BbDkU';
 
         let sb = null; // Supabase client
-        let sbUser = null; // Current auth user
+        let sbUser = null; // Current auth user { id }
         let sbProfile = null; // Current user profile from DB
         let sbOnline = false; // Whether Supabase is reachable
 
@@ -32,37 +33,39 @@
             return false;
         }
 
-        // Load current user profile
+        // Load current user profile (called after auth)
         async function loadUserProfile() {
             if (!sb || !sbUser) return null;
             const { data } = await sb.from('profiles').select('*').eq('id', sbUser.id).single();
-            sbProfile = data;
+            if (data) {
+                sbProfile = data;
+                // Cache profile for this user
+                Safe.setJSON('auth_profile_' + sbUser.id, data);
+            }
             return data;
         }
 
-        // Auth: Load profile directly (bypass Supabase Auth)
+        // Legacy compatibility — now delegates to Auth system
         async function signInAnonymously() {
+            // This is now handled by Auth.init() and Auth.signIn()
+            // Kept for backward compatibility
             if (!sb) return null;
             try {
-                // Get the first profile as the "logged in" user
-                const { data: profiles } = await sb.from('profiles')
-                    .select('*')
-                    .order('created_at', { ascending: true })
-                    .limit(1);
-                if (profiles && profiles.length > 0) {
-                    sbProfile = profiles[0];
-                    sbUser = { id: sbProfile.id };
-                    console.log('✅ Supabase profile:', sbProfile.name);
+                // Check if we already have a session via Auth
+                const { data: { session } } = await sb.auth.getSession();
+                if (session) {
+                    sbUser = { id: session.user.id };
+                    await loadUserProfile();
                     return sbUser;
                 }
             } catch(e) {
-                console.warn('Profile load failed:', e.message);
+                console.warn('Session check failed:', e.message);
             }
             return null;
         }
 
         // ============================================================
-        // SUPABASE CRUD OPERATIONS (with localStorage fallback)
+        // SUPABASE CRUD OPERATIONS — كل عملية مرتبطة بالمستخدم الحالي
         // ============================================================
 
         const SB = {
@@ -85,23 +88,35 @@
                 return data;
             },
 
+            async updatePost(postId, updates) {
+                if (!sbOnline || !sbUser) return null;
+                // RLS يضمن أن فقط صاحب المنشور يمكنه التعديل
+                const { data } = await sb.from('posts')
+                    .update({ ...updates, is_edited: true, updated_at: new Date().toISOString() })
+                    .eq('id', postId)
+                    .eq('author_id', sbUser.id)
+                    .select()
+                    .single();
+                return data;
+            },
+
             async deletePost(postId) {
                 if (!sbOnline || !sbUser) return;
+                // RLS يضمن أن فقط صاحب المنشور يمكنه الحذف
                 await sb.from('posts').delete().eq('id', postId).eq('author_id', sbUser.id);
             },
 
             // LIKES
             async toggleLike(postId) {
                 if (!sbOnline || !sbUser) return null;
-                // Check if already liked
                 const { data: existing } = await sb.from('likes')
                     .select('id').eq('user_id', sbUser.id).eq('post_id', postId).maybeSingle();
                 if (existing) {
                     await sb.from('likes').delete().eq('id', existing.id);
-                    return false; // unliked
+                    return false;
                 } else {
                     await sb.from('likes').insert({ user_id: sbUser.id, post_id: postId });
-                    return true; // liked
+                    return true;
                 }
             },
 
@@ -129,6 +144,11 @@
                     content, is_sticker: isSticker
                 }).select('*, profiles(*)').single();
                 return data;
+            },
+
+            async deleteComment(commentId) {
+                if (!sbOnline || !sbUser) return;
+                await sb.from('comments').delete().eq('id', commentId).eq('author_id', sbUser.id);
             },
 
             // BOOKMARKS
@@ -186,7 +206,6 @@
             // MESSAGES
             async getConversations() {
                 if (!sbOnline || !sbUser) return null;
-                // Get unique conversation partners
                 const { data: sent } = await sb.from('messages')
                     .select('receiver_id, profiles!receiver_id(*)')
                     .eq('sender_id', sbUser.id)
@@ -195,7 +214,6 @@
                     .select('sender_id, profiles!sender_id(*)')
                     .eq('receiver_id', sbUser.id)
                     .order('created_at', { ascending: false });
-                // Merge and deduplicate
                 const partners = new Map();
                 if (sent) sent.forEach(m => { if (!partners.has(m.receiver_id)) partners.set(m.receiver_id, m.profiles); });
                 if (received) received.forEach(m => { if (!partners.has(m.sender_id)) partners.set(m.sender_id, m.profiles); });
@@ -270,6 +288,11 @@
                 return data;
             },
 
+            async deleteArticle(articleId) {
+                if (!sbOnline || !sbUser) return;
+                await sb.from('articles').delete().eq('id', articleId).eq('author_id', sbUser.id);
+            },
+
             // NOTIFICATIONS
             async getNotifications() {
                 if (!sbOnline || !sbUser) return null;
@@ -309,6 +332,21 @@
                 return data ? data.map(d => d.event_id) : [];
             },
 
+            // PROFILE
+            async updateProfile(updates) {
+                if (!sbOnline || !sbUser) return null;
+                const { data } = await sb.from('profiles')
+                    .update({ ...updates, updated_at: new Date().toISOString() })
+                    .eq('id', sbUser.id)
+                    .select()
+                    .single();
+                if (data) {
+                    sbProfile = data;
+                    Safe.setJSON('auth_profile_' + sbUser.id, data);
+                }
+                return data;
+            },
+
             // SEARCH
             async searchPosts(query) {
                 if (!sbOnline) return null;
@@ -334,4 +372,3 @@
             getCurrentUser() { return sbUser; },
             getCurrentProfile() { return sbProfile; }
         };
-

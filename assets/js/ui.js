@@ -4,20 +4,20 @@
             const file = input.files[0]; if (!file) return;
             if (!file.type.startsWith('image/')) { showToast('يرجى اختيار صورة فقط'); return; }
             const reader = new FileReader();
-            reader.onload = function(e) { imgIds.forEach(id => { const el = document.getElementById(id); if (el) el.src = e.target.result; }); Safe.setString('profileAvatar', e.target.result); showToast('تم تحديث الصورة الشخصية ✓'); };
+            reader.onload = function(e) { imgIds.forEach(id => { const el = document.getElementById(id); if (el) el.src = e.target.result; }); UserStore.setString('profileAvatar', e.target.result); showToast('تم تحديث الصورة الشخصية ✓'); };
             reader.readAsDataURL(file);
         }
         function handleCoverUpload(input) {
             const file = input.files[0]; if (!file) return;
             if (!file.type.startsWith('image/')) { showToast('يرجى اختيار صورة فقط'); return; }
             const reader = new FileReader();
-            reader.onload = function(e) { const img = document.getElementById('coverPhoto'); if (img) { img.src = e.target.result; img.classList.remove('hidden'); img.parentElement.style.background = 'none'; } Safe.setString('coverPhoto', e.target.result); showToast('تم تحديث صورة الغلاف ✓'); };
+            reader.onload = function(e) { const img = document.getElementById('coverPhoto'); if (img) { img.src = e.target.result; img.classList.remove('hidden'); img.parentElement.style.background = 'none'; } UserStore.setString('coverPhoto', e.target.result); showToast('تم تحديث صورة الغلاف ✓'); };
             reader.readAsDataURL(file);
         }
         function loadSavedImages() {
-            const sa = Safe.getString('profileAvatar');
+            const sa = UserStore.getString('profileAvatar');
             if (sa) ['mobileAvatar','sidebarAvatar','desktopAvatar'].forEach(id => { const el = document.getElementById(id); if (el) el.src = sa; });
-            const sc = Safe.getString('coverPhoto');
+            const sc = UserStore.getString('coverPhoto');
             if (sc) { const img = document.getElementById('coverPhoto'); if (img) { img.src = sc; img.classList.remove('hidden'); img.parentElement.style.background = 'none'; } }
         }
 
@@ -25,8 +25,8 @@
         function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
 
         // ===== Following =====
-        let followingUsers = Safe.getJSON('followingUsers', []);
-        function saveFollowing() { Safe.setJSON('followingUsers', followingUsers); }
+        let followingUsers = UserStore.getJSON('followingUsers', []);
+        function saveFollowing() { UserStore.setJSON('followingUsers', followingUsers); }
         function isFollowing(author) { return followingUsers.includes(author); }
         function toggleFollow(btn) {
             const author = btn.dataset.author; if (!author) return;
@@ -178,7 +178,7 @@
 
         // ===== Profile =====
         const defaultProfile = { name:'د. أحمد الخالدي', username:'@ahmed_alkhalidi', title:'محامي دولي', bio:'محامي دولي متخصص في التحكيم التجاري وقانون الشركات. خبرة +15 عاماً في القضايا المعقدة عابرة الحدود.', location:'دبي، الإمارات', website:'ahmed-law.com' };
-        function getProfile() { const s = Safe.getString('userProfile'); return s ? JSON.parse(s) : { ...defaultProfile }; }
+        function getProfile() { const s = UserStore.getString('userProfile'); return s ? JSON.parse(s) : { ...defaultProfile }; }
         function applyProfile(p) {
             const pn=document.querySelector('#page-profile .text-xl.font-bold'); if(pn)pn.textContent=p.name;
             const ps=document.querySelector('#page-profile .text-dark-400.text-sm.mb-3'); if(ps)ps.textContent=p.username+' • '+p.title+' • الإمارات 🇦🇪';
@@ -188,7 +188,7 @@
             const sn=document.querySelector('.desktop-sidebar .font-semibold.text-sm'); if(sn)sn.textContent=p.name;
             const dn=document.querySelector('#mobileDrawer h3'); if(dn)dn.textContent=p.name;
         }
-        function loadProfile() { const s=Safe.getString('userProfile'); if(s)applyProfile(JSON.parse(s)); }
+        function loadProfile() { const s=UserStore.getString('userProfile'); if(s)applyProfile(JSON.parse(s)); }
 
         // ===== VISIT OTHER USER'S PROFILE =====
         let _visitingProfile = null; // null = viewing own profile
@@ -349,6 +349,6 @@
 
         function openEditProfile() { const p=getProfile(); document.getElementById('editName').value=p.name; document.getElementById('editUsername').value=p.username; document.getElementById('editTitle').value=p.title; document.getElementById('editBio').value=p.bio; document.getElementById('editLocation').value=p.location; document.getElementById('editWebsite').value=p.website; document.getElementById('editProfileModal').classList.add('active'); document.body.style.overflow='hidden'; }
         function closeEditProfile(e) { if(e&&e.target!==e.currentTarget)return; document.getElementById('editProfileModal').classList.remove('active'); document.body.style.overflow=''; }
-        function saveProfile() { const p={name:document.getElementById('editName').value.trim()||defaultProfile.name,username:document.getElementById('editUsername').value.trim()||defaultProfile.username,title:document.getElementById('editTitle').value.trim()||defaultProfile.title,bio:document.getElementById('editBio').value.trim()||defaultProfile.bio,location:document.getElementById('editLocation').value.trim()||defaultProfile.location,website:document.getElementById('editWebsite').value.trim()||defaultProfile.website}; Safe.setJSON('userProfile', p); applyProfile(p); closeEditProfile(); showToast('تم حفظ الملف الشخصي ✓'); }
+        function saveProfile() { const p={name:document.getElementById('editName').value.trim()||defaultProfile.name,username:document.getElementById('editUsername').value.trim()||defaultProfile.username,title:document.getElementById('editTitle').value.trim()||defaultProfile.title,bio:document.getElementById('editBio').value.trim()||defaultProfile.bio,location:document.getElementById('editLocation').value.trim()||defaultProfile.location,website:document.getElementById('editWebsite').value.trim()||defaultProfile.website}; UserStore.setJSON('userProfile', p); applyProfile(p); closeEditProfile(); showToast('تم حفظ الملف الشخصي ✓'); }
 
         // ====================================================

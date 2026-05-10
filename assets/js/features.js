@@ -1,15 +1,51 @@
-        // ============================================================
-
         // ===== Init =====
         document.addEventListener('DOMContentLoaded', async()=>{
             // Initialize Supabase first
             await initSupabase();
-            if (sbOnline) {
-                await signInAnonymously();
-                console.log('✅ Supabase auth:', sbUser?.id);
+
+            // Initialize Auth system — يحدد المستخدم الحالي
+            const authResult = await Auth.init();
+
+            if (!authResult) {
+                // No valid session — show login screen
+                Auth.showLoginScreen();
+                return;
             }
 
-            loadSavedImages();loadProfile();renderTrendingList('all');renderFollowingPosts();renderSpaces('live');updateNotifDots();renderProfilePosts();hideStaticPosts();renderFeedPosts();
+            console.log('✅ Auth:', sbUser?.id, sbProfile?.display_name);
+
+            // Initialize app for authenticated user
+            await initAppForUser();
+        });
+
+        // Called after successful auth (login or account switch)
+        async function onAuthSuccess(result) {
+            await initAppForUser();
+        }
+
+        // Initialize all app modules for current user
+        async function initAppForUser() {
+            loadSavedImages();
+            loadProfile();
+            renderTrendingList('all');
+            renderFollowingPosts();
+            renderSpaces('live');
+            updateNotifDots();
+            renderProfilePosts();
+            hideStaticPosts();
+            renderFeedPosts();
+
+            // Initialize enhanced features
+            initDefaultConversations();
+            initSettings();
+            initEvents();
+            initNotifications();
+
+            // Render enhanced pages
+            renderMessagesPage();
+            renderArticlesPage();
+            renderBookmarksPage();
+            renderConnectionsPage();
 
             // Initialize SPA system
             Router.init();
@@ -17,12 +53,34 @@
             NotifPTR.init();
             initStories();
 
+            // Setup infinite scroll
+            setupInfiniteScroll();
+
+            // Fix article editor button
+            const newArticleBtn = document.querySelector('#page-articles button');
+            if (newArticleBtn) {
+                newArticleBtn.onclick = showArticleEditor;
+            }
+
+            // Fix search input
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.onkeydown = function(e) { if (e.key === 'Enter') doSearch(); };
+            }
+
+            // Initialize Library module
+            if (typeof Library !== 'undefined') {
+                Library.init();
+                const uid = sbUser?.id || 'local';
+                Library.fetchLibraries(uid);
+            }
+
             // Restore state (if returning from refresh)
             const restored = AppState.restore();
             if (restored) {
                 // State was restored, skip default scroll-to-top
             }
-        });
+        }
 
         // ===== Connect Button =====
         function toggleConnect(btn) {
@@ -47,17 +105,17 @@
         // ===== ENHANCED FEATURES - ALL FUNCTIONAL ===================
         // ============================================================
 
-        // ===== A. MESSAGING SYSTEM =====
+        // ===== A. MESSAGING SYSTEM (معزول لكل مستخدم) =====
         const MsgStore = {
-            _key: 'lawbook_conversations',
+            _key: 'conversations',
             _activeId: null,
 
             getAll() {
-                return Safe.getJSON(this._key, []) || [];
+                return UserStore.getJSON(this._key, []) || [];
             },
 
             save(list) {
-                Safe.setJSON(this._key, list);
+                UserStore.setJSON(this._key, list);
             },
 
             getOrCreate(userId, userName, userAvatar) {
@@ -309,9 +367,9 @@
             showToast(`تم العثور على ${matchedPosts.length + matchedUserPosts.length} نتيجة`);
         }
 
-        // ===== C. SETTINGS PERSISTENCE =====
+        // ===== C. SETTINGS PERSISTENCE (معزول لكل مستخدم) =====
         const SettingsStore = {
-            _key: 'lawbook_settings',
+            _key: 'settings',
             _defaults: {
                 profileVisible: true,
                 emailNotifs: true,
@@ -320,13 +378,13 @@
                 language: 'ar'
             },
             get() {
-                const saved = Safe.getJSON(this._key, '{}');
+                const saved = UserStore.getJSON(this._key, '{}');
                 return { ...this._defaults, ...saved };
             },
             update(key, value) {
                 const s = this.get();
                 s[key] = value;
-                Safe.setJSON(this._key, s);
+                UserStore.setJSON(this._key, s);
             }
         };
 
@@ -337,7 +395,6 @@
                 if (settings[keys[i]]) toggle.classList.add('on');
                 else toggle.classList.remove('on');
 
-                // Replace the inline onclick with a proper handler
                 toggle.onclick = function() {
                     this.classList.toggle('on');
                     SettingsStore.update(keys[i], this.classList.contains('on'));
@@ -348,22 +405,31 @@
             // Logout button
             const logoutBtn = document.querySelector('#page-settings .text-red-400:first-of-type');
             if (logoutBtn && logoutBtn.textContent.includes('تسجيل الخروج')) {
-                logoutBtn.onclick = function() {
+                logoutBtn.onclick = async function() {
                     if (confirm('هل تريد تسجيل الخروج؟')) {
-                        try { localStorage.clear(); } catch(e) { console.warn("[Safe] clear failed:", e.message); }
-                        sessionStorage.clear();
+                        await Auth.signOut();
                         location.reload();
                     }
+                };
+            }
+
+            // Account switcher button
+            const switchBtn = document.querySelector('#page-settings [data-action="switch-account"]');
+            if (switchBtn) {
+                switchBtn.onclick = function() {
+                    Auth.showAccountSwitcher();
                 };
             }
 
             // Delete account
             const deleteBtn = document.querySelectorAll('#page-settings .text-red-400')[1];
             if (deleteBtn && deleteBtn.textContent.includes('حذف الحساب')) {
-                deleteBtn.onclick = function() {
+                deleteBtn.onclick = async function() {
                     if (confirm('تحذير: سيتم حذف جميع بياناتك نهائياً! هل أنت متأكد؟')) {
-                        try { localStorage.clear(); } catch(e) { console.warn("[Safe] clear failed:", e.message); }
-                        sessionStorage.clear();
+                        const uid = Auth.getCurrentUserId();
+                        UserStore.clearAll();
+                        Auth.removeAccount(uid);
+                        await Auth.signOut();
                         showToast('تم حذف الحساب');
                         setTimeout(() => location.reload(), 1000);
                     }
@@ -371,10 +437,10 @@
             }
         }
 
-        // ===== D. EVENTS REGISTRATION =====
+        // ===== D. EVENTS REGISTRATION (معزول لكل مستخدم) =====
         const EventsStore = {
-            _key: 'lawbook_registered_events',
-            getRegistered() { return Safe.getJSON(this._key, []) || []; },
+            _key: 'registered_events',
+            getRegistered() { return UserStore.getJSON(this._key, []) || []; },
             toggle(eventId) {
                 let reg = this.getRegistered();
                 if (reg.includes(eventId)) {
@@ -384,7 +450,7 @@
                     reg.push(eventId);
                     showToast('تم التسجيل بنجاح ✓');
                 }
-                Safe.setJSON(this._key, reg);
+                UserStore.setJSON(this._key, reg);
                 return reg.includes(eventId);
             },
             isRegistered(eventId) { return this.getRegistered().includes(eventId); }
@@ -412,11 +478,11 @@
             });
         }
 
-        // ===== E. ARTICLES MANAGEMENT =====
+        // ===== E. ARTICLES MANAGEMENT (معزول لكل مستخدم) =====
         const ArticlesStore = {
-            _key: 'lawbook_articles',
-            getAll() { return Safe.getJSON(this._key, []) || []; },
-            save(list) { Safe.setJSON(this._key, list); },
+            _key: 'articles',
+            getAll() { return UserStore.getJSON(this._key, []) || []; },
+            save(list) { UserStore.setJSON(this._key, list); },
             add(article) {
                 const list = this.getAll();
                 list.unshift(article);
@@ -434,7 +500,6 @@
         };
 
         function showArticleEditor() {
-            // Create modal if it doesn't exist
             let modal = document.getElementById('articleEditorModal');
             if (!modal) {
                 modal = document.createElement('div');

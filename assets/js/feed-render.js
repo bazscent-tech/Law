@@ -75,8 +75,8 @@
         // ===== STORIES SYSTEM ======================================
         // ============================================================
 
-        let storiesData = Safe.getJSON('storiesData', null);
-        let viewedStories = Safe.getJSON('viewedStories', []);
+        let storiesData = UserStore.getJSON('storiesData', null);
+        let viewedStories = UserStore.getJSON('viewedStories', []);
         let currentStoryUserIndex = 0;
         let currentStoryIndex = 0;
         let storyTimer = null;
@@ -112,13 +112,13 @@
         function initStories() {
             if (!storiesData) {
                 storiesData = getDefaultStories();
-                Safe.setJSON('storiesData', storiesData);
+                UserStore.setJSON('storiesData', storiesData);
             }
             renderStoriesBar();
         }
 
-        function saveStories() { Safe.setJSON('storiesData', storiesData); }
-        function saveViewedStories() { Safe.setJSON('viewedStories', viewedStories); }
+        function saveStories() { UserStore.setJSON('storiesData', storiesData); }
+        function saveViewedStories() { UserStore.setJSON('viewedStories', viewedStories); }
 
         function renderStoriesBar() {
             const bar = document.getElementById('storiesBar');
@@ -128,7 +128,7 @@
             // Update "add story" avatar
             const addCard = bar.querySelector('.add-story');
             if (addCard) {
-                const savedAvatar = Safe.getString('profileAvatar');
+                const savedAvatar = UserStore.getString('profileAvatar');
                 if (savedAvatar) addCard.querySelector('.story-card-bg').src = savedAvatar;
             }
 
@@ -218,7 +218,7 @@
 
             let myUser = storiesData.find(u => u.isOwn);
             if (!myUser) {
-                myUser = { id: 'user-me', name: getProfile().name, avatar: Safe.getString('profileAvatar') || 'https://picsum.photos/seed/lawyer-me/80/80.jpg', isOwn: true, stories: [] };
+                myUser = { id: 'user-me', name: getProfile().name, avatar: UserStore.getString('profileAvatar') || 'https://picsum.photos/seed/lawyer-me/80/80.jpg', isOwn: true, stories: [] };
                 storiesData.unshift(myUser);
             }
 

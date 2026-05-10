@@ -1,6 +1,6 @@
-        function saveUserReplies() { Safe.setJSON('userReplies', userReplies); }
-        function saveUserLikes() { Safe.setJSON('userLikes', userLikes); }
-        function savePlatformComments() { Safe.setJSON('platformComments', platformComments); }
+        function saveUserReplies() { UserStore.setJSON('userReplies', userReplies); }
+        function saveUserLikes() { UserStore.setJSON('userLikes', userLikes); }
+        function savePlatformComments() { UserStore.setJSON('platformComments', platformComments); }
 
         function isLiked(postId) { return userLikes.some(p => p.id === postId); }
         function isReposted(postId) { return userPosts.some(p => p.repostOf === postId); }
@@ -16,13 +16,13 @@
         // ====================================================
         // ===== PIN POST FEATURE ============================
         // ====================================================
-        let pinnedPostId = Safe.getString('pinnedPostId', '');
+        let pinnedPostId = UserStore.getString('pinnedPostId', '');
 
         function isPinned(postId) { return pinnedPostId === postId; }
 
         function pinPost(postId) {
             pinnedPostId = postId;
-            Safe.setString('pinnedPostId', postId);
+            UserStore.setString('pinnedPostId', postId);
             showToast('تم تثبيت المنشور 📌');
             // Re-render profile if on profile page
             const profilePage = document.getElementById('page-profile');
@@ -33,7 +33,7 @@
 
         function unpinPost() {
             pinnedPostId = '';
-            Safe.setString('pinnedPostId', '');
+            UserStore.setString('pinnedPostId', '');
             showToast('تم إلغاء تثبيت المنشور');
             const profilePage = document.getElementById('page-profile');
             if (profilePage && !profilePage.classList.contains('hidden')) {

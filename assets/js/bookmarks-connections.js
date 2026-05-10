@@ -1,8 +1,8 @@
 
-        // ===== F. BOOKMARKS SYSTEM =====
+        // ===== F. BOOKMARKS SYSTEM (معزول لكل مستخدم) =====
         const BookmarksStore = {
-            _key: 'lawbook_bookmarks',
-            getIds() { return Safe.getJSON(this._key, '[]'); },
+            _key: 'bookmarks',
+            getIds() { return UserStore.getJSON(this._key, '[]'); },
             toggle(postId) {
                 let ids = this.getIds();
                 if (ids.includes(postId)) {
@@ -12,7 +12,7 @@
                     ids.push(postId);
                     showToast('تم الحفظ ✓');
                 }
-                Safe.setJSON(this._key, ids);
+                UserStore.setJSON(this._key, ids);
                 return ids.includes(postId);
             },
             isBookmarked(postId) { return this.getIds().includes(postId); }
