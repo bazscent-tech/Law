@@ -363,8 +363,16 @@
         // Auth guard helper — reusable across all modules
         function requireAuth(action) {
             if (!Auth.isLoggedIn()) {
+                // ⚡ محاولة تجديد الجلسة أولاً
+                if (sb && sb.auth) {
+                    sb.auth.getSession().then(({ data: { session } }) => {
+                        if (session && session.user) {
+                            window.sbUser = session.user;
+                            window.sbOnline = true;
+                        }
+                    }).catch(() => {});
+                }
                 showToast('سجّل دخولك أولاً');
-                AuthUI.show();
                 return false;
             }
             return true;

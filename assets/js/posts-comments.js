@@ -87,6 +87,13 @@
             post.tags = newText.match(hashtagRegex) || [];
             post.edited = true;
             saveUserPosts();
+
+            // ⚡ مزامنة التعديل مع Supabase
+            if (post.sbId && sbOnline && sbUser) {
+                SB.updatePost(post.sbId, { content: newText, title: '', tags: post.tags })
+                    .catch(err => console.warn('Supabase edit sync failed:', err));
+            }
+
             closeEditPostModal();
             renderProfilePosts();
             renderFeedPosts();
@@ -96,6 +103,13 @@
         function deletePost(postId) {
             if (!requireAuth()) return;
             if (!confirm('هل أنت متأكد من حذف هذا المنشور؟')) return;
+
+            // ⚡ احذف من Supabase أيضاً
+            const post = userPosts.find(p => p.id === postId);
+            if (post && post.sbId && sbOnline && sbUser) {
+                SB.deletePost(post.sbId).catch(err => console.warn('Supabase delete failed:', err));
+            }
+
             userPosts = userPosts.filter(p => p.id !== postId);
             saveUserPosts();
             closeAllMenus();
@@ -426,7 +440,7 @@
             pendingMedia = [];
             renderMediaPreview();
 
-            const post = { id: postId, text, displayText, tags, time: timeStr, likes: 0, comments: 0, shares: 0, isRepost: false, commentList: [], media: mediaCopy, edited: false };
+            const post = { id: postId, text, displayText, tags, time: timeStr, likes: 0, comments: 0, shares: 0, isRepost: false, commentList: [], media: mediaCopy, edited: false, sbId: null };
             userPosts.unshift(post);
             saveUserPosts();
 
@@ -440,15 +454,21 @@
             if (first) fp.insertBefore(article, first); else fp.insertBefore(article, loader);
             article.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-            // Sync to Supabase in background
+            // ⚡ مزامنة مع Supabase — وتحديث الـ ID المحلي
             if (sbOnline && sbUser) {
                 SB.createPost(text, '', tags).then(result => {
-                    if (result) {
-                        // Update local post with Supabase ID for future sync
+                    if (result && result.id) {
+                        // ⚡ حدّث الـ ID المحلي ليساوي Supabase ID
                         post.sbId = result.id;
+                        // حدّث أيضاً في المصفوفة
+                        const idx = userPosts.findIndex(p => p.id === postId);
+                        if (idx !== -1) userPosts[idx].sbId = result.id;
                         saveUserPosts();
+                        console.log('✅ Post synced to Supabase:', result.id);
                     }
-                }).catch(() => {});
+                }).catch(err => {
+                    console.warn('Post sync failed (saved locally):', err.message);
+                });
             }
         }
 
@@ -541,10 +561,10 @@
         async function renderProfilePosts() {
             const c=document.getElementById('profilePostsList'); const e=document.getElementById('profileEmptyState'); if(!c)return;
 
-            // Merge localStorage posts with Supabase posts
+            // ⚡ ابدأ بالمنشورات المحلية فقط (سريعة)
             let allUserPostsLocal = [...userPosts];
 
-            // Fetch from Supabase if connected
+            // ⚡ جلب من Supabase في الخلفية (لا ي阻塞)
             if (sbOnline && sbUser) {
                 try {
                     const { data: sbPosts } = await sb.from('posts')
@@ -552,8 +572,13 @@
                         .eq('author_id', sbUser.id)
                         .order('created_at', { ascending: false });
                     if (sbPosts && sbPosts.length > 0) {
-                        // Convert Supabase posts to local format and merge (avoid duplicates)
-                        const localIds = new Set(allUserPostsLocal.map(p => p.sbId || p.id));
+                        // ⚡ مجموعة IDs المحلية (سواء id أو sbId) لمنع التكرار
+                        const localIds = new Set();
+                        allUserPostsLocal.forEach(p => {
+                            localIds.add(p.id);
+                            if (p.sbId) localIds.add(p.sbId);
+                        });
+
                         sbPosts.forEach(sp => {
                             if (!localIds.has(sp.id)) {
                                 allUserPostsLocal.unshift({

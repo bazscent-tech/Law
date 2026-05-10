@@ -17,7 +17,19 @@
                     .order('created_at', { ascending: false })
                     .limit(50);
                 if (!sbPosts || sbPosts.length === 0) return;
-                const existingIds = new Set(allPosts.map(p => p.id));
+                // ⚡ منع التكرار: تحقق من id و sbId
+                const existingIds = new Set();
+                allPosts.forEach(p => {
+                    existingIds.add(p.id);
+                    if (p.sbId) existingIds.add(p.sbId);
+                });
+                // ⚡ أيضاً تحقق من منشورات المستخدم المحلية
+                if (typeof userPosts !== 'undefined') {
+                    userPosts.forEach(p => {
+                        existingIds.add(p.id);
+                        if (p.sbId) existingIds.add(p.sbId);
+                    });
+                }
                 sbPosts.forEach((sp, i) => {
                     if (existingIds.has(sp.id)) return;
                     const profile = sp.profiles || {};
@@ -32,6 +44,7 @@
                     else time = `منذ ${Math.floor(mins/1440)} يوم`;
                     allPosts.push({
                         id: sp.id,
+                        sbId: sp.id,
                         author: name,
                         avatar: avatarLetter,
                         avatarUrl: avatarUrl,

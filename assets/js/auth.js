@@ -176,6 +176,33 @@ const Auth = {
         window.location.reload();
     },
 
+    // ===== CHECK IF SESSION IS VALID =====
+    async ensureSession() {
+        if (!sb || !sb.auth) return false;
+        try {
+            const { data: { session }, error } = await sb.auth.getSession();
+            if (error) {
+                console.warn('[Auth] Session check error:', error.message);
+                return false;
+            }
+            if (session && session.user) {
+                window.sbUser = session.user;
+                window.sbOnline = true;
+                return true;
+            }
+            // ⚡ محاولة تجديد الجلسة
+            const { data: { session: refreshed } } = await sb.auth.refreshSession();
+            if (refreshed && refreshed.user) {
+                window.sbUser = refreshed.user;
+                window.sbOnline = true;
+                return true;
+            }
+        } catch (e) {
+            console.warn('[Auth] Session ensure failed:', e.message);
+        }
+        return false;
+    },
+
     // ===== GETTERS =====
     getCurrentUserId() {
         return window.sbUser?.id || null;

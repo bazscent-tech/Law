@@ -110,7 +110,7 @@
 
             _restoreScrollPosition(page) {
                 try {
-                    Safe.parse(sessionStorage.getItem(this._scrollKey) || '{}', {});
+                    const positions = Safe.parse(sessionStorage.getItem(this._scrollKey) || '{}', {});
                     const y = positions[page] || 0;
                     window.scrollTo({ top: y, behavior: 'instant' });
                 } catch(e) {}
