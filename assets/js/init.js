@@ -1,20 +1,111 @@
         // ===== Init — Real Auth Mode =====
         document.addEventListener('DOMContentLoaded', async () => {
-            // تهيئة Supabase
+            // ⚡ STEP 1: فوري — اقرأ الكاش المحلي وحدّث الواجهة قبل أي طلب شبكة
+            const cachedProfile = _instantCacheRestore();
+
+            // ⚡ STEP 2: تهيئة Supabase (شبكة)
             await initSupabase();
 
-            // محاولة استعادة الجلسة الحقيقية
+            // ⚡ STEP 3: محاولة استعادة الجلسة
             const hasSession = await Auth.init();
 
             if (hasSession && Auth.isLoggedIn()) {
                 console.log('✅ Authenticated:', sbProfile?.name || sbProfile?.display_name || sbUser?.id);
                 await initAppForUser();
+
+                // ⚡ STEP 4: حدّث الواجهة بالبيانات الطازجة من السيرفر
+                updateUIWithRealProfile();
             } else {
                 // لا توجد جلسة — إظهار شاشة تسجيل الدخول
                 console.log('🔒 No session — showing auth screen');
+                // إذا كان فيه كاش قديم، نظّفه
+                if (cachedProfile) {
+                    _clearCachedUI();
+                }
                 AuthUI.show();
             }
         });
+
+        // ⚡ استعادة فورية من الكاش — تُنفّذ قبل أي طلب شبكة
+        function _instantCacheRestore() {
+            try {
+                // ابحث عن أي بروفايل مخزن (المفتاح: auth_profile_{uuid})
+                const allKeys = Object.keys(localStorage);
+                const profileKey = allKeys.find(k => k.startsWith('auth_profile_'));
+                if (!profileKey) return null;
+
+                const cached = Safe.getJSON(profileKey, null);
+                if (!cached || !cached.name) return null;
+
+                // استخدم نفس دالة التحديث لكن مع بيانات الكاش
+                const name = cached.name || cached.display_name || 'مستخدم';
+                const avatar = cached.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=f97316&textColor=ffffff`;
+
+                // حدّث كل الصور فوراً
+                ['mobileAvatar', 'sidebarAvatar', 'desktopAvatar', 'mobileDrawerAvatar',
+                 'postCreatorAvatar', 'profilePageAvatar', 'storyCreatorAvatar', 'modalPostAvatar'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.src = avatar;
+                });
+
+                // حدّث الأسماء فوراً
+                const headerName = document.getElementById('headerUserName');
+                if (headerName) headerName.textContent = name;
+
+                const sidebarName = document.getElementById('sidebarName');
+                if (sidebarName) sidebarName.textContent = name;
+
+                const mdName = document.getElementById('mobileDrawerName');
+                if (mdName) mdName.textContent = name;
+
+                const ppName = document.getElementById('profileDisplayName');
+                if (ppName) ppName.textContent = name;
+
+                const sName = document.getElementById('settingsName');
+                if (sName) sName.textContent = name;
+
+                // username
+                const username = cached.username ? '@' + cached.username : '';
+                const mdUser = document.getElementById('mobileDrawerUsername');
+                if (mdUser) mdUser.textContent = username;
+
+                // counts
+                const sF = document.getElementById('sidebarFollowers');
+                const sG = document.getElementById('sidebarFollowing');
+                const sP = document.getElementById('sidebarPosts');
+                if (sF) sF.textContent = (cached.followers_count || 0).toLocaleString('ar');
+                if (sG) sG.textContent = (cached.following_count || 0).toLocaleString('ar');
+                if (sP) sP.textContent = (cached.posts_count || 0).toLocaleString('ar');
+
+                const mdFoll = document.getElementById('mobileDrawerFollowers');
+                const mdFing = document.getElementById('mobileDrawerFollowing');
+                if (mdFoll) mdFoll.textContent = (cached.followers_count || 0).toLocaleString('ar');
+                if (mdFing) mdFing.textContent = (cached.following_count || 0).toLocaleString('ar');
+
+                console.log('⚡ Instant cache restore:', name);
+                return cached;
+            } catch (e) {
+                console.warn('[Cache] Instant restore failed:', e.message);
+                return null;
+            }
+        }
+
+        // مسح الواجهة عند عدم وجود جلسة
+        function _clearCachedUI() {
+            const defaultName = 'مستخدم';
+            const defaultAvatar = 'https://api.dicebear.com/7.x/initials/svg?seed=User&backgroundColor=f97316&textColor=ffffff';
+
+            ['mobileAvatar', 'sidebarAvatar', 'desktopAvatar', 'mobileDrawerAvatar',
+             'postCreatorAvatar', 'profilePageAvatar', 'storyCreatorAvatar', 'modalPostAvatar'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.src = defaultAvatar;
+            });
+
+            ['headerUserName', 'sidebarName', 'mobileDrawerName', 'profileDisplayName', 'settingsName'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = defaultName;
+            });
+        }
 
         // Called after successful auth (not used in real auth — page reloads)
         async function onAuthSuccess() {
@@ -24,37 +115,17 @@
         // Initialize all app modules for current user
         async function initAppForUser() {
             if (!Auth.isLoggedIn()) { AuthUI.show(); return; }
+
+            // ⚡ المرحلة 1: فوري — UI محلي فقط (لا شبكة)
             loadSavedImages();
             loadProfile();
-            renderTrendingList('all');
-            renderFollowingPosts();
-            renderSpaces('live');
-            updateNotifDots();
-            renderProfilePosts();
-            hideStaticPosts();
-            renderFeedPosts();
-
-            // Update UI with real user data
             updateUIWithRealProfile();
+            hideStaticPosts();
+            updateNotifDots();
 
-            // Initialize enhanced features
-            initDefaultConversations();
-            initSettings();
-            initEvents();
-            initNotifications();
-
-            // Render enhanced pages
-            renderMessagesPage();
-            renderArticlesPage();
-            renderBookmarksPage();
-            renderConnectionsPage();
-
-            // Initialize SPA system
+            // ⚡ المرحلة 2: تهيئة الـ SPA والميزات المحلية (لا تنتظر)
             Router.init();
             NotifPTR.init();
-            initStories();
-
-            // Setup infinite scroll
             setupInfiniteScroll();
 
             // Fix article editor button
@@ -68,6 +139,30 @@
             if (searchInput) {
                 searchInput.onkeydown = function(e) { if (e.key === 'Enter') doSearch(); };
             }
+
+            // Initialize enhanced features (sync, fast)
+            initDefaultConversations();
+            initSettings();
+            initEvents();
+            initNotifications();
+
+            // Render local pages (sync, fast)
+            renderTrendingList('all');
+            renderSpaces('live');
+            renderMessagesPage();
+            renderArticlesPage();
+            renderBookmarksPage();
+            renderConnectionsPage();
+
+            // ⚡ المرحلة 3: طلبات شبكية — بالتوازي (لا ت阻塞 الواجهة)
+            Promise.allSettled([
+                renderFeedPosts(),
+                renderFollowingPosts(),
+                renderProfilePosts(),
+                initStories()
+            ]).then(() => {
+                console.log('✅ Background data loaded');
+            });
 
             // Initialize Library module
             if (typeof Library !== 'undefined') {

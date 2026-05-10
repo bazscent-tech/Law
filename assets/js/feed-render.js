@@ -52,21 +52,59 @@
         }
 
         async function renderFeedPosts(){
-            await loadSupabaseFeedPosts();
+            // ⚡ عرض المنشورات المحلية فوراً (بدون انتظار الشبكة)
             const container=document.getElementById('page-feed');if(!container)return;
             container.querySelectorAll('.post-card,.dynamic-post').forEach(el=>el.remove());
-            const posts=getFeedPosts().sort((a,b)=>b.relevance-a.relevance);
             const loader=document.getElementById('infiniteLoader');
+
+            // Render local posts immediately
+            let posts=getFeedPosts().sort((a,b)=>b.relevance-a.relevance);
             if(posts.length===0){
+                // Show empty state only if no posts at all
                 const e=document.createElement('div');e.className='dynamic-post text-center py-12 text-dark-400';
                 e.innerHTML='<span class="iconify text-4xl mb-3 block" data-icon="lucide:file-text"></span><p class="text-sm">لا توجد منشورات بعد. كن أول من ينشر!</p>';
-                container.insertBefore(e,loader);document.getElementById('infiniteLoader').style.display='none';return;
+                container.insertBefore(e,loader);
+            } else {
+                posts.forEach((post,i)=>{const div=document.createElement('div');div.className='dynamic-post';div.innerHTML=buildPlatformPostHTML(post,i);container.insertBefore(div.firstElementChild,loader)});
             }
-            posts.forEach((post,i)=>{const div=document.createElement('div');div.className='dynamic-post';div.innerHTML=buildPlatformPostHTML(post,i);container.insertBefore(div.firstElementChild,loader)});
-            document.getElementById('infiniteLoader').style.display='none';document.getElementById('feedEnd').style.display='none';
+
+            // ⚡ تحميل منشورات Supabase في الخلفية (لا ت阻塞)
+            loadSupabaseFeedPosts().then(() => {
+                const newPosts = getFeedPosts().sort((a,b)=>b.relevance-a.relevance);
+                if (newPosts.length > posts.length) {
+                    // There are new posts from Supabase — append them
+                    container.querySelectorAll('.post-card,.dynamic-post').forEach(el=>el.remove());
+                    newPosts.forEach((post,i)=>{const div=document.createElement('div');div.className='dynamic-post';div.innerHTML=buildPlatformPostHTML(post,i);container.insertBefore(div.firstElementChild,loader)});
+                }
+                document.getElementById('infiniteLoader').style.display='none';
+                document.getElementById('feedEnd').style.display='none';
+            });
         }
 
-        async function renderFollowingPosts(){await loadSupabaseFeedPosts();const c=document.getElementById('followingPosts');if(!c)return;const posts=allPosts.filter(p=>isFollowing(p.author));if(posts.length===0){c.innerHTML='<div class="text-center py-12 text-dark-400"><span class="iconify text-4xl mb-3 block" data-icon="lucide:user-plus"></span><p class="text-sm">لم تتابع أحداً بعد</p></div>';return;}c.innerHTML=posts.map((p,i)=>buildPlatformPostHTML(p,i)).join('')}
+        async function renderFollowingPosts(){
+            // ⚡ عرض فوري بدون انتظار الشبكة
+            const c=document.getElementById('followingPosts');if(!c)return;
+            let posts=allPosts.filter(p=>isFollowing(p.author));
+            if(posts.length===0){
+                c.innerHTML='<div class="text-center py-12 text-dark-400"><span class="iconify text-4xl mb-3 block" data-icon="lucide:user-plus"></span><p class="text-sm">لم تتابع أحداً بعد</p></div>';
+                // Try loading from Supabase in background
+                loadSupabaseFeedPosts().then(() => {
+                    const newPosts = allPosts.filter(p=>isFollowing(p.author));
+                    if (newPosts.length > 0) {
+                        c.innerHTML = newPosts.map((p,i)=>buildPlatformPostHTML(p,i)).join('');
+                    }
+                });
+                return;
+            }
+            c.innerHTML=posts.map((p,i)=>buildPlatformPostHTML(p,i)).join('');
+            // Refresh from Supabase in background
+            loadSupabaseFeedPosts().then(() => {
+                const newPosts = allPosts.filter(p=>isFollowing(p.author));
+                if (newPosts.length > posts.length) {
+                    c.innerHTML = newPosts.map((p,i)=>buildPlatformPostHTML(p,i)).join('');
+                }
+            });
+        }
         function switchFollowingTab(btn,filter){document.querySelectorAll('.following-tab').forEach(t=>{t.classList.remove('active','bg-dark-800','text-white');t.classList.add('text-dark-400')});btn.classList.add('active','bg-dark-800','text-white');btn.classList.remove('text-dark-400');showToast('عرض: '+(filter==='all'?'الكل':filter==='people'?'أشخاص':'صفحات'));renderFollowingPosts()}
 
         // ===== Audio Spaces =====
