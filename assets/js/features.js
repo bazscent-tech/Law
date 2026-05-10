@@ -53,7 +53,7 @@
             _activeId: null,
 
             getAll() {
-                return Safe.getJSON(this._key, '[]');
+                return Safe.getJSON(this._key, []) || [];
             },
 
             save(list) {
@@ -374,7 +374,7 @@
         // ===== D. EVENTS REGISTRATION =====
         const EventsStore = {
             _key: 'lawbook_registered_events',
-            getRegistered() { return Safe.getJSON(this._key, '[]'); },
+            getRegistered() { return Safe.getJSON(this._key, []) || []; },
             toggle(eventId) {
                 let reg = this.getRegistered();
                 if (reg.includes(eventId)) {
@@ -415,7 +415,7 @@
         // ===== E. ARTICLES MANAGEMENT =====
         const ArticlesStore = {
             _key: 'lawbook_articles',
-            getAll() { return Safe.getJSON(this._key, '[]'); },
+            getAll() { return Safe.getJSON(this._key, []) || []; },
             save(list) { Safe.setJSON(this._key, list); },
             add(article) {
                 const list = this.getAll();
