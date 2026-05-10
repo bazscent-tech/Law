@@ -177,8 +177,25 @@
         if (postInput) { const s = document.createElement('style'); s.textContent = `#postInput:empty::before { content: attr(data-placeholder); color: #525252; pointer-events: none; }`; document.head.appendChild(s); }
 
         // ===== Profile =====
-        const defaultProfile = { name:'د. أحمد الخالدي', username:'@ahmed_alkhalidi', title:'محامي دولي', bio:'محامي دولي متخصص في التحكيم التجاري وقانون الشركات. خبرة +15 عاماً في القضايا المعقدة عابرة الحدود.', location:'دبي، الإمارات', website:'ahmed-law.com' };
-        function getProfile() { const s = UserStore.getString('userProfile'); return s ? JSON.parse(s) : { ...defaultProfile }; }
+        const defaultProfile = { name:'مستخدم', username:'', title:'', bio:'', location:'', website:'' };
+        function getProfile() {
+            // Prefer real Supabase profile
+            if (sbProfile) {
+                return {
+                    name: sbProfile.name || sbProfile.display_name || 'مستخدم',
+                    username: sbProfile.username ? '@' + sbProfile.username : '',
+                    title: sbProfile.title || '',
+                    bio: sbProfile.bio || '',
+                    location: sbProfile.location || '',
+                    website: sbProfile.website || '',
+                    avatar: sbProfile.avatar_url || ''
+                };
+            }
+            // Fallback to localStorage
+            const s = UserStore.getString('userProfile');
+            if (s) { try { return JSON.parse(s); } catch(e) {} }
+            return { ...defaultProfile };
+        }
         function applyProfile(p) {
             const name = p.name || p.display_name || '';
             const username = p.username || '';

@@ -22,7 +22,8 @@
                     if (existingIds.has(sp.id)) return;
                     const profile = sp.profiles || {};
                     const name = profile.name || 'مستخدم';
-                    const avatar = name.charAt(0);
+                    const avatarLetter = name.charAt(0);
+                    const avatarUrl = profile.avatar_url || '';
                     const timeDiff = Date.now() - new Date(sp.created_at).getTime();
                     const mins = Math.floor(timeDiff / 60000);
                     let time = 'الآن';
@@ -32,7 +33,8 @@
                     allPosts.push({
                         id: sp.id,
                         author: name,
-                        avatar: avatar,
+                        avatar: avatarLetter,
+                        avatarUrl: avatarUrl,
                         verified: profile.verified || false,
                         role: profile.title || '',
                         time: time,
@@ -55,7 +57,11 @@
             container.querySelectorAll('.post-card,.dynamic-post').forEach(el=>el.remove());
             const posts=getFeedPosts().sort((a,b)=>b.relevance-a.relevance);
             const loader=document.getElementById('infiniteLoader');
-            if(posts.length===0){const e=document.createElement('div');e.className='dynamic-post text-center py-12 text-dark-400';e.innerHTML='<span class="iconify text-4xl mb-3 block" data-icon="lucide:users"></span><p class="text-sm">تابعت كل المقترحات! 🎉</p>';container.insertBefore(e,loader);document.getElementById('infiniteLoader').style.display='none';return;}
+            if(posts.length===0){
+                const e=document.createElement('div');e.className='dynamic-post text-center py-12 text-dark-400';
+                e.innerHTML='<span class="iconify text-4xl mb-3 block" data-icon="lucide:file-text"></span><p class="text-sm">لا توجد منشورات بعد. كن أول من ينشر!</p>';
+                container.insertBefore(e,loader);document.getElementById('infiniteLoader').style.display='none';return;
+            }
             posts.forEach((post,i)=>{const div=document.createElement('div');div.className='dynamic-post';div.innerHTML=buildPlatformPostHTML(post,i);container.insertBefore(div.firstElementChild,loader)});
             document.getElementById('infiniteLoader').style.display='none';document.getElementById('feedEnd').style.display='none';
         }
