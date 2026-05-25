@@ -1,93 +1,197 @@
 // ============================================================
-// ===== APP ENTRY POINT — نقطة البداية =====================
+// ===== APP ENTRY POINT =====
 // ============================================================
 
 import { store } from './core/store.js';
-import { initAPI, Auth, Posts, Profiles, Follows } from './core/api.js';
+import { initAPI, Auth, Posts, Profiles, Follows, Likes, Bookmarks } from './core/api.js';
 import { router } from './core/router.js';
-import { showToast, getAvatarUrl, requireAuth, escapeHtml, timeAgo } from './utils/ui.js';
-import { initAuth, tryRestoreSession, showAuthScreen, hideAuthScreen, handleLogin, handleSignup, handleForgot, switchMode as authSwitchMode } from './features/auth.js';
+import { showToast, getAvatarUrl, requireAuth, showAuthPrompt, escapeHtml, timeAgo } from './utils/ui.js';
+import {
+    initAuth, tryRestoreSession,
+    showAuthScreen, hideAuthScreen,
+    handleLogin, handleSignup, handleForgot,
+    switchMode as authSwitchMode,
+    checkUsernameRealtime, autoFillUsername
+} from './features/auth.js';
 
-// ===== GLOBAL APP OBJECT (for inline onclick handlers) =====
+// ===== GLOBAL =====
 window.__app = {
-    store,
-    router,
-    initApp,
-    auth: { handleLogin, handleSignup, handleForgot, switchMode: authSwitchMode },
+    store, router, initApp, initGuestMode,
+    auth: {
+        handleLogin, handleSignup, handleForgot,
+        switchMode: authSwitchMode,
+        showAuthScreen,
+        checkUsernameRealtime,
+        autoFillUsername,
+        signOut: () => Auth.signOut(),
+    },
     navigate: (page) => router.navigate(page),
     showToast,
 };
 
 // ===== BOOTSTRAP =====
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🚀 Lawbook v2 starting...');
+    console.log('🚀 Lawbook starting...');
 
-    // 1. Initialize Supabase
-    await initAPI();
-
-    // 2. Try restore session
-    const hasSession = await tryRestoreSession();
+    const connected = await initAPI();
+    const hasSession = connected ? await tryRestoreSession() : false;
 
     if (hasSession && store.get('isLoggedIn')) {
-        console.log('✅ Session restored');
         initApp();
     } else {
-        console.log('🔒 No session');
-        showAuthScreen();
+        // Guest mode — show popular posts without login
+        initGuestMode();
     }
 });
+
+// ===== GUEST MODE =====
+async function initGuestMode() {
+    console.log('👁 Guest mode');
+    store.set('isLoggedIn', false);
+
+    // Show guest UI
+    setupGuestUI();
+    setupGuestNavigation();
+
+    // Load popular posts for guests
+    const { data } = await Posts.getPopular(15);
+    store.set('posts', data);
+
+    // Init router in guest mode
+    router.init();
+    registerGuestPages();
+
+    const hash = window.location.hash.replace('#', '') || 'feed';
+    router.navigate(hash === 'feed' ? 'feed' : 'feed');
+
+    renderFeed(true);
+}
+
+function setupGuestUI() {
+    // Replace avatar buttons with guest elements
+    document.querySelectorAll('[data-avatar]').forEach(img => {
+        img.src = 'https://api.dicebear.com/7.x/shapes/svg?seed=guest&backgroundColor=262626';
+        img.style.opacity = '0.5';
+    });
+
+    // Hide create post area
+    const createPost = document.querySelector('#page-feed .bg-dark-900\\/80:first-child');
+
+    // Show guest banner
+    showGuestBanner();
+
+    // Update header for guest
+    updateHeaderForGuest();
+}
+
+function showGuestBanner() {
+    const banner = document.getElementById('guestBanner');
+    if (banner) banner.style.display = 'flex';
+}
+
+function updateHeaderForGuest() {
+    // Update mobile header button to show login
+    const mobileAvatar = document.querySelector('.lg\\:hidden .p-2');
+    if (mobileAvatar) {
+        mobileAvatar.onclick = () => showAuthScreen('login');
+        mobileAvatar.innerHTML = '<span style="font-size:13px;font-weight:600;color:#f97316;font-family:\'Noto Kufi Arabic\',sans-serif;">دخول</span>';
+    }
+}
+
+function setupGuestNavigation() {
+    // Block bottom nav items for guests (except feed)
+    const blockedPages = ['profile', 'messages', 'bookmarks', 'notifications'];
+    document.querySelectorAll('.bottom-nav-item').forEach(btn => {
+        const page = btn.dataset.navigate;
+        if (blockedPages.includes(page)) {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                showAuthPrompt('الوصول لهذه الصفحة');
+            }, true);
+        }
+    });
+
+    // Block search
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('focus', () => {
+            searchInput.blur();
+            showAuthPrompt('البحث');
+        });
+    }
+
+    // Block post modal
+    window.showPostModal = () => showAuthPrompt('النشر');
+}
+
+function registerGuestPages() {
+    router.register('feed', { onShow: () => renderFeed(true) });
+    router.register('trending', { onShow: () => {} });
+    // All other pages redirect to auth
+    ['profile','messages','bookmarks','notifications','articles','settings','following','connections','audio-spaces','events','certificates'].forEach(page => {
+        router.register(page, {
+            onShow: () => {
+                router.navigate('feed');
+                showAuthPrompt('الوصول لهذه الصفحة');
+            }
+        });
+    });
+}
 
 // ===== INIT APP (after auth) =====
 async function initApp() {
     const profile = store.get('profile');
     if (!profile) return;
 
-    // Update all UI with profile data
     updateProfileUI(profile);
-
-    // Register pages
     registerPages();
-
-    // Initialize router
     router.init();
 
-    // Load initial data
+    // Hide guest banner
+    const banner = document.getElementById('guestBanner');
+    if (banner) banner.style.display = 'none';
+
+    // Show create post area
+    const createPostArea = document.getElementById('createPostArea');
+    if (createPostArea) createPostArea.style.display = '';
+
+    // Show edit profile button
+    const editBtn = document.getElementById('editProfileBtn');
+    if (editBtn) editBtn.classList.remove('hidden');
+
     await Promise.allSettled([
         loadFeedPosts(),
         loadUserPosts(),
     ]);
 
+    // Set active nav
+    const hash = window.location.hash.replace('#', '') || 'feed';
+    router.navigate(hash);
+
     console.log('✅ App initialized');
 }
 
-// ===== UPDATE PROFILE UI =====
 function updateProfileUI(profile) {
     const name = profile.name || 'مستخدم';
     const avatar = getAvatarUrl(profile);
     const username = profile.username ? '@' + profile.username : '';
 
-    // Update all avatars
-    document.querySelectorAll('[data-avatar]').forEach(el => el.src = avatar);
-
-    // Update all names
+    document.querySelectorAll('[data-avatar]').forEach(el => { el.src = avatar; el.style.opacity = ''; });
     document.querySelectorAll('[data-user-name]').forEach(el => el.textContent = name);
-
-    // Update username
     document.querySelectorAll('[data-username]').forEach(el => el.textContent = username);
-
-    // Update counts
     document.querySelectorAll('[data-followers]').forEach(el => el.textContent = (profile.followers_count || 0).toLocaleString('ar'));
     document.querySelectorAll('[data-following]').forEach(el => el.textContent = (profile.following_count || 0).toLocaleString('ar'));
     document.querySelectorAll('[data-posts-count]').forEach(el => el.textContent = (profile.posts_count || 0).toLocaleString('ar'));
 
-    // Settings
     const settingsName = document.getElementById('settingsName');
     if (settingsName) settingsName.textContent = name;
     const settingsEmail = document.getElementById('settingsEmail');
     if (settingsEmail) settingsEmail.textContent = store.get('user')?.email || '-';
+    const settingsUsername = document.getElementById('settingsUsername');
+    if (settingsUsername) settingsUsername.textContent = username;
 }
 
-// ===== REGISTER PAGES =====
 function registerPages() {
     router.register('feed', { onShow: () => renderFeed() });
     router.register('profile', { onShow: () => renderProfile() });
@@ -96,15 +200,14 @@ function registerPages() {
     router.register('bookmarks', { onShow: () => renderBookmarks() });
     router.register('settings', { onShow: () => {} });
     router.register('articles', { onShow: () => renderArticles() });
-    router.register('connections', { onShow: () => renderConnections() });
+    router.register('connections', { onShow: () => {} });
     router.register('events', { onShow: () => {} });
     router.register('certificates', { onShow: () => {} });
-    router.register('trending', { onShow: () => renderTrending() });
+    router.register('trending', { onShow: () => {} });
     router.register('audio-spaces', { onShow: () => {} });
     router.register('following', { onShow: () => renderFollowing() });
 }
 
-// ===== LOAD DATA =====
 async function loadFeedPosts() {
     const { data } = await Posts.getAll(50);
     store.set('posts', data);
@@ -119,46 +222,54 @@ async function loadUserPosts() {
 }
 
 // ===== RENDER FUNCTIONS =====
-function renderFeed() {
+function renderFeed(isGuest = false) {
     const container = document.getElementById('page-feed');
     if (!container) return;
 
     const posts = store.get('posts') || [];
-    const localPosts = getLocalPosts();
-
-    // Merge and deduplicate
+    const localPosts = isGuest ? [] : getLocalPosts();
     const allPosts = deduplicatePosts([...localPosts, ...posts]);
 
-    // Remove existing dynamic posts
     container.querySelectorAll('.dynamic-post').forEach(el => el.remove());
+
+    // Hide create post for guests
+    const createPostArea = container.querySelector('#createPostArea');
+    if (isGuest && createPostArea) createPostArea.style.display = 'none';
 
     const loader = document.getElementById('infiniteLoader');
 
     if (allPosts.length === 0) {
         const empty = document.createElement('div');
-        empty.className = 'dynamic-post text-center py-12 text-dark-400';
-        empty.innerHTML = '<span class="iconify text-4xl mb-3 block" data-icon="lucide:file-text"></span><p class="text-sm">لا توجد منشورات بعد</p>';
+        empty.className = 'dynamic-post text-center py-16 text-dark-400';
+        empty.innerHTML = '<span class="iconify text-5xl mb-3 block" data-icon="lucide:file-text"></span><p class="text-sm">لا توجد منشورات بعد</p>';
         container.insertBefore(empty, loader);
         return;
     }
 
+    const fragment = document.createDocumentFragment();
     allPosts.forEach((post, i) => {
         const div = document.createElement('div');
         div.className = 'dynamic-post';
         div.dataset.postId = post.id;
-        div.innerHTML = buildPostHTML(post, i);
-        container.insertBefore(div.firstElementChild || div, loader);
+        div.innerHTML = buildPostHTML(post, i, isGuest);
+        const el = div.firstElementChild;
+        if (el) fragment.appendChild(el);
     });
+    container.insertBefore(fragment, loader);
 
     if (loader) loader.style.display = 'none';
+
+    // Re-trigger iconify scan
+    if (window.Iconify) Iconify.scan(container);
 }
 
 function renderProfile() {
     const profile = store.get('profile');
     if (!profile) return;
+    updateProfileUI(profile);
 
     const userPosts = store.get('userPosts') || [];
-    const localPosts = getLocalPosts().filter(p => p.author_id === store.get('user')?.id);
+    const localPosts = getLocalPosts();
     const allPosts = deduplicatePosts([...localPosts, ...userPosts]);
 
     const container = document.getElementById('profilePostsList');
@@ -169,135 +280,207 @@ function renderProfile() {
         if (emptyState) emptyState.style.display = '';
         return;
     }
-
     if (emptyState) emptyState.style.display = 'none';
-    if (container) {
-        container.innerHTML = allPosts.map((post, i) => buildOwnPostHTML(post, profile)).join('');
-    }
+    if (container) container.innerHTML = allPosts.map(post => buildOwnPostHTML(post, profile)).join('');
 }
 
-function renderNotifications() { /* TODO */ }
-function renderMessages() { /* TODO */ }
-function renderBookmarks() { /* TODO */ }
-function renderArticles() { /* TODO */ }
-function renderConnections() { /* TODO */ }
-function renderTrending() { /* TODO */ }
-function renderFollowing() { /* TODO */ }
+function renderNotifications() {
+    const el = document.getElementById('notifContent');
+    if (el) el.innerHTML = `<div class="text-center py-12 text-dark-400"><span class="iconify text-4xl mb-3 block" data-icon="lucide:bell"></span><p class="text-sm">لا توجد إشعارات</p></div>`;
+}
 
-// ===== POST HTML BUILDERS =====
-function buildPostHTML(post, index) {
+function renderMessages() {}
+function renderBookmarks() {}
+function renderArticles() {}
+function renderFollowing() {}
+
+// ===== POST HTML =====
+function buildPostHTML(post, index, isGuest = false) {
     const profile = post.profiles || {};
-    const name = profile.name || 'مستخدم';
+    const name = escapeHtml(profile.name || 'مستخدم');
     const avatar = getAvatarUrl(profile);
-    const verified = profile.verified ? '<span class="iconify text-brand-500 text-sm" data-icon="lucide:badge-check"></span>' : '';
-    const role = profile.title || '';
+    const verified = profile.verified ? `<span class="iconify text-brand-500 text-sm" data-icon="lucide:badge-check"></span>` : '';
+    const role = escapeHtml(profile.title || '');
     const time = timeAgo(post.created_at);
     const content = escapeHtml(post.content || '').replace(/\n/g, '<br>');
     const title = post.title ? `<h2 class="font-bold text-base mb-2">${escapeHtml(post.title)}</h2>` : '';
-    const tags = (post.tags || []).map(t => `<span class="hashtag bg-brand-500/10 text-brand-400 text-xs font-medium px-3 py-1 rounded-full">${escapeHtml(t)}</span>`).join('');
+    const tags = (post.tags || []).map(t => `<span class="hashtag">#${escapeHtml(t)}</span>`).join('');
+
+    const interactionsGuest = `
+        <button class="post-action" onclick="showAuthPrompt('الإعجاب')">
+            <span class="iconify" data-icon="lucide:heart"></span>
+            <span>${post.likes_count || 0}</span>
+        </button>
+        <button class="post-action" onclick="showAuthPrompt('التعليق')">
+            <span class="iconify" data-icon="lucide:message-circle"></span>
+            <span>${post.comments_count || 0}</span>
+        </button>
+        <button class="post-action" onclick="showAuthPrompt('المشاركة')">
+            <span class="iconify" data-icon="lucide:share-2"></span>
+        </button>
+        <button class="post-action" onclick="showAuthPrompt('الحفظ')">
+            <span class="iconify" data-icon="lucide:bookmark"></span>
+        </button>`;
+
+    const interactionsAuth = `
+        <button class="post-action like-btn" data-like="${post.id}">
+            <span class="iconify" data-icon="lucide:heart"></span>
+            <span>${post.likes_count || 0}</span>
+        </button>
+        <button class="post-action" data-open-post="${post.id}">
+            <span class="iconify" data-icon="lucide:message-circle"></span>
+            <span>${post.comments_count || 0}</span>
+        </button>
+        <button class="post-action" data-share="${post.id}">
+            <span class="iconify" data-icon="lucide:share-2"></span>
+        </button>
+        <button class="post-action bookmark-btn" data-bookmark="${post.id}">
+            <span class="iconify" data-icon="lucide:bookmark"></span>
+        </button>`;
 
     return `
-    <article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 animate-fade-in-up overflow-hidden" style="animation-delay:${index * 80}ms" data-post-id="${post.id}">
-        <div class="p-5 pb-0">
-            <div class="flex items-start justify-between mb-3">
-                <div class="flex items-center gap-3 cursor-pointer" data-navigate="profile" data-author-id="${profile.id}">
-                    <img src="${avatar}" class="w-11 h-11 rounded-xl object-cover border border-dark-700" alt="">
-                    <div>
-                        <div class="flex items-center gap-2"><h3 class="font-semibold text-sm">${escapeHtml(name)}</h3>${verified}</div>
-                        <p class="text-dark-400 text-xs">${escapeHtml(role)} • ${time}</p>
+    <article class="post-card" style="animation-delay:${Math.min(index * 60, 400)}ms" data-post-id="${post.id}">
+        <div class="post-card-body">
+            <div class="post-header">
+                <div class="post-author" data-navigate="profile" data-author-id="${profile.id}">
+                    <img src="${avatar}" class="post-avatar" alt="${name}" loading="lazy">
+                    <div class="post-author-info">
+                        <div class="post-author-name">${name}${verified}</div>
+                        <div class="post-author-meta">${role}${role ? ' · ' : ''}${time}</div>
                     </div>
                 </div>
-                <button class="follow-btn flex items-center gap-1.5 bg-dark-800 hover:bg-dark-700 text-brand-400 text-xs font-semibold px-3 py-1.5 rounded-full border border-brand-500/30 transition-all" data-follow="${profile.id}">
-                    <span class="iconify text-sm" data-icon="lucide:user-plus"></span><span>متابعة</span>
-                </button>
+                ${!isGuest ? `
+                <button class="follow-btn" data-follow="${profile.id}">
+                    <span class="iconify" data-icon="lucide:user-plus"></span>
+                    <span>متابعة</span>
+                </button>` : `
+                <button class="btn-secondary text-xs px-3 py-1.5" onclick="showAuthPrompt('المتابعة')">متابعة</button>`}
             </div>
-            <div class="mb-3 cursor-pointer" data-open-post="${post.id}">
-                ${title}
-                <p class="text-dark-200 text-sm leading-relaxed">${content}</p>
-            </div>
-            ${tags ? `<div class="flex flex-wrap gap-2 mb-4">${tags}</div>` : ''}
+            ${title}
+            <div class="post-content">${content}</div>
+            ${tags ? `<div class="post-tags">${tags}</div>` : ''}
         </div>
-        <div class="px-5 pb-2">
-            <div class="flex items-center justify-between text-dark-400 text-xs mb-2">
-                <span>${post.likes_count || 0} إعجاب</span>
-                <span data-open-post="${post.id}">${post.comments_count || 0} تعليق</span>
-            </div>
+        <div class="post-stats">
+            <span>${post.likes_count || 0} إعجاب</span>
+            <span>${post.comments_count || 0} تعليق</span>
         </div>
-        <div class="border-t border-dark-800/50 px-2 py-1">
-            <div class="flex items-center justify-around">
-                <button class="like-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" data-like="${post.id}">
-                    <span class="iconify text-lg text-dark-400 group-hover:text-red-400" data-icon="lucide:heart"></span>
-                    <span class="text-sm text-dark-400 group-hover:text-red-400">${post.likes_count || 0}</span>
-                </button>
-                <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" data-open-post="${post.id}">
-                    <span class="iconify text-lg text-dark-400 group-hover:text-blue-400" data-icon="lucide:message-circle"></span>
-                    <span class="text-sm text-dark-400">${post.comments_count || 0}</span>
-                </button>
-                <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" data-share="${post.id}">
-                    <span class="iconify text-lg text-dark-400 group-hover:text-green-400" data-icon="lucide:share-2"></span>
-                    <span class="text-sm text-dark-400">${post.shares_count || 0}</span>
-                </button>
-                <button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" data-bookmark="${post.id}">
-                    <span class="iconify text-lg text-dark-400 group-hover:text-brand-400" data-icon="lucide:bookmark"></span>
-                </button>
-            </div>
+        <div class="post-actions">
+            ${isGuest ? interactionsGuest : interactionsAuth}
         </div>
     </article>`;
 }
 
 function buildOwnPostHTML(post, profile) {
     const avatar = getAvatarUrl(profile);
-    const time = timeAgo(post.created_at || post.created_at);
+    const time = timeAgo(post.created_at);
     const content = escapeHtml(post.content || post.text || '').replace(/\n/g, '<br>');
 
     return `
-    <article class="post-card bg-dark-900/80 border border-dark-800/50 rounded-2xl mb-5 animate-fade-in-up overflow-hidden" data-post-id="${post.id}">
-        <div class="p-5 pb-0">
-            <div class="flex items-start justify-between mb-3">
-                <div class="flex items-center gap-3 cursor-pointer" data-navigate="profile">
-                    <img src="${avatar}" class="w-11 h-11 rounded-xl object-cover border border-dark-700" alt="">
-                    <div>
-                        <div class="flex items-center gap-2"><h3 class="font-semibold text-sm">${escapeHtml(profile.name)}</h3><span class="iconify text-brand-500 text-sm" data-icon="lucide:badge-check"></span></div>
-                        <p class="text-dark-400 text-xs">${escapeHtml(profile.title || '')} • ${time}</p>
+    <article class="post-card" data-post-id="${post.id}">
+        <div class="post-card-body">
+            <div class="post-header">
+                <div class="post-author">
+                    <img src="${avatar}" class="post-avatar" alt="">
+                    <div class="post-author-info">
+                        <div class="post-author-name">${escapeHtml(profile.name)}<span class="iconify text-brand-500 text-sm mr-1" data-icon="lucide:badge-check"></span></div>
+                        <div class="post-author-meta">${escapeHtml(profile.title || '')} · ${time}</div>
                     </div>
                 </div>
-                <div class="relative">
-                    <button class="p-2.5 rounded-xl hover:bg-dark-800/50 transition-all" data-menu="${post.id}">
-                        <span class="iconify text-lg text-dark-400" data-icon="lucide:more-horizontal"></span>
-                    </button>
-                </div>
+                <button class="p-2 rounded-xl hover:bg-dark-800/50 transition-all" data-menu="${post.id}">
+                    <span class="iconify text-dark-400 text-xl" data-icon="lucide:more-horizontal"></span>
+                </button>
             </div>
-            <div class="mb-3"><p class="text-dark-200 text-sm leading-relaxed">${content}</p></div>
+            <div class="post-content">${content}</div>
         </div>
-        <div class="border-t border-dark-800/50 px-2 py-1">
-            <div class="flex items-center justify-around">
-                <button class="like-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" data-like="${post.id}">
-                    <span class="iconify text-lg text-dark-400 group-hover:text-red-400" data-icon="lucide:heart"></span>
-                    <span class="text-sm text-dark-400">${post.likes_count || 0}</span>
-                </button>
-                <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" data-open-post="${post.id}">
-                    <span class="iconify text-lg text-dark-400 group-hover:text-blue-400" data-icon="lucide:message-circle"></span>
-                    <span class="text-sm text-dark-400">${post.comments_count || 0}</span>
-                </button>
-                <button class="bookmark-btn flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-dark-800/50 transition-all group" data-bookmark="${post.id}">
-                    <span class="iconify text-lg text-dark-400 group-hover:text-brand-400" data-icon="lucide:bookmark"></span>
-                </button>
-            </div>
+        <div class="post-actions">
+            <button class="post-action like-btn" data-like="${post.id}">
+                <span class="iconify" data-icon="lucide:heart"></span>
+                <span>${post.likes_count || 0}</span>
+            </button>
+            <button class="post-action" data-open-post="${post.id}">
+                <span class="iconify" data-icon="lucide:message-circle"></span>
+                <span>${post.comments_count || 0}</span>
+            </button>
+            <button class="post-action bookmark-btn" data-bookmark="${post.id}">
+                <span class="iconify" data-icon="lucide:bookmark"></span>
+            </button>
         </div>
     </article>`;
 }
 
+// ===== PUBLISH POST =====
+window.publishPost = async function() {
+    if (!requireAuth()) return;
+    const input = document.getElementById('postInput');
+    const text = input?.textContent?.trim() || input?.value?.trim();
+    if (!text) { showToast('اكتب شيئاً أولاً'); return; }
+
+    const btn = document.querySelector('[onclick="publishPost()"]');
+    if (btn) { btn.disabled = true; btn.textContent = 'جاري النشر...'; }
+
+    const { data, error } = await Posts.create(text);
+    if (error) {
+        // Save locally
+        const user = store.get('user');
+        const profile = store.get('profile');
+        const localPost = { id: 'local_' + Date.now(), content: text, created_at: new Date().toISOString(), author_id: user?.id, profiles: profile, likes_count: 0, comments_count: 0 };
+        saveLocalPost(localPost);
+        store.set('posts', [localPost, ...(store.get('posts') || [])]);
+    } else if (data) {
+        store.set('posts', [data, ...(store.get('posts') || [])]);
+    }
+
+    if (input) { input.textContent = ''; input.innerHTML = ''; }
+    if (btn) { btn.disabled = false; btn.textContent = 'نشر'; }
+    showToast('تم النشر ✓');
+    renderFeed();
+};
+
+window.publishModalPost = async function() {
+    if (!requireAuth()) return;
+    const textarea = document.getElementById('modalPostText');
+    const text = textarea?.value?.trim();
+    if (!text) return;
+    textarea.value = '';
+    document.getElementById('postModal')?.classList.remove('active');
+    document.body.style.overflow = '';
+
+    const { data, error } = await Posts.create(text);
+    if (!error && data) {
+        store.set('posts', [data, ...(store.get('posts') || [])]);
+        renderFeed();
+    } else {
+        const localPost = buildLocalPost(text);
+        saveLocalPost(localPost);
+        store.set('posts', [localPost, ...(store.get('posts') || [])]);
+        renderFeed();
+    }
+    showToast('تم النشر ✓');
+};
+
+function buildLocalPost(text) {
+    const user = store.get('user');
+    const profile = store.get('profile');
+    return { id: 'local_' + Date.now(), content: text, created_at: new Date().toISOString(), author_id: user?.id, profiles: profile, likes_count: 0, comments_count: 0 };
+}
+
 // ===== EVENT DELEGATION =====
 document.addEventListener('click', async (e) => {
+    const isGuest = !store.get('isLoggedIn');
+
     // Like
     const likeBtn = e.target.closest('[data-like]');
     if (likeBtn) {
-        if (!requireAuth()) return;
-        const postId = likeBtn.dataset.like;
+        if (isGuest) { showAuthPrompt('الإعجاب'); return; }
         likeBtn.classList.toggle('liked');
-        likeBtn.style.transform = 'scale(1.15)';
+        likeBtn.style.transform = 'scale(1.2)';
         setTimeout(() => likeBtn.style.transform = '', 200);
-        const { Likes } = await import('./core/api.js');
+        const postId = likeBtn.dataset.like;
+        const countEl = likeBtn.querySelector('span:last-child');
+        if (countEl) {
+            const n = parseInt(countEl.textContent) || 0;
+            countEl.textContent = likeBtn.classList.contains('liked') ? n + 1 : Math.max(0, n - 1);
+        }
         await Likes.toggle(postId);
         return;
     }
@@ -305,20 +488,18 @@ document.addEventListener('click', async (e) => {
     // Bookmark
     const bookmarkBtn = e.target.closest('[data-bookmark]');
     if (bookmarkBtn) {
-        if (!requireAuth()) return;
+        if (isGuest) { showAuthPrompt('الحفظ'); return; }
         const postId = bookmarkBtn.dataset.bookmark;
         bookmarkBtn.classList.toggle('saved');
         const icon = bookmarkBtn.querySelector('.iconify');
         if (bookmarkBtn.classList.contains('saved')) {
-            icon.setAttribute('data-icon', 'lucide:bookmark-check');
-            icon.style.color = '#f97316';
+            icon?.setAttribute('data-icon', 'lucide:bookmark-check');
+            icon && (icon.style.color = '#f97316');
             showToast('تم الحفظ ✓');
         } else {
-            icon.setAttribute('data-icon', 'lucide:bookmark');
-            icon.style.color = '';
-            showToast('تم إلغاء الحفظ');
+            icon?.setAttribute('data-icon', 'lucide:bookmark');
+            icon && (icon.style.color = '');
         }
-        const { Bookmarks } = await import('./core/api.js');
         await Bookmarks.toggle(postId);
         return;
     }
@@ -326,48 +507,54 @@ document.addEventListener('click', async (e) => {
     // Follow
     const followBtn = e.target.closest('[data-follow]');
     if (followBtn) {
-        if (!requireAuth()) return;
+        if (isGuest) { showAuthPrompt('المتابعة'); return; }
         const userId = followBtn.dataset.follow;
         const isFollowing = followBtn.classList.toggle('following');
         if (isFollowing) {
-            followBtn.innerHTML = '<span class="iconify text-sm" data-icon="lucide:check"></span><span>متابَع</span>';
-            followBtn.style.color = '#a3a3a3';
-            followBtn.style.borderColor = '#525252';
+            followBtn.innerHTML = '<span class="iconify" data-icon="lucide:check"></span><span>متابَع</span>';
+            followBtn.style.opacity = '0.7';
         } else {
-            followBtn.innerHTML = '<span class="iconify text-sm" data-icon="lucide:user-plus"></span><span>متابعة</span>';
-            followBtn.style.color = '#f97316';
-            followBtn.style.borderColor = 'rgba(249,115,22,0.3)';
+            followBtn.innerHTML = '<span class="iconify" data-icon="lucide:user-plus"></span><span>متابعة</span>';
+            followBtn.style.opacity = '';
         }
         await Follows.toggle(userId);
         return;
     }
 
-    // Open post detail
-    const postEl = e.target.closest('[data-open-post]');
-    if (postEl) {
-        // TODO: open post detail modal
-        showToast('عرض المنشور');
+    // Share
+    const shareBtn = e.target.closest('[data-share]');
+    if (shareBtn) {
+        if (navigator.share) {
+            navigator.share({ title: 'Lawbook', url: window.location.href }).catch(() => {});
+        } else {
+            navigator.clipboard?.writeText(window.location.href).then(() => showToast('تم نسخ الرابط'));
+        }
         return;
     }
 });
 
-// ===== LOCAL POSTS (localStorage fallback) =====
+// ===== SEARCH =====
+window.doSearch = function() {
+    if (!store.get('isLoggedIn')) { showAuthPrompt('البحث'); return; }
+    const q = document.getElementById('searchInput')?.value?.trim();
+    if (q) showToast('بحث عن: ' + q);
+};
+
+// ===== LOCAL POSTS =====
 function getLocalPosts() {
     try {
         const user = store.get('user');
         if (!user) return [];
-        const key = 'user_' + user.id + '_userPosts';
-        return JSON.parse(localStorage.getItem(key) || '[]');
+        return JSON.parse(localStorage.getItem('user_' + user.id + '_userPosts') || '[]');
     } catch(e) { return []; }
 }
 
 function saveLocalPost(post) {
     const user = store.get('user');
     if (!user) return;
-    const key = 'user_' + user.id + '_userPosts';
     const posts = getLocalPosts();
     posts.unshift(post);
-    try { localStorage.setItem(key, JSON.stringify(posts)); } catch(e) {}
+    try { localStorage.setItem('user_' + user.id + '_userPosts', JSON.stringify(posts)); } catch(e) {}
 }
 
 function deduplicatePosts(posts) {
@@ -379,3 +566,9 @@ function deduplicatePosts(posts) {
         return true;
     });
 }
+
+// Make showAuthPrompt globally accessible
+window.showAuthPrompt = (action) => {
+    const { showAuthPrompt: sap } = window.__app?.ui || {};
+    import('./utils/ui.js').then(({ showAuthPrompt }) => showAuthPrompt(action));
+};

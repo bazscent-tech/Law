@@ -1,12 +1,12 @@
 // ============================================================
 // ===== API LAYER — كل طلبات Supabase في مكان واحد =========
 // ============================================================
-// كل دالة ترجع { data, error } — لا أخطاء مخفية.
 
 import { store } from './store.js';
 
 const SB_URL = 'https://wxokmokxehssnchtmjke.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4b2ttb2t4ZWhzc25jaHRtamtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMTg4MjQsImV4cCI6MjA5Mzg5NDgyNH0.6RRUCXnX7IdExnirAr4Uz3Y-PmJbMMB00JVDr1BbDkU';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4b2ttb2t4ZWhzc25jaHRtamtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMTg4MjQsImV4cCI6MjA5Mzg5NDgyNH0.6RRUCXnX7IdExnirAr4Uz3Y-PmJbMMB00JVDr1BbDkU';
+const SB_SERVICE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4b2ttb2t4ZWhzc25jaHRtamtlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODMxODgyNCwiZXhwIjoyMDkzODk0ODI0fQ.AN5SkazpJVm4R-6Pdh2ZqvzqhNIM-Mu2XHCbrCmqs3g';
 
 let sb = null;
 
@@ -17,10 +17,16 @@ export async function initAPI() {
             console.warn('[API] Supabase library not loaded');
             return false;
         }
-        sb = supabase.createClient(SB_URL, SB_KEY);
+        sb = supabase.createClient(SB_URL, SB_ANON, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                storageKey: 'lawbook_auth',
+                storage: window.localStorage,
+            }
+        });
         store.set('supabaseClient', sb);
 
-        // Test connection
         const { error } = await sb.from('profiles').select('id').limit(1);
         if (error) throw error;
 
@@ -45,7 +51,6 @@ export const Auth = {
                 store.set('isLoggedIn', true);
                 return session;
             }
-            // Try refresh
             const { data: { session: refreshed } } = await sb.auth.refreshSession();
             if (refreshed?.user) {
                 store.set('user', refreshed.user);
@@ -59,7 +64,7 @@ export const Auth = {
     },
 
     async signIn(email, password) {
-        if (!sb) return { error: 'الخدمة غير متاحة' };
+        if (!sb) return { error: 'الخدمة غير متاحة حالياً' };
         const { data, error } = await sb.auth.signInWithPassword({ email, password });
         if (error) return { error: translateError(error.message) };
         store.set('user', data.user);
@@ -67,14 +72,79 @@ export const Auth = {
         return { data };
     },
 
-    async signUp(email, password, name) {
-        if (!sb) return { error: 'الخدمة غير متاحة' };
+    async signUp(email, password, name, username, phone) {
+        if (!sb) return { error: 'الخدمة غير متاحة حالياً' };
+        
+        // Check username availability first
+        const available = await Auth.checkUsernameAvailable(username);
+        if (!available) return { error: 'هذا المعرف مستخدم بالفعل، اختر معرفاً آخر' };
+
+        // Sign up
         const { data, error } = await sb.auth.signUp({
             email, password,
-            options: { data: { display_name: name, username: generateUsername(name) } }
+            options: {
+                data: { display_name: name, username, phone },
+                emailRedirectTo: undefined,
+            }
         });
         if (error) return { error: translateError(error.message) };
+
+        // If email confirmation not required, user is returned with session
+        if (data?.session) {
+            store.set('user', data.user);
+            store.set('isLoggedIn', true);
+            // Create profile immediately
+            await Profiles.ensureProfile(data.user, { name, username, phone });
+            return { data };
+        }
+
+        // If email confirmation required, try admin confirm
+        if (data?.user && !data?.session) {
+            const confirmed = await Auth._adminConfirm(data.user.id);
+            if (confirmed) {
+                // Now sign in
+                const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({ email, password });
+                if (!signInErr && signInData?.session) {
+                    store.set('user', signInData.user);
+                    store.set('isLoggedIn', true);
+                    await Profiles.ensureProfile(signInData.user, { name, username, phone });
+                    return { data: signInData };
+                }
+            }
+            // Fallback: account created, needs email
+            return { data, needsEmail: true };
+        }
+
         return { data };
+    },
+
+    async _adminConfirm(userId) {
+        try {
+            const res = await fetch(`${SB_URL}/auth/v1/admin/users/${userId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SB_SERVICE,
+                    'Authorization': `Bearer ${SB_SERVICE}`,
+                },
+                body: JSON.stringify({ email_confirm: true })
+            });
+            return res.ok;
+        } catch(e) {
+            console.warn('[Auth] Admin confirm failed:', e.message);
+            return false;
+        }
+    },
+
+    async checkUsernameAvailable(username) {
+        if (!sb || !username) return false;
+        try {
+            const { data, error } = await sb.from('profiles')
+                .select('username')
+                .eq('username', username.toLowerCase())
+                .maybeSingle();
+            return !data && !error;
+        } catch(e) { return true; }
     },
 
     async signOut() {
@@ -125,7 +195,7 @@ export const Profiles = {
         return { data: data || [] };
     },
 
-    async ensureProfile(user) {
+    async ensureProfile(user, extra = {}) {
         if (!sb) return null;
         const { data: existing } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
         if (existing) {
@@ -133,11 +203,15 @@ export const Profiles = {
             cacheProfile(user.id, existing);
             return existing;
         }
-        // Create new
         const meta = user.user_metadata || {};
-        const name = meta.display_name || meta.full_name || 'مستخدم';
+        const name = extra.name || meta.display_name || meta.full_name || 'مستخدم';
+        const username = extra.username || meta.username || generateUsername(name);
+        const phone = extra.phone || meta.phone || '';
         const newProfile = {
-            id: user.id, username: generateUsername(name), name,
+            id: user.id,
+            username: username.toLowerCase(),
+            name,
+            phone,
             bio: '', title: '', location: '', website: '',
             avatar_url: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=f97316&textColor=ffffff`,
             cover_url: '', followers_count: 0, following_count: 0, posts_count: 0, verified: false
@@ -158,6 +232,15 @@ export const Posts = {
         const { data, error } = await sb.from('posts')
             .select('*, profiles(*)').order('created_at', { ascending: false }).limit(limit);
         return { data: data || [], error };
+    },
+
+    async getPopular(limit = 20) {
+        if (!sb) return { data: [] };
+        const { data } = await sb.from('posts')
+            .select('*, profiles(*)')
+            .order('likes_count', { ascending: false })
+            .limit(limit);
+        return { data: data || [] };
     },
 
     async getByUser(userId) {
@@ -207,14 +290,6 @@ export const Likes = {
         }
         await sb.from('likes').insert({ user_id: user.id, post_id: postId });
         return { data: true };
-    },
-
-    async getByUser() {
-        const user = store.get('user');
-        if (!sb || !user) return { data: [] };
-        const { data } = await sb.from('likes')
-            .select('post_id, posts(*, profiles(*)').eq('user_id', user.id);
-        return { data: data || [] };
     }
 };
 
@@ -226,11 +301,11 @@ export const Comments = {
         return { data: data || [] };
     },
 
-    async add(postId, content, isSticker = false) {
+    async add(postId, content) {
         const user = store.get('user');
         if (!sb || !user) return { error: 'Not authenticated' };
         const { data, error } = await sb.from('comments').insert({
-            post_id: postId, author_id: user.id, content, is_sticker: isSticker
+            post_id: postId, author_id: user.id, content
         }).select('*, profiles(*)').single();
         return { data, error };
     }
@@ -273,14 +348,6 @@ export const Libraries = {
             .eq('owner_id', userId).order('created_at', { ascending: false });
         return { data: data || [] };
     },
-
-    async getItems(libId) {
-        if (!sb) return { data: [] };
-        const { data } = await sb.from('library_items').select('*')
-            .eq('library_id', libId).order('created_at', { ascending: false });
-        return { data: data || [] };
-    },
-
     async create(libData) {
         const user = store.get('user');
         if (!sb || !user) return { error: 'Not authenticated' };
@@ -289,7 +356,6 @@ export const Libraries = {
         }).select().single();
         return { data, error };
     },
-
     async delete(libId) {
         if (!sb) return { error: 'Offline' };
         await sb.from('libraries').delete().eq('id', libId);
@@ -303,7 +369,7 @@ function cacheProfile(userId, data) {
 }
 
 function generateUsername(name) {
-    const map = { 'ا':'a','أ':'a','إ':'a','آ':'a','ب':'b','ت':'t','ث':'th','ج':'j','ح':'h','خ':'kh','د':'d','ذ':'dh','ر':'r','ز':'z','س':'s','ش':'sh','ص':'s','ض':'d','ط':'t','ظ':'z','ع':'a','غ':'gh','ف':'f','ق':'q','ك':'k','ل':'l','م':'m','ن':'n','ه':'h','و':'w','ي':'y','ة':'a','ى':'a','ء':'a',' ':'_' };
+    const map = {'ا':'a','أ':'a','إ':'a','آ':'a','ب':'b','ت':'t','ث':'th','ج':'j','ح':'h','خ':'kh','د':'d','ذ':'dh','ر':'r','ز':'z','س':'s','ش':'sh','ص':'s','ض':'d','ط':'t','ظ':'z','ع':'a','غ':'gh','ف':'f','ق':'q','ك':'k','ل':'l','م':'m','ن':'n','ه':'h','و':'w','ي':'y','ة':'a','ى':'a','ء':'a',' ':'_'};
     let base = '';
     for (const c of name) base += map[c] || c;
     base = base.toLowerCase().replace(/[^a-z0-9_]/g, '').replace(/_+/g, '_').substring(0, 20);
@@ -313,9 +379,12 @@ function generateUsername(name) {
 
 function translateError(msg) {
     const map = {
-        'Invalid login credentials': 'بيانات تسجيل الدخول غير صحيحة',
-        'User already registered': 'البريد الإلكتروني مسجل بالفعل',
+        'Invalid login credentials': 'البريد أو كلمة المرور غير صحيحة',
+        'User already registered': 'هذا البريد الإلكتروني مسجل بالفعل',
         'Email not confirmed': 'يرجى تأكيد البريد الإلكتروني أولاً',
+        'Password should be at least 6 characters': 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
+        'Unable to validate email address': 'البريد الإلكتروني غير صالح',
+        'signup is disabled': 'التسجيل معطل حالياً',
     };
     for (const [en, ar] of Object.entries(map)) {
         if (msg.includes(en)) return ar;
