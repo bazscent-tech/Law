@@ -1,35 +1,57 @@
-/* ===== PAGES ===== */
+/* ============ PAGES ============ */
+/* Additional page-specific styles */
 
-/* Profile stats */
-.profile-stat-item {
-    text-align: center;
-    padding: 8px;
+/* Skeleton loading */
+.skeleton{
+  background:linear-gradient(90deg,var(--bg2) 25%,var(--bg3) 50%,var(--bg2) 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.4s infinite;
+  border-radius:6px;
 }
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
 
-/* Empty states */
-.empty-state {
-    text-align: center;
-    padding: 48px 16px;
-    color: #525252;
+.skeleton-post{
+  display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);
 }
-.empty-state .iconify { font-size: 48px; margin-bottom: 12px; display: block; }
-.empty-state p { font-size: 14px; margin-bottom: 16px; }
+.skeleton-avatar{width:44px;height:44px;border-radius:50%;flex-shrink:0}
+.skeleton-lines{flex:1;display:flex;flex-direction:column;gap:8px;padding-top:4px}
+.skeleton-line{height:14px}
+.skeleton-line-sm{height:12px;width:60%}
 
-/* Responsive tweaks */
-@media (max-width: 640px) {
-    .post-card { border-radius: 14px; margin-bottom: 8px; }
-    .post-card-body { padding: 14px 14px 10px; }
-    .post-avatar { width: 38px; height: 38px; border-radius: 10px; }
-    .post-author-name { font-size: 13px; }
-    .post-content { font-size: 13px; }
-    .post-action { font-size: 12px; padding: 9px 2px; }
-    .post-action .iconify { font-size: 17px; }
-    .follow-btn { font-size: 11px; padding: 5px 10px; }
-    .guest-banner { padding: 14px; }
-    .post-composer { border-radius: 14px; padding: 14px; }
+/* Following page users list */
+.user-list-item{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 16px;border-bottom:1px solid var(--border);
+  cursor:pointer;transition:background 0.15s;
 }
+.user-list-item:hover{background:var(--bg-hover)}
+.user-list-avatar{width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.user-list-info{flex:1;min-width:0}
+.user-list-name{font-size:15px;font-weight:600}
+.user-list-handle{font-size:13px;color:var(--text2)}
 
-@media (max-width: 380px) {
-    .post-action span:last-child:not(.iconify) { display: none; }
-    .post-action { padding: 9px 4px; }
+/* Post actions sheet (more options) */
+.action-sheet{
+  position:fixed;inset:0;z-index:9500;
+  display:none;align-items:flex-end;justify-content:center;
 }
+.action-sheet.open{display:flex}
+.action-sheet-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.6)}
+.action-sheet-card{
+  position:relative;z-index:1;
+  background:var(--bg2);border-radius:20px 20px 0 0;
+  width:100%;max-width:600px;
+  padding:8px 0 calc(24px + var(--safe-bot)) 0;
+  animation:slideUp 0.25s var(--ease);
+  border:1px solid var(--border);border-bottom:none;
+}
+.action-sheet-item{
+  display:flex;align-items:center;gap:16px;
+  padding:14px 20px;cursor:pointer;font-size:16px;
+  transition:background 0.15s;
+}
+.action-sheet-item:hover{background:var(--bg-hover)}
+.action-sheet-item .iconify{font-size:22px;flex-shrink:0;color:var(--text2)}
+.action-sheet-item.danger{color:var(--red)}
+.action-sheet-item.danger .iconify{color:var(--red)}
+.action-sheet-hr{height:1px;background:var(--border);margin:4px 0}

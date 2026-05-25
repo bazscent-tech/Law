@@ -1,6 +1,6 @@
-/* Main CSS - imports all partials */
+/* ===== MAIN ENTRY — imports all partials ===== */
 @import url('base.css');
-@import url('components.css');
 @import url('layout.css');
+@import url('components.css');
 @import url('pages.css');
 @import url('stories.css');

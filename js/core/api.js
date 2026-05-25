@@ -1,5 +1,5 @@
 // ============================================================
-// ===== API LAYER — كل طلبات Supabase في مكان واحد =========
+// ===== API LAYER — Supabase integration =====================
 // ============================================================
 
 import { store } from './store.js';
@@ -10,11 +10,10 @@ const SB_SERVICE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 
 let sb = null;
 
-// ===== INITIALIZATION =====
 export async function initAPI() {
     try {
         if (typeof supabase === 'undefined' || !supabase.createClient) {
-            console.warn('[API] Supabase library not loaded');
+            console.warn('[API] Supabase not loaded');
             return false;
         }
         sb = supabase.createClient(SB_URL, SB_ANON, {
@@ -26,15 +25,13 @@ export async function initAPI() {
             }
         });
         store.set('supabaseClient', sb);
-
         const { error } = await sb.from('profiles').select('id').limit(1);
         if (error) throw error;
-
         store.set('isOnline', true);
-        console.log('✅ Supabase connected');
+        console.log('[API] Connected');
         return true;
     } catch (e) {
-        console.warn('[API] Supabase unavailable:', e.message);
+        console.warn('[API] Unavailable:', e.message);
         store.set('isOnline', false);
         return false;
     }
@@ -57,9 +54,7 @@ export const Auth = {
                 store.set('isLoggedIn', true);
                 return refreshed;
             }
-        } catch (e) {
-            console.warn('[Auth] Session error:', e.message);
-        }
+        } catch (e) { console.warn('[Auth]', e.message); }
         return null;
     },
 
@@ -74,47 +69,32 @@ export const Auth = {
 
     async signUp(email, password, name, username, phone) {
         if (!sb) return { error: 'الخدمة غير متاحة حالياً' };
-        
-        // Check username availability first
         const available = await Auth.checkUsernameAvailable(username);
         if (!available) return { error: 'هذا المعرف مستخدم بالفعل، اختر معرفاً آخر' };
-
-        // Sign up
         const { data, error } = await sb.auth.signUp({
             email, password,
-            options: {
-                data: { display_name: name, username, phone },
-                emailRedirectTo: undefined,
-            }
+            options: { data: { display_name: name, username, phone }, emailRedirectTo: undefined }
         });
         if (error) return { error: translateError(error.message) };
-
-        // If email confirmation not required, user is returned with session
         if (data?.session) {
             store.set('user', data.user);
             store.set('isLoggedIn', true);
-            // Create profile immediately
             await Profiles.ensureProfile(data.user, { name, username, phone });
             return { data };
         }
-
-        // If email confirmation required, try admin confirm
         if (data?.user && !data?.session) {
             const confirmed = await Auth._adminConfirm(data.user.id);
             if (confirmed) {
-                // Now sign in
-                const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({ email, password });
-                if (!signInErr && signInData?.session) {
-                    store.set('user', signInData.user);
+                const { data: sd, error: se } = await sb.auth.signInWithPassword({ email, password });
+                if (!se && sd?.session) {
+                    store.set('user', sd.user);
                     store.set('isLoggedIn', true);
-                    await Profiles.ensureProfile(signInData.user, { name, username, phone });
-                    return { data: signInData };
+                    await Profiles.ensureProfile(sd.user, { name, username, phone });
+                    return { data: sd };
                 }
             }
-            // Fallback: account created, needs email
             return { data, needsEmail: true };
         }
-
         return { data };
     },
 
@@ -122,50 +102,33 @@ export const Auth = {
         try {
             const res = await fetch(`${SB_URL}/auth/v1/admin/users/${userId}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': SB_SERVICE,
-                    'Authorization': `Bearer ${SB_SERVICE}`,
-                },
+                headers: { 'Content-Type': 'application/json', 'apikey': SB_SERVICE, 'Authorization': `Bearer ${SB_SERVICE}` },
                 body: JSON.stringify({ email_confirm: true })
             });
             return res.ok;
-        } catch(e) {
-            console.warn('[Auth] Admin confirm failed:', e.message);
-            return false;
-        }
+        } catch(e) { return false; }
     },
 
     async checkUsernameAvailable(username) {
         if (!sb || !username) return false;
         try {
-            const { data, error } = await sb.from('profiles')
-                .select('username')
-                .eq('username', username.toLowerCase())
-                .maybeSingle();
-            return !data && !error;
+            const { data } = await sb.from('profiles').select('username').eq('username', username.toLowerCase()).maybeSingle();
+            return !data;
         } catch(e) { return true; }
     },
 
     async signOut() {
         if (sb) await sb.auth.signOut();
-        store.set('user', null);
-        store.set('profile', null);
-        store.set('isLoggedIn', false);
-        localStorage.clear();
+        store.set('user', null); store.set('profile', null); store.set('isLoggedIn', false);
+        localStorage.removeItem('lawbook_auth');
         window.location.reload();
     },
 
     onAuthChange(callback) {
         if (!sb) return;
         sb.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN' && session) {
-                store.set('user', session.user);
-                store.set('isLoggedIn', true);
-            } else if (event === 'SIGNED_OUT') {
-                store.set('user', null);
-                store.set('isLoggedIn', false);
-            }
+            if (event === 'SIGNED_IN' && session) { store.set('user', session.user); store.set('isLoggedIn', true); }
+            else if (event === 'SIGNED_OUT') { store.set('user', null); store.set('isLoggedIn', false); }
             callback(event, session);
         });
     }
@@ -191,36 +154,26 @@ export const Profiles = {
     async search(query) {
         if (!sb) return { data: [] };
         const { data } = await sb.from('profiles')
-            .select('*').or(`name.ilike.%${query}%,username.ilike.%${query}%`).limit(10);
+            .select('*').or(`name.ilike.%${query}%,username.ilike.%${query}%`).limit(15);
         return { data: data || [] };
     },
 
     async ensureProfile(user, extra = {}) {
         if (!sb) return null;
         const { data: existing } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
-        if (existing) {
-            store.set('profile', existing);
-            cacheProfile(user.id, existing);
-            return existing;
-        }
+        if (existing) { store.set('profile', existing); cacheProfile(user.id, existing); return existing; }
         const meta = user.user_metadata || {};
         const name = extra.name || meta.display_name || meta.full_name || 'مستخدم';
         const username = extra.username || meta.username || generateUsername(name);
         const phone = extra.phone || meta.phone || '';
         const newProfile = {
-            id: user.id,
-            username: username.toLowerCase(),
-            name,
-            phone,
+            id: user.id, username: username.toLowerCase(), name, phone,
             bio: '', title: '', location: '', website: '',
-            avatar_url: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=f97316&textColor=ffffff`,
+            avatar_url: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=f97316&textColor=ffffff&fontSize=38`,
             cover_url: '', followers_count: 0, following_count: 0, posts_count: 0, verified: false
         };
         const { data: created } = await sb.from('profiles').insert(newProfile).select().single();
-        if (created) {
-            store.set('profile', created);
-            cacheProfile(user.id, created);
-        }
+        if (created) { store.set('profile', created); cacheProfile(user.id, created); }
         return created || newProfile;
     }
 };
@@ -230,7 +183,8 @@ export const Posts = {
     async getAll(limit = 50) {
         if (!sb) return { data: [] };
         const { data, error } = await sb.from('posts')
-            .select('*, profiles(*)').order('created_at', { ascending: false }).limit(limit);
+            .select('*, profiles(*)')
+            .order('created_at', { ascending: false }).limit(limit);
         return { data: data || [], error };
     },
 
@@ -238,8 +192,7 @@ export const Posts = {
         if (!sb) return { data: [] };
         const { data } = await sb.from('posts')
             .select('*, profiles(*)')
-            .order('likes_count', { ascending: false })
-            .limit(limit);
+            .order('likes_count', { ascending: false }).limit(limit);
         return { data: data || [] };
     },
 
@@ -251,12 +204,12 @@ export const Posts = {
         return { data: data || [] };
     },
 
-    async create(content, title = '', tags = []) {
+    async create(content, title = '', tags = [], imageUrl = null) {
         const user = store.get('user');
         if (!sb || !user) return { error: 'Not authenticated' };
-        const { data, error } = await sb.from('posts').insert({
-            author_id: user.id, content, title, tags
-        }).select('*, profiles(*)').single();
+        const insert = { author_id: user.id, content, title, tags };
+        if (imageUrl) insert.image_url = imageUrl;
+        const { data, error } = await sb.from('posts').insert(insert).select('*, profiles(*)').single();
         return { data, error };
     },
 
@@ -282,12 +235,8 @@ export const Likes = {
     async toggle(postId) {
         const user = store.get('user');
         if (!sb || !user) return { error: 'Not authenticated' };
-        const { data: existing } = await sb.from('likes')
-            .select('id').eq('user_id', user.id).eq('post_id', postId).maybeSingle();
-        if (existing) {
-            await sb.from('likes').delete().eq('id', existing.id);
-            return { data: false };
-        }
+        const { data: existing } = await sb.from('likes').select('id').eq('user_id', user.id).eq('post_id', postId).maybeSingle();
+        if (existing) { await sb.from('likes').delete().eq('id', existing.id); return { data: false }; }
         await sb.from('likes').insert({ user_id: user.id, post_id: postId });
         return { data: true };
     }
@@ -296,17 +245,13 @@ export const Likes = {
 export const Comments = {
     async get(postId) {
         if (!sb) return { data: [] };
-        const { data } = await sb.from('comments')
-            .select('*, profiles(*)').eq('post_id', postId).order('created_at');
+        const { data } = await sb.from('comments').select('*, profiles(*)').eq('post_id', postId).order('created_at');
         return { data: data || [] };
     },
-
     async add(postId, content) {
         const user = store.get('user');
         if (!sb || !user) return { error: 'Not authenticated' };
-        const { data, error } = await sb.from('comments').insert({
-            post_id: postId, author_id: user.id, content
-        }).select('*, profiles(*)').single();
+        const { data, error } = await sb.from('comments').insert({ post_id: postId, author_id: user.id, content }).select('*, profiles(*)').single();
         return { data, error };
     }
 };
@@ -315,12 +260,8 @@ export const Follows = {
     async toggle(userId) {
         const user = store.get('user');
         if (!sb || !user) return { error: 'Not authenticated' };
-        const { data: existing } = await sb.from('follows')
-            .select('id').eq('follower_id', user.id).eq('following_id', userId).maybeSingle();
-        if (existing) {
-            await sb.from('follows').delete().eq('id', existing.id);
-            return { data: false };
-        }
+        const { data: existing } = await sb.from('follows').select('id').eq('follower_id', user.id).eq('following_id', userId).maybeSingle();
+        if (existing) { await sb.from('follows').delete().eq('id', existing.id); return { data: false }; }
         await sb.from('follows').insert({ follower_id: user.id, following_id: userId });
         return { data: true };
     }
@@ -330,36 +271,10 @@ export const Bookmarks = {
     async toggle(postId) {
         const user = store.get('user');
         if (!sb || !user) return { error: 'Not authenticated' };
-        const { data: existing } = await sb.from('bookmarks')
-            .select('id').eq('user_id', user.id).eq('post_id', postId).maybeSingle();
-        if (existing) {
-            await sb.from('bookmarks').delete().eq('id', existing.id);
-            return { data: false };
-        }
+        const { data: existing } = await sb.from('bookmarks').select('id').eq('user_id', user.id).eq('post_id', postId).maybeSingle();
+        if (existing) { await sb.from('bookmarks').delete().eq('id', existing.id); return { data: false }; }
         await sb.from('bookmarks').insert({ user_id: user.id, post_id: postId });
         return { data: true };
-    }
-};
-
-export const Libraries = {
-    async getByUser(userId) {
-        if (!sb) return { data: [] };
-        const { data } = await sb.from('libraries').select('*')
-            .eq('owner_id', userId).order('created_at', { ascending: false });
-        return { data: data || [] };
-    },
-    async create(libData) {
-        const user = store.get('user');
-        if (!sb || !user) return { error: 'Not authenticated' };
-        const { data, error } = await sb.from('libraries').insert({
-            owner_id: user.id, ...libData
-        }).select().single();
-        return { data, error };
-    },
-    async delete(libId) {
-        if (!sb) return { error: 'Offline' };
-        await sb.from('libraries').delete().eq('id', libId);
-        return { data: null, error: null };
     }
 };
 
@@ -381,17 +296,14 @@ function translateError(msg) {
     const map = {
         'Invalid login credentials': 'البريد أو كلمة المرور غير صحيحة',
         'User already registered': 'هذا البريد الإلكتروني مسجل بالفعل',
-        'Email not confirmed': 'يرجى تأكيد البريد الإلكتروني أولاً',
+        'Email not confirmed': 'يرجى تأكيد البريد الإلكتروني',
         'Password should be at least 6 characters': 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
         'Unable to validate email address': 'البريد الإلكتروني غير صالح',
         'signup is disabled': 'التسجيل معطل حالياً',
+        'Email rate limit exceeded': 'حاول مرة أخرى لاحقاً',
     };
-    for (const [en, ar] of Object.entries(map)) {
-        if (msg.includes(en)) return ar;
-    }
+    for (const [en, ar] of Object.entries(map)) if (msg.includes(en)) return ar;
     return msg;
 }
 
-export function isConnected() {
-    return store.get('isOnline') && !!sb;
-}
+export function isConnected() { return store.get('isOnline') && !!sb; }

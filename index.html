@@ -2,486 +2,652 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#0a0a0a">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Lawbook - المنصة القانونية الاجتماعية</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>Lawbook</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: { 50:'#fff7ed',100:'#ffedd5',200:'#fed7aa',300:'#fdba74',400:'#fb923c',500:'#f97316',600:'#ea580c',700:'#c2410c',800:'#9a3412',900:'#7c2d12' },
-                        dark: { 50:'#fafafa',100:'#f5f5f5',200:'#e5e5e5',300:'#d4d4d4',400:'#a3a3a3',500:'#737373',600:'#525252',700:'#404040',800:'#262626',850:'#1a1a1a',900:'#171717',950:'#0a0a0a' }
-                    },
-                    fontFamily: { sans: ['Noto Kufi Arabic', 'Inter', 'sans-serif'] }
-                }
-            }
-        }
-    </script>
+    <script>tailwind.config={corePlugins:{preflight:false}}</script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://code.iconify.design/3/3.1.0/iconify.min.js" defer></script>
 </head>
-<body class="bg-dark-950 text-white font-sans min-h-screen">
+<body>
 
-    <div id="toast" class="toast"></div>
+<!-- Toast -->
+<div id="toast" class="lb-toast" role="status" aria-live="polite"></div>
 
-    <!-- ===== HEADER ===== -->
-    <nav id="mainHeader" class="fixed top-0 left-0 right-0 z-50 bg-dark-950/95 backdrop-blur-md border-b border-dark-800/50 safe-top">
-        <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+<!-- ============================================================ -->
+<!-- DRAWER OVERLAY — completely separate from page layout       -->
+<!-- ============================================================ -->
+<div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer()"></div>
 
-            <!-- Mobile: Avatar/Menu Button -->
-            <div class="lg:hidden flex items-center shrink-0">
-                <button class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center bg-dark-800 border border-dark-700" onclick="openMobileMenu()" id="mobileMenuBtn">
-                    <img data-avatar class="w-full h-full object-cover rounded-full" src="https://api.dicebear.com/7.x/shapes/svg?seed=guest&backgroundColor=262626" alt="">
-                </button>
-            </div>
-
-            <!-- Logo (mobile: centered, desktop: left) -->
-            <div class="flex items-center gap-2 cursor-pointer lg:shrink-0" data-navigate="feed">
-                <div class="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-700 rounded-lg flex items-center justify-center shadow-lg shadow-brand-500/20">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
+<!-- DRAWER — position:fixed, NEVER affects page layout -->
+<aside id="mainDrawer" class="main-drawer" role="navigation" aria-label="القائمة الرئيسية">
+    <!-- Drawer Header -->
+    <div class="drawer-header">
+        <!-- Guest state -->
+        <div id="drawerGuest" class="drawer-guest">
+            <div class="drawer-logo-row">
+                <div class="lb-icon-sm">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
                 </div>
-                <span class="font-bold text-base tracking-tight">Law<span class="text-brand-500">book</span></span>
+                <span class="lb-logo-text">Law<span>book</span></span>
             </div>
-
-            <!-- Search Bar -->
-            <div class="flex-1 max-w-sm hidden sm:block">
-                <div class="relative">
-                    <span class="iconify absolute right-3 top-1/2 -translate-y-1/2 text-dark-500 text-base" data-icon="lucide:search"></span>
-                    <input type="text" id="searchInput" placeholder="ابحث..." readonly
-                        class="w-full bg-dark-900 border border-dark-700/50 rounded-xl pr-9 pl-4 py-2 text-sm text-white placeholder-dark-500 focus:outline-none focus:border-brand-500/50 cursor-pointer transition-all"
-                        onclick="if(!window.__app?.store?.get('isLoggedIn'))showAuthPrompt('البحث')"
-                        onkeydown="if(event.key==='Enter')doSearch()">
-                </div>
-            </div>
-
-            <!-- Desktop Actions -->
-            <div class="hidden lg:flex items-center gap-1.5 shrink-0">
-                <button class="p-2.5 rounded-xl hover:bg-dark-800 transition-colors group" data-navigate="messages" title="الرسائل">
-                    <span class="iconify text-dark-400 group-hover:text-white text-xl" data-icon="lucide:message-circle"></span>
-                </button>
-                <button class="p-2.5 rounded-xl hover:bg-dark-800 transition-colors group" data-navigate="notifications" title="الإشعارات">
-                    <span class="iconify text-dark-400 group-hover:text-white text-xl" data-icon="lucide:bell"></span>
-                </button>
-                <div id="desktopAuthArea">
-                    <div id="desktopUserBtn" class="hidden">
-                        <button class="flex items-center gap-2 bg-dark-800 hover:bg-dark-700 rounded-xl px-3 py-1.5 transition-colors" data-navigate="profile">
-                            <img data-avatar class="w-7 h-7 rounded-lg object-cover" src="" alt="">
-                            <span data-user-name class="text-sm font-medium">مستخدم</span>
-                        </button>
-                    </div>
-                    <div id="desktopGuestBtns" class="flex items-center gap-2">
-                        <button onclick="window.__app.auth.showAuthScreen('login')" class="text-sm font-medium text-dark-300 hover:text-white px-3 py-2 transition-colors">دخول</button>
-                        <button onclick="window.__app.auth.showAuthScreen('signup')" class="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">إنشاء حساب</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Mobile: Notifications -->
-            <div class="lg:hidden flex items-center shrink-0">
-                <button class="w-9 h-9 rounded-xl hover:bg-dark-800 transition-colors flex items-center justify-center" id="mobileNotifBtn" onclick="if(!window.__app?.store?.get('isLoggedIn'))showAuthPrompt('الإشعارات');else toggleNotifDropdown(event)">
-                    <span class="iconify text-dark-400 text-xl" data-icon="lucide:bell"></span>
-                </button>
+            <p class="drawer-guest-title">انضم إلى Lawbook</p>
+            <div class="drawer-guest-btns">
+                <button class="lb-btn-primary" onclick="closeDrawer();window.__app.auth.showAuthScreen('signup')">إنشاء حساب</button>
+                <button class="lb-btn-outline" onclick="closeDrawer();window.__app.auth.showAuthScreen('login')">تسجيل الدخول</button>
             </div>
         </div>
+        <!-- Logged-in state -->
+        <div id="drawerUser" class="drawer-user" style="display:none">
+            <div class="drawer-user-top" onclick="closeDrawer(); window.__app.navigate('profile')" style="cursor:pointer">
+                <img id="drawerAvatar" class="drawer-avatar" src="" alt="الصورة الشخصية">
+                <div class="drawer-user-info">
+                    <h3 id="drawerName" class="drawer-name">مستخدم</h3>
+                    <p id="drawerHandle" class="drawer-handle">@handle</p>
+                </div>
+            </div>
+            <div class="drawer-user-stats">
+                <span><b id="drawerFollowing">0</b> يتابع</span>
+                <span><b id="drawerFollowers">0</b> متابع</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Drawer Nav -->
+    <nav class="drawer-nav">
+        <button class="drawer-link" onclick="closeDrawer();window.__app.navigate('profile')" data-page="profile">
+            <span class="iconify" data-icon="ph:user-bold"></span>
+            <span>الملف الشخصي</span>
+        </button>
+        <button class="drawer-link" onclick="closeDrawer();window.__app.navigate('feed')" data-page="feed">
+            <span class="iconify" data-icon="ph:house-bold"></span>
+            <span>الرئيسية</span>
+        </button>
+        <button class="drawer-link" onclick="closeDrawer();window.__app.navigate('following')" data-page="following">
+            <span class="iconify" data-icon="ph:users-bold"></span>
+            <span>أتابع</span>
+        </button>
+        <button class="drawer-link" onclick="closeDrawer();window.__app.navigate('messages')" data-page="messages">
+            <span class="iconify" data-icon="ph:envelope-simple-bold"></span>
+            <span>الرسائل</span>
+        </button>
+        <button class="drawer-link" onclick="closeDrawer();window.__app.navigate('notifications')" data-page="notifications">
+            <span class="iconify" data-icon="ph:bell-bold"></span>
+            <span>الإشعارات</span>
+        </button>
+        <button class="drawer-link" onclick="closeDrawer();window.__app.navigate('bookmarks')" data-page="bookmarks">
+            <span class="iconify" data-icon="ph:bookmark-simple-bold"></span>
+            <span>المحفوظات</span>
+        </button>
+        <button class="drawer-link" onclick="closeDrawer();window.__app.navigate('settings')" data-page="settings">
+            <span class="iconify" data-icon="ph:gear-bold"></span>
+            <span>الإعدادات</span>
+        </button>
     </nav>
 
-    <!-- Notification Dropdown -->
-    <div id="notifDropdown" class="notif-dropdown">
-        <div class="notif-header"><h3>الإشعارات</h3></div>
-        <div class="notif-list" id="notifList">
-            <div class="text-center py-8 text-dark-400 text-sm">لا توجد إشعارات</div>
+    <div class="drawer-footer">
+        <button id="drawerSignout" class="drawer-signout" onclick="if(confirm('تأكيد تسجيل الخروج؟'))window.__app.auth.signOut()" style="display:none">
+            <span class="iconify" data-icon="ph:sign-out-bold"></span>
+            <span>تسجيل الخروج</span>
+        </button>
+    </div>
+</aside>
+
+<!-- ============================================================ -->
+<!-- HEADER — fixed top bar                                       -->
+<!-- ============================================================ -->
+<header id="mainHeader" class="lb-header">
+    <!-- Left: Avatar/Menu -->
+    <button class="header-avatar-btn" id="headerAvatarBtn" onclick="openDrawer()" aria-label="فتح القائمة">
+        <img id="headerAvatar" class="header-avatar" src="https://api.dicebear.com/7.x/shapes/svg?seed=guest&backgroundColor=1a1a1a" alt="">
+    </button>
+
+    <!-- Center: Logo or Page Title -->
+    <div class="header-center" onclick="window.__app.navigate('feed')" style="cursor:pointer">
+        <div class="lb-icon-sm header-logo-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
         </div>
+        <span id="headerTitle" class="header-title-text">Lawbook</span>
     </div>
 
-    <!-- Mobile Drawer -->
-    <div id="mobileMenuOverlay" class="mobile-drawer-overlay" onclick="closeMobileMenu()">
-        <div id="mobileDrawer" class="mobile-drawer" onclick="event.stopPropagation()">
-            <div class="p-4 pb-3 border-b border-dark-800/50">
-                <div id="drawerGuestArea" class="flex flex-col gap-2">
-                    <p class="text-dark-400 text-sm font-medium mb-1">انضم إلى Lawbook</p>
-                    <button onclick="closeMobileMenu();window.__app.auth.showAuthScreen('signup')" class="w-full bg-brand-500 text-white font-bold text-sm py-3 rounded-xl">إنشاء حساب</button>
-                    <button onclick="closeMobileMenu();window.__app.auth.showAuthScreen('login')" class="w-full bg-dark-800 text-white font-medium text-sm py-3 rounded-xl border border-dark-700">تسجيل الدخول</button>
-                </div>
-                <div id="drawerUserArea" class="hidden">
-                    <div class="flex items-center gap-3 cursor-pointer mb-3" data-navigate="profile" onclick="closeMobileMenu()">
-                        <img data-avatar class="w-12 h-12 rounded-full object-cover border-2 border-dark-700" src="" alt="">
-                        <div class="flex-1 min-w-0">
-                            <h3 data-user-name class="font-bold text-base text-white truncate">مستخدم</h3>
-                            <p data-username class="text-dark-400 text-xs"></p>
-                        </div>
-                    </div>
-                    <div class="flex gap-4 text-sm">
-                        <span><strong data-following class="text-white">0</strong> <span class="text-dark-400">يتابع</span></span>
-                        <span><strong data-followers class="text-white">0</strong> <span class="text-dark-400">متابع</span></span>
-                    </div>
+    <!-- Right: Actions -->
+    <div class="header-actions">
+        <!-- Desktop auth buttons (shown when not logged in) -->
+        <div id="headerGuestBtns" class="header-guest-btns">
+            <button class="lb-btn-sm-outline" onclick="window.__app.auth.showAuthScreen('login')">دخول</button>
+            <button class="lb-btn-sm-primary" onclick="window.__app.auth.showAuthScreen('signup')">انضم</button>
+        </div>
+        <!-- Desktop user actions -->
+        <div id="headerUserBtns" class="header-user-btns" style="display:none">
+            <button class="icon-btn" onclick="window.__app.navigate('messages')" title="الرسائل">
+                <span class="iconify" data-icon="ph:envelope-simple-bold"></span>
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- ============================================================ -->
+<!-- MAIN APP LAYOUT                                              -->
+<!-- ============================================================ -->
+<div id="appLayout" class="app-layout">
+
+    <!-- Desktop Left Sidebar -->
+    <aside class="desktop-sidebar">
+        <div class="desktop-logo" onclick="window.__app.navigate('feed')" style="cursor:pointer">
+            <div class="lb-icon-sm">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
+            </div>
+            <span class="lb-logo-text">Law<span>book</span></span>
+        </div>
+
+        <nav class="desktop-nav">
+            <button class="desktop-nav-link active" data-page="feed" onclick="window.__app.navigate('feed')">
+                <span class="iconify" data-icon="ph:house-bold"></span>
+                <span>الرئيسية</span>
+            </button>
+            <button class="desktop-nav-link" data-page="search" onclick="focusSearch()">
+                <span class="iconify" data-icon="ph:magnifying-glass-bold"></span>
+                <span>بحث</span>
+            </button>
+            <button class="desktop-nav-link" data-page="notifications" onclick="window.__app.navigate('notifications')">
+                <span class="iconify" data-icon="ph:bell-bold"></span>
+                <span>الإشعارات</span>
+            </button>
+            <button class="desktop-nav-link" data-page="messages" onclick="window.__app.navigate('messages')">
+                <span class="iconify" data-icon="ph:envelope-simple-bold"></span>
+                <span>الرسائل</span>
+            </button>
+            <button class="desktop-nav-link" data-page="bookmarks" onclick="window.__app.navigate('bookmarks')">
+                <span class="iconify" data-icon="ph:bookmark-simple-bold"></span>
+                <span>المحفوظات</span>
+            </button>
+            <button class="desktop-nav-link" data-page="profile" onclick="window.__app.navigate('profile')">
+                <span class="iconify" data-icon="ph:user-bold"></span>
+                <span>الملف الشخصي</span>
+            </button>
+            <button class="desktop-nav-link" data-page="settings" onclick="window.__app.navigate('settings')">
+                <span class="iconify" data-icon="ph:gear-bold"></span>
+                <span>الإعدادات</span>
+            </button>
+        </nav>
+
+        <button class="desktop-post-btn" onclick="openPostModal()">
+            <span class="iconify" data-icon="ph:pencil-bold"></span>
+            <span class="desktop-post-label">منشور</span>
+        </button>
+
+        <!-- Desktop User Card -->
+        <div id="desktopUserCard" class="desktop-user-card" style="display:none" onclick="window.__app.navigate('profile')" style="cursor:pointer">
+            <img id="desktopCardAvatar" class="du-avatar" src="" alt="">
+            <div class="du-info">
+                <p id="desktopCardName" class="du-name">مستخدم</p>
+                <p id="desktopCardHandle" class="du-handle">@handle</p>
+            </div>
+            <button class="du-more" onclick="event.stopPropagation();openUserMenu(event)" title="المزيد">
+                <span class="iconify" data-icon="ph:dots-three-bold"></span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="mainContent" class="main-content">
+
+        <!-- ===== FEED PAGE ===== -->
+        <div id="page-feed" class="page">
+            <!-- Feed Header (sticky sub-header) -->
+            <div class="page-tab-header">
+                <div class="page-tab-title">الرئيسية</div>
+                <div class="feed-tabs">
+                    <button class="feed-tab active" id="tab-latest" onclick="switchFeedTab('latest',this)">الأحدث</button>
+                    <button class="feed-tab" id="tab-trending" onclick="switchFeedTab('trending',this)">الأكثر رواجاً</button>
                 </div>
             </div>
-            <nav class="flex-1 overflow-y-auto p-2">
-                <a href="#" class="mobile-drawer-link" data-navigate="profile" onclick="closeMobileMenu()"><span class="iconify text-xl" data-icon="lucide:user"></span><span>الملف الشخصي</span></a>
-                <a href="#" class="mobile-drawer-link" data-navigate="feed" onclick="closeMobileMenu()"><span class="iconify text-xl" data-icon="lucide:home"></span><span>الرئيسية</span></a>
-                <a href="#" class="mobile-drawer-link" data-navigate="following" onclick="closeMobileMenu()"><span class="iconify text-xl" data-icon="lucide:users"></span><span>أتابع</span></a>
-                <a href="#" class="mobile-drawer-link" data-navigate="messages" onclick="closeMobileMenu()"><span class="iconify text-xl" data-icon="lucide:message-circle"></span><span>الرسائل</span></a>
-                <a href="#" class="mobile-drawer-link" data-navigate="notifications" onclick="closeMobileMenu()"><span class="iconify text-xl" data-icon="lucide:bell"></span><span>الإشعارات</span></a>
-                <a href="#" class="mobile-drawer-link" data-navigate="bookmarks" onclick="closeMobileMenu()"><span class="iconify text-xl" data-icon="lucide:bookmark"></span><span>المحفوظات</span></a>
-                <a href="#" class="mobile-drawer-link" data-navigate="settings" onclick="closeMobileMenu()"><span class="iconify text-xl" data-icon="lucide:settings"></span><span>الإعدادات</span></a>
-                <div class="mt-2 pt-2 border-t border-dark-800/30">
-                    <a href="#" class="mobile-drawer-link text-red-400" onclick="if(confirm('تسجيل الخروج؟'))window.__app.auth.signOut()"><span class="iconify text-xl" data-icon="lucide:log-out"></span><span>تسجيل الخروج</span></a>
+
+            <!-- Guest Banner -->
+            <div id="guestBanner" class="guest-banner" style="display:none">
+                <h2>اكتشف المنصة القانونية</h2>
+                <p>انضم الآن للتفاعل مع المجتمع القانوني اليمني</p>
+                <div class="guest-banner-btns">
+                    <button class="lb-btn-primary" onclick="window.__app.auth.showAuthScreen('signup')">إنشاء حساب مجاني</button>
+                    <button class="lb-btn-outline" onclick="window.__app.auth.showAuthScreen('login')">تسجيل الدخول</button>
                 </div>
-            </nav>
+            </div>
+
+            <!-- Compose Box (auth only) -->
+            <div id="composeBox" class="compose-box" style="display:none">
+                <img id="composeAvatar" class="compose-avatar" src="" alt="">
+                <button class="compose-placeholder" onclick="openPostModal()">شارك أفكارك القانونية...</button>
+                <div class="compose-actions">
+                    <button class="compose-action-btn" onclick="openPostModal('image')" title="إضافة صورة">
+                        <span class="iconify" data-icon="ph:image-bold"></span>
+                    </button>
+                    <button class="compose-post-btn" onclick="openPostModal()">نشر</button>
+                </div>
+            </div>
+
+            <!-- Posts Feed -->
+            <div id="feedList" class="feed-list">
+                <div class="feed-loading">
+                    <div class="lb-spinner"></div>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <!-- ===== MAIN LAYOUT ===== -->
-    <div class="max-w-7xl mx-auto pt-[72px] pb-[80px] lg:pb-8 px-3 sm:px-4 lg:px-6">
-        <div class="flex gap-5">
-
-            <!-- LEFT SIDEBAR (Desktop) -->
-            <aside class="hidden lg:flex flex-col w-60 shrink-0 sticky top-[72px] self-start max-h-[calc(100vh-88px)] overflow-y-auto space-y-3">
-                <!-- Profile Card -->
-                <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-4 cursor-pointer hover:border-brand-500/30 transition-all" data-navigate="profile">
-                    <div class="flex items-center gap-3 mb-3">
-                        <img data-avatar class="w-11 h-11 rounded-xl object-cover border border-dark-700" src="" alt="">
-                        <div class="min-w-0">
-                            <h3 data-user-name class="font-semibold text-sm truncate">مستخدم</h3>
-                            <p data-username class="text-dark-400 text-xs truncate"></p>
-                        </div>
-                    </div>
-                    <div class="flex justify-between text-center border-t border-dark-800 pt-2.5">
-                        <div><p data-followers class="font-bold text-sm">0</p><p class="text-dark-500 text-[10px]">متابع</p></div>
-                        <div><p data-following class="font-bold text-sm">0</p><p class="text-dark-500 text-[10px]">يتابع</p></div>
-                        <div><p data-posts-count class="font-bold text-sm">0</p><p class="text-dark-500 text-[10px]">مقالة</p></div>
-                    </div>
+        <!-- ===== SEARCH PAGE ===== -->
+        <div id="page-search" class="page" style="display:none">
+            <div class="page-tab-header sticky-header">
+                <div class="search-bar-wrap">
+                    <span class="iconify search-icon-inner" data-icon="ph:magnifying-glass-bold"></span>
+                    <input type="search" id="searchInput" class="search-input" placeholder="ابحث في Lawbook" autocomplete="off"
+                        oninput="handleSearch(this.value)" onkeydown="if(event.key==='Enter')doSearch()">
+                    <button class="search-clear" id="searchClear" onclick="clearSearch()" style="display:none">
+                        <span class="iconify" data-icon="ph:x-bold"></span>
+                    </button>
                 </div>
-                <!-- Nav -->
-                <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-2.5">
-                    <nav class="flex flex-col gap-0.5">
-                        <a href="#" class="sidebar-link active" data-page="feed" data-navigate="feed"><span class="iconify text-lg" data-icon="lucide:home"></span>الرئيسية</a>
-                        <a href="#" class="sidebar-link" data-page="profile" data-navigate="profile"><span class="iconify text-lg" data-icon="lucide:user"></span>ملفي الشخصي</a>
-                        <a href="#" class="sidebar-link" data-page="following" data-navigate="following"><span class="iconify text-lg" data-icon="lucide:users"></span>أتابع</a>
-                        <a href="#" class="sidebar-link" data-page="bookmarks" data-navigate="bookmarks"><span class="iconify text-lg" data-icon="lucide:bookmark"></span>المحفوظات</a>
-                        <a href="#" class="sidebar-link" data-page="articles" data-navigate="articles"><span class="iconify text-lg" data-icon="lucide:file-text"></span>مقالاتي</a>
-                        <a href="#" class="sidebar-link" data-page="settings" data-navigate="settings"><span class="iconify text-lg" data-icon="lucide:settings"></span>الإعدادات</a>
-                    </nav>
+            </div>
+            <div id="searchResults" class="search-results">
+                <div class="search-empty">
+                    <span class="iconify" data-icon="ph:magnifying-glass-bold"></span>
+                    <p>ابحث عن أشخاص أو منشورات</p>
                 </div>
-            </aside>
-
-            <!-- MAIN CONTENT -->
-            <main class="flex-1 min-w-0">
-
-                <!-- GUEST BANNER -->
-                <div id="guestBanner" class="guest-banner mb-4" style="display:none;">
-                    <div class="guest-banner-content">
-                        <div class="guest-banner-icon">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
-                        </div>
-                        <div class="guest-banner-text">
-                            <h3>انضم إلى Lawbook</h3>
-                            <p>شاهد المنشورات وتفاعل مع المجتمع القانوني</p>
-                        </div>
-                    </div>
-                    <div class="guest-banner-actions">
-                        <button onclick="window.__app.auth.showAuthScreen('signup')" class="btn-primary">إنشاء حساب</button>
-                        <button onclick="window.__app.auth.showAuthScreen('login')" class="btn-secondary">دخول</button>
-                    </div>
-                </div>
-
-                <!-- FEED PAGE -->
-                <div id="page-feed" class="page-content">
-                    <!-- Create Post (hidden for guests) -->
-                    <div id="createPostArea" class="post-composer mb-4">
-                        <div class="flex items-start gap-3">
-                            <img data-avatar class="w-10 h-10 rounded-xl object-cover shrink-0 border border-dark-700" src="" alt="">
-                            <div class="flex-1 min-w-0">
-                                <div id="postInput" contenteditable="true"
-                                    class="post-composer-input"
-                                    data-placeholder="شارك أفكارك القانونية..."></div>
-                                <div class="flex items-center justify-between mt-3">
-                                    <div class="flex items-center gap-1">
-                                        <button class="p-2 rounded-lg hover:bg-dark-800 transition-colors">
-                                            <span class="iconify text-dark-400 hover:text-brand-400 text-lg" data-icon="lucide:image"></span>
-                                        </button>
-                                        <button class="p-2 rounded-lg hover:bg-dark-800 transition-colors">
-                                            <span class="iconify text-dark-400 hover:text-brand-400 text-lg" data-icon="lucide:tag"></span>
-                                        </button>
-                                    </div>
-                                    <button onclick="publishPost()" class="btn-primary px-5 py-2 text-sm">نشر</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Feed Tabs -->
-                    <div class="flex items-center gap-1 mb-4 bg-dark-900/50 rounded-xl p-1 border border-dark-800/30">
-                        <button class="feed-tab active">الأحدث</button>
-                        <button class="feed-tab">الأكثر رواجاً</button>
-                    </div>
-
-                    <div id="infiniteLoader" class="infinite-loader" style="display:none">
-                        <div class="spinner"></div>
-                        <span class="text-dark-400 text-xs">جاري التحميل...</span>
-                    </div>
-                </div>
-
-                <!-- PROFILE PAGE -->
-                <div id="page-profile" class="page-content hidden">
-                    <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl overflow-hidden mb-5">
-                        <div class="h-36 sm:h-44 bg-gradient-to-br from-brand-600 via-brand-500 to-brand-700 relative"></div>
-                        <div class="px-4 sm:px-6 pb-5 -mt-14 relative">
-                            <div class="flex items-end justify-between mb-3">
-                                <img data-avatar class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-4 border-dark-900 shadow-xl" src="" alt="">
-                                <button id="editProfileBtn" class="bg-dark-800 hover:bg-dark-700 text-sm font-medium px-4 py-2 rounded-xl border border-dark-700 hidden" onclick="openEditProfile()">
-                                    <span class="iconify inline ml-1" data-icon="lucide:pencil" style="font-size:14px"></span>تعديل
-                                </button>
-                            </div>
-                            <div class="flex items-center gap-2 mb-1">
-                                <h2 data-user-name class="text-xl font-bold">مستخدم</h2>
-                                <span class="iconify text-brand-500" data-icon="lucide:badge-check"></span>
-                            </div>
-                            <p data-username class="text-dark-400 text-sm mb-4"></p>
-                            <div class="grid grid-cols-3 gap-2 text-center">
-                                <div class="bg-dark-850/50 rounded-xl p-3">
-                                    <p data-followers class="font-bold text-lg">0</p>
-                                    <p class="text-dark-400 text-xs">متابع</p>
-                                </div>
-                                <div class="bg-dark-850/50 rounded-xl p-3">
-                                    <p data-following class="font-bold text-lg">0</p>
-                                    <p class="text-dark-400 text-xs">يتابع</p>
-                                </div>
-                                <div class="bg-dark-850/50 rounded-xl p-3">
-                                    <p data-posts-count class="font-bold text-lg">0</p>
-                                    <p class="text-dark-400 text-xs">مقالة</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="profilePostsList"></div>
-                    <div id="profileEmptyState" class="text-center py-14 text-dark-400">
-                        <span class="iconify text-5xl mb-3 block" data-icon="lucide:file-text"></span>
-                        <p class="text-sm mb-4">لم تنشر أي شيء بعد</p>
-                        <button class="btn-primary px-5 py-2.5 text-sm" onclick="showPostModal()">اكتب أول منشور</button>
-                    </div>
-                </div>
-
-                <!-- OTHER PAGES -->
-                <div id="page-notifications" class="page-content hidden">
-                    <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-5">
-                        <h2 class="font-bold text-lg mb-4">الإشعارات</h2>
-                        <div id="notifContent" class="text-center py-8 text-dark-400">
-                            <span class="iconify text-4xl mb-3 block" data-icon="lucide:bell"></span>
-                            <p class="text-sm">لا توجد إشعارات</p>
-                        </div>
-                    </div>
-                </div>
-                <div id="page-messages" class="page-content hidden">
-                    <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-5 text-center py-14">
-                        <span class="iconify text-5xl mb-3 block text-dark-400" data-icon="lucide:message-circle"></span>
-                        <h2 class="font-bold text-lg mb-2">الرسائل</h2>
-                        <p class="text-dark-400 text-sm">لا توجد محادثات بعد</p>
-                    </div>
-                </div>
-                <div id="page-bookmarks" class="page-content hidden">
-                    <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-5 text-center py-14">
-                        <span class="iconify text-5xl mb-3 block text-dark-400" data-icon="lucide:bookmark"></span>
-                        <h2 class="font-bold text-lg mb-2">المحفوظات</h2>
-                        <p class="text-dark-400 text-sm">لم تحفظ أي منشور بعد</p>
-                    </div>
-                </div>
-                <div id="page-articles" class="page-content hidden">
-                    <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-5">
-                        <h2 class="font-bold text-lg">مقالاتي</h2>
-                    </div>
-                </div>
-                <div id="page-settings" class="page-content hidden">
-                    <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl overflow-hidden">
-                        <div class="p-5 border-b border-dark-800/50">
-                            <h2 class="font-bold text-lg">الإعدادات</h2>
-                        </div>
-                        <div class="p-5 space-y-4">
-                            <div class="flex items-center justify-between py-2"><span class="text-sm text-dark-300">الاسم</span><span id="settingsName" class="text-sm text-dark-400">-</span></div>
-                            <div class="flex items-center justify-between py-2 border-t border-dark-800/30"><span class="text-sm text-dark-300">المعرّف</span><span id="settingsUsername" class="text-sm text-dark-400">-</span></div>
-                            <div class="flex items-center justify-between py-2 border-t border-dark-800/30"><span class="text-sm text-dark-300">البريد</span><span id="settingsEmail" class="text-sm text-dark-400">-</span></div>
-                            <div class="pt-4 border-t border-dark-800/30">
-                                <button class="text-red-400 border border-red-500/30 text-sm px-4 py-2.5 rounded-xl hover:bg-red-500/10 transition-all w-full" onclick="if(confirm('تأكيد تسجيل الخروج؟'))window.__app.auth.signOut()">
-                                    <span class="iconify inline ml-2" data-icon="lucide:log-out"></span>
-                                    تسجيل الخروج
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div id="page-following" class="page-content hidden">
-                    <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-5">
-                        <h2 class="font-bold text-lg">منشورات المتابَعين</h2>
-                    </div>
-                </div>
-                <div id="page-connections" class="page-content hidden">
-                    <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-5">
-                        <h2 class="font-bold text-lg">الروابط</h2>
-                    </div>
-                </div>
-                <div id="page-events" class="page-content hidden">
-                    <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-5">
-                        <h2 class="font-bold text-lg">الفعاليات</h2>
-                    </div>
-                </div>
-                <div id="page-audio-spaces" class="page-content hidden">
-                    <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-5">
-                        <h2 class="font-bold text-lg">المساحات الصوتية</h2>
-                    </div>
-                </div>
-                <div id="page-trending" class="page-content hidden">
-                    <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-5">
-                        <h2 class="font-bold text-lg">المواضيع الرائجة</h2>
-                    </div>
-                </div>
-                <div id="page-certificates" class="page-content hidden">
-                    <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-5">
-                        <h2 class="font-bold text-lg">الشهادات</h2>
-                    </div>
-                </div>
-            </main>
-
-            <!-- RIGHT SIDEBAR (Desktop) -->
-            <aside class="hidden xl:block w-64 shrink-0 sticky top-[72px] self-start space-y-4">
-                <div class="bg-dark-900/80 border border-dark-800/50 rounded-2xl p-4">
-                    <h3 class="font-bold text-sm mb-3 text-dark-300 uppercase tracking-wider text-[11px]">المواضيع الرائجة</h3>
-                    <div class="space-y-2.5">
-                        <div class="cursor-pointer group"><span class="text-sm group-hover:text-brand-400 transition-colors">#التحكيم_الدولي</span><p class="text-xs text-dark-500 mt-0.5">120 منشور</p></div>
-                        <div class="cursor-pointer group"><span class="text-sm group-hover:text-brand-400 transition-colors">#حقوق_الملكية_الفكرية</span><p class="text-xs text-dark-500 mt-0.5">87 منشور</p></div>
-                        <div class="cursor-pointer group"><span class="text-sm group-hover:text-brand-400 transition-colors">#قانون_الشركات</span><p class="text-xs text-dark-500 mt-0.5">64 منشور</p></div>
-                        <div class="cursor-pointer group"><span class="text-sm group-hover:text-brand-400 transition-colors">#القانون_اليمني</span><p class="text-xs text-dark-500 mt-0.5">51 منشور</p></div>
-                    </div>
-                </div>
-            </aside>
+            </div>
         </div>
-    </div>
 
-    <!-- ===== BOTTOM NAV (Mobile) ===== -->
-    <nav class="mobile-bottom-nav lg:hidden fixed bottom-0 left-0 right-0 z-50 safe-bottom">
-        <div class="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
-            <button class="bottom-nav-item active" data-navigate="feed">
-                <span class="iconify text-[22px]" data-icon="lucide:home"></span>
-                <span class="nav-label">الرئيسية</span>
-            </button>
-            <button class="bottom-nav-item" data-navigate="following">
-                <span class="iconify text-[22px]" data-icon="lucide:users"></span>
-                <span class="nav-label">أتابع</span>
-            </button>
-            <button class="bottom-nav-post" onclick="showPostModal()">
-                <div class="post-fab">
-                    <span class="iconify text-[24px] text-white" data-icon="lucide:plus"></span>
+        <!-- ===== NOTIFICATIONS PAGE ===== -->
+        <div id="page-notifications" class="page" style="display:none">
+            <div class="page-tab-header sticky-header">
+                <div class="page-tab-title">الإشعارات</div>
+            </div>
+            <div id="notifList" class="notif-list">
+                <div class="empty-state">
+                    <span class="iconify" data-icon="ph:bell-bold"></span>
+                    <h3>لا توجد إشعارات</h3>
+                    <p>ستظهر إشعاراتك هنا</p>
                 </div>
-            </button>
-            <button class="bottom-nav-item" data-navigate="notifications">
-                <span class="iconify text-[22px]" data-icon="lucide:bell"></span>
-                <span class="nav-label">الإشعارات</span>
-            </button>
-            <button class="bottom-nav-item" data-navigate="profile">
-                <span class="iconify text-[22px]" data-icon="lucide:user"></span>
-                <span class="nav-label">ملفي</span>
-            </button>
+            </div>
         </div>
-    </nav>
 
-    <!-- POST MODAL -->
-    <div id="postModal" class="modal-overlay" onclick="if(event.target===this){this.classList.remove('active');document.body.style.overflow=''}">
-        <div class="modal-card" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3 class="font-bold text-base">منشور جديد</h3>
-                <button onclick="document.getElementById('postModal').classList.remove('active');document.body.style.overflow=''" class="modal-close">
-                    <span class="iconify text-dark-400 text-xl" data-icon="lucide:x"></span>
+        <!-- ===== MESSAGES PAGE ===== -->
+        <div id="page-messages" class="page" style="display:none">
+            <div class="page-tab-header sticky-header">
+                <div class="page-tab-title">الرسائل</div>
+                <button class="icon-btn" title="رسالة جديدة" onclick="showToast('قريباً...')">
+                    <span class="iconify" data-icon="ph:pencil-bold"></span>
                 </button>
             </div>
-            <textarea id="modalPostText" rows="5" placeholder="شارك أفكارك القانونية..." class="modal-textarea"></textarea>
-            <div class="flex items-center justify-between mt-3">
-                <div class="flex gap-1">
-                    <button class="p-2 rounded-lg hover:bg-dark-800 transition-colors"><span class="iconify text-dark-400 text-lg" data-icon="lucide:image"></span></button>
-                    <button class="p-2 rounded-lg hover:bg-dark-800 transition-colors"><span class="iconify text-dark-400 text-lg" data-icon="lucide:tag"></span></button>
+            <div class="empty-state">
+                <span class="iconify" data-icon="ph:envelope-simple-bold"></span>
+                <h3>رسائلك</h3>
+                <p>ابدأ محادثة مع أي شخص</p>
+                <button class="lb-btn-primary" onclick="showToast('قريباً...')">رسالة جديدة</button>
+            </div>
+        </div>
+
+        <!-- ===== BOOKMARKS PAGE ===== -->
+        <div id="page-bookmarks" class="page" style="display:none">
+            <div class="page-tab-header sticky-header">
+                <div class="page-tab-title">المحفوظات</div>
+            </div>
+            <div id="bookmarksList" class="feed-list">
+                <div class="empty-state">
+                    <span class="iconify" data-icon="ph:bookmark-simple-bold"></span>
+                    <h3>لا توجد محفوظات</h3>
+                    <p>احفظ المنشورات لتراجعها لاحقاً</p>
                 </div>
-                <button onclick="publishModalPost()" class="btn-primary px-6 py-2.5 text-sm">نشر</button>
+            </div>
+        </div>
+
+        <!-- ===== PROFILE PAGE ===== -->
+        <div id="page-profile" class="page" style="display:none">
+            <!-- Profile Back Header -->
+            <div class="page-back-header sticky-header">
+                <button class="icon-btn" onclick="history.back()">
+                    <span class="iconify" data-icon="ph:arrow-right-bold"></span>
+                </button>
+                <div>
+                    <p id="profileHeaderName" class="profile-header-name">مستخدم</p>
+                    <p id="profileHeaderCount" class="profile-header-count">0 منشور</p>
+                </div>
+            </div>
+            <!-- Cover -->
+            <div id="profileCover" class="profile-cover">
+                <button id="editCoverBtn" class="edit-cover-btn" onclick="triggerCoverUpload()" style="display:none">
+                    <span class="iconify" data-icon="ph:camera-bold"></span>
+                </button>
+                <input type="file" id="coverFileInput" accept="image/*" style="display:none" onchange="handleCoverUpload(this)">
+            </div>
+            <!-- Profile Info Row -->
+            <div class="profile-info-row">
+                <div class="profile-avatar-wrap">
+                    <img id="profileAvatar" class="profile-big-avatar" src="" alt="">
+                    <button id="editAvatarBtn" class="edit-avatar-btn" onclick="triggerAvatarUpload()" style="display:none">
+                        <span class="iconify" data-icon="ph:camera-bold"></span>
+                    </button>
+                    <input type="file" id="avatarFileInput" accept="image/*" style="display:none" onchange="handleAvatarUpload(this)">
+                </div>
+                <div class="profile-btn-row">
+                    <button id="editProfileBtn" class="lb-btn-outline-sm" onclick="openEditProfile()" style="display:none">تعديل الملف</button>
+                    <button id="followProfileBtn" class="lb-btn-primary-sm" onclick="toggleProfileFollow()" style="display:none">متابعة</button>
+                </div>
+            </div>
+            <!-- Profile Meta -->
+            <div class="profile-meta">
+                <h2 id="profileName" class="profile-display-name">مستخدم</h2>
+                <p id="profileHandle" class="profile-username">@handle</p>
+                <p id="profileBio" class="profile-bio"></p>
+                <div class="profile-stats">
+                    <span><b id="profileFollowing">0</b> يتابع</span>
+                    <span><b id="profileFollowers">0</b> متابع</span>
+                </div>
+            </div>
+            <!-- Profile Tabs -->
+            <div class="profile-tabs">
+                <button class="profile-tab active" onclick="switchProfileTab('posts',this)">المنشورات</button>
+                <button class="profile-tab" onclick="switchProfileTab('likes',this)">الإعجابات</button>
+            </div>
+            <!-- Profile Posts -->
+            <div id="profilePostsList" class="feed-list"></div>
+            <div id="profileEmpty" class="empty-state" style="display:none">
+                <span class="iconify" data-icon="ph:pencil-line-bold"></span>
+                <h3>لا توجد منشورات</h3>
+                <p>ابدأ بنشر أول منشور</p>
+                <button class="lb-btn-primary" onclick="openPostModal()">اكتب منشوراً</button>
+            </div>
+        </div>
+
+        <!-- ===== SETTINGS PAGE ===== -->
+        <div id="page-settings" class="page" style="display:none">
+            <div class="page-back-header sticky-header">
+                <button class="icon-btn" onclick="history.back()">
+                    <span class="iconify" data-icon="ph:arrow-right-bold"></span>
+                </button>
+                <div class="page-tab-title">الإعدادات</div>
+            </div>
+            <div class="settings-list">
+                <div class="settings-section">
+                    <div class="settings-section-title">حسابك</div>
+                    <div class="settings-item" onclick="openEditProfile()">
+                        <span class="iconify" data-icon="ph:user-circle-bold"></span>
+                        <div class="settings-item-info">
+                            <span>معلومات الحساب</span>
+                            <small id="settingsEmail">-</small>
+                        </div>
+                        <span class="iconify settings-arrow" data-icon="ph:caret-left-bold"></span>
+                    </div>
+                    <div class="settings-item" onclick="showToast('قريباً...')">
+                        <span class="iconify" data-icon="ph:lock-bold"></span>
+                        <div class="settings-item-info">
+                            <span>الخصوصية والأمان</span>
+                        </div>
+                        <span class="iconify settings-arrow" data-icon="ph:caret-left-bold"></span>
+                    </div>
+                    <div class="settings-item" onclick="showToast('قريباً...')">
+                        <span class="iconify" data-icon="ph:bell-bold"></span>
+                        <div class="settings-item-info">
+                            <span>الإشعارات</span>
+                        </div>
+                        <span class="iconify settings-arrow" data-icon="ph:caret-left-bold"></span>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <div class="settings-section-title">التطبيق</div>
+                    <div class="settings-item" onclick="showToast('الوضع الداكن مفعّل')">
+                        <span class="iconify" data-icon="ph:moon-bold"></span>
+                        <div class="settings-item-info">
+                            <span>الوضع الداكن</span>
+                        </div>
+                        <div class="settings-toggle active"></div>
+                    </div>
+                    <div class="settings-item" onclick="showToast('قريباً...')">
+                        <span class="iconify" data-icon="ph:translate-bold"></span>
+                        <div class="settings-item-info">
+                            <span>اللغة</span>
+                            <small>العربية</small>
+                        </div>
+                        <span class="iconify settings-arrow" data-icon="ph:caret-left-bold"></span>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <div class="settings-section-title">معلومات</div>
+                    <div class="settings-item" onclick="showToast('قريباً...')">
+                        <span class="iconify" data-icon="ph:info-bold"></span>
+                        <div class="settings-item-info">
+                            <span>عن Lawbook</span>
+                        </div>
+                        <span class="iconify settings-arrow" data-icon="ph:caret-left-bold"></span>
+                    </div>
+                    <div class="settings-item danger" onclick="if(confirm('تأكيد تسجيل الخروج؟'))window.__app.auth.signOut()">
+                        <span class="iconify" data-icon="ph:sign-out-bold"></span>
+                        <div class="settings-item-info">
+                            <span>تسجيل الخروج</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== FOLLOWING PAGE ===== -->
+        <div id="page-following" class="page" style="display:none">
+            <div class="page-tab-header sticky-header">
+                <div class="page-tab-title">منشورات المتابَعين</div>
+            </div>
+            <div id="followingList" class="feed-list">
+                <div class="empty-state">
+                    <span class="iconify" data-icon="ph:users-bold"></span>
+                    <h3>تابع أشخاصاً أولاً</h3>
+                    <p>ستظهر منشوراتهم هنا</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Other pages (fallback) -->
+        <div id="page-connections" class="page" style="display:none"></div>
+        <div id="page-events" class="page" style="display:none"></div>
+        <div id="page-articles" class="page" style="display:none"></div>
+        <div id="page-trending" class="page" style="display:none"></div>
+        <div id="page-audio-spaces" class="page" style="display:none"></div>
+        <div id="page-certificates" class="page" style="display:none"></div>
+
+    </main>
+
+    <!-- Desktop Right Sidebar (optional: trending etc.) -->
+    <aside class="desktop-right-sidebar">
+        <div class="right-search-wrap">
+            <span class="iconify" data-icon="ph:magnifying-glass-bold"></span>
+            <input type="search" id="desktopSearchInput" class="right-search-input" placeholder="بحث"
+                oninput="handleSearch(this.value)" onkeydown="if(event.key==='Enter')doSearch()">
+        </div>
+        <div class="right-sidebar-card">
+            <h3>ما الذي يحدث</h3>
+            <div id="trendingWidget" class="trending-widget">
+                <div class="trending-item" onclick="showToast('قريباً...')">
+                    <span class="trending-cat">القانون · اليمن</span>
+                    <p class="trending-topic">#القانون_اليمني</p>
+                    <span class="trending-count">1.2K منشور</span>
+                </div>
+                <div class="trending-item" onclick="showToast('قريباً...')">
+                    <span class="trending-cat">محاكم</span>
+                    <p class="trending-topic">#أحكام_قضائية</p>
+                    <span class="trending-count">845 منشور</span>
+                </div>
+                <div class="trending-item" onclick="showToast('قريباً...')">
+                    <span class="trending-cat">قانون</span>
+                    <p class="trending-topic">#حقوق_الإنسان</p>
+                    <span class="trending-count">2.3K منشور</span>
+                </div>
+            </div>
+        </div>
+        <div class="right-sidebar-card" id="whoToFollow" style="display:none">
+            <h3>من تتابع</h3>
+            <div id="suggestedUsers"></div>
+        </div>
+    </aside>
+</div>
+
+<!-- ============================================================ -->
+<!-- MOBILE BOTTOM NAV                                            -->
+<!-- ============================================================ -->
+<nav id="bottomNav" class="bottom-nav" role="navigation" aria-label="التنقل السفلي">
+    <button class="bn-item active" id="bn-feed" onclick="window.__app.navigate('feed')" data-page="feed">
+        <span class="iconify bn-icon" data-icon="ph:house-fill"></span>
+    </button>
+    <button class="bn-item" id="bn-search" onclick="window.__app.navigate('search')" data-page="search">
+        <span class="iconify bn-icon" data-icon="ph:magnifying-glass-bold"></span>
+    </button>
+    <!-- Compose FAB -->
+    <button class="bn-compose" onclick="openPostModal()" aria-label="منشور جديد">
+        <span class="iconify" data-icon="ph:pencil-bold"></span>
+    </button>
+    <button class="bn-item" id="bn-notifications" onclick="window.__app.navigate('notifications')" data-page="notifications">
+        <span class="iconify bn-icon" data-icon="ph:bell-bold"></span>
+        <span class="bn-badge" id="notifBadge" style="display:none">3</span>
+    </button>
+    <button class="bn-item" id="bn-messages" onclick="window.__app.navigate('messages')" data-page="messages">
+        <span class="iconify bn-icon" data-icon="ph:envelope-simple-bold"></span>
+    </button>
+</nav>
+
+<!-- ============================================================ -->
+<!-- POST MODAL                                                   -->
+<!-- ============================================================ -->
+<div id="postModal" class="lb-modal-overlay" onclick="if(e.target===this)closePostModal()">
+    <div class="lb-modal-sheet" id="postModalSheet" onclick="event.stopPropagation()">
+        <div class="post-modal-header">
+            <button class="icon-btn" onclick="closePostModal()">
+                <span class="iconify" data-icon="ph:x-bold"></span>
+            </button>
+            <button class="lb-btn-primary-sm" id="postSubmitBtn" onclick="submitPost()">نشر</button>
+        </div>
+        <div class="post-modal-body">
+            <img id="postModalAvatar" class="compose-avatar" src="" alt="">
+            <div class="post-modal-right">
+                <textarea id="postModalText" class="post-modal-textarea" placeholder="شارك أفكارك القانونية..." rows="4" maxlength="500" oninput="updatePostCounter(this)"></textarea>
+                <!-- Image preview -->
+                <div id="postImagePreview" class="post-image-preview" style="display:none">
+                    <button class="remove-image-btn" onclick="removePostImage()">
+                        <span class="iconify" data-icon="ph:x-bold"></span>
+                    </button>
+                    <img id="postPreviewImg" class="preview-img" src="" alt="">
+                </div>
+            </div>
+        </div>
+        <div class="post-modal-footer">
+            <div class="post-modal-tools">
+                <label class="icon-btn" title="إضافة صورة">
+                    <span class="iconify" data-icon="ph:image-bold"></span>
+                    <input type="file" id="postImageInput" accept="image/*" style="display:none" onchange="handlePostImage(this)">
+                </label>
+                <button class="icon-btn" title="هاشتاق" onclick="insertHashtag()">
+                    <span class="iconify" data-icon="ph:hash-bold"></span>
+                </button>
+            </div>
+            <span id="postCounter" class="post-counter">500</span>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- POST DETAIL MODAL                                            -->
+<!-- ============================================================ -->
+<div id="postDetailModal" class="lb-modal-overlay" onclick="if(event.target===this)closePostDetail()">
+    <div class="lb-modal-full" onclick="event.stopPropagation()">
+        <div class="modal-back-header">
+            <button class="icon-btn" onclick="closePostDetail()">
+                <span class="iconify" data-icon="ph:arrow-right-bold"></span>
+            </button>
+            <span class="modal-back-title">المنشور</span>
+        </div>
+        <div id="postDetailContent" class="post-detail-content"></div>
+        <div id="commentsSection" class="comments-section">
+            <div class="comment-composer">
+                <img id="commentAvatar" class="mini-avatar" src="" alt="">
+                <input type="text" id="commentInput" class="comment-input" placeholder="أضف تعليقاً..." maxlength="280"
+                    onkeydown="if(event.key==='Enter')submitComment()">
+                <button class="lb-btn-primary-sm" onclick="submitComment()">رد</button>
+            </div>
+            <div id="commentsList" class="comments-list"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- EDIT PROFILE MODAL                                           -->
+<!-- ============================================================ -->
+<div id="editProfileModal" class="lb-modal-overlay" onclick="if(event.target===this)closeEditProfile()">
+    <div class="lb-modal-sheet" onclick="event.stopPropagation()">
+        <div class="post-modal-header">
+            <button class="icon-btn" onclick="closeEditProfile()">
+                <span class="iconify" data-icon="ph:x-bold"></span>
+            </button>
+            <span class="modal-back-title">تعديل الملف</span>
+            <button class="lb-btn-primary-sm" onclick="saveProfile()">حفظ</button>
+        </div>
+        <div class="edit-profile-body">
+            <!-- Cover upload -->
+            <div id="editCoverPreview" class="edit-cover-preview">
+                <label class="edit-cover-label">
+                    <span class="iconify" data-icon="ph:camera-bold"></span>
+                    <input type="file" id="editCoverInput" accept="image/*" style="display:none" onchange="handleEditCover(this)">
+                </label>
+            </div>
+            <!-- Avatar upload -->
+            <div class="edit-avatar-row">
+                <label class="edit-avatar-label">
+                    <img id="editProfileAvatar" class="edit-avatar-img" src="" alt="">
+                    <div class="edit-avatar-overlay">
+                        <span class="iconify" data-icon="ph:camera-bold"></span>
+                    </div>
+                    <input type="file" id="editAvatarInput" accept="image/*" style="display:none" onchange="handleEditAvatar(this)">
+                </label>
+            </div>
+            <!-- Fields -->
+            <div class="edit-fields">
+                <div class="edit-field-group">
+                    <label class="edit-field-label">الاسم</label>
+                    <input type="text" id="editName" class="edit-field-input" placeholder="اسمك الكامل" maxlength="50">
+                </div>
+                <div class="edit-field-group">
+                    <label class="edit-field-label">المعرّف</label>
+                    <div class="edit-handle-wrap">
+                        <span class="at-prefix">@</span>
+                        <input type="text" id="editUsername" class="edit-field-input" placeholder="handle" dir="ltr" maxlength="20"
+                            oninput="this.value=this.value.replace(/[^a-z0-9_]/gi,'').toLowerCase()">
+                    </div>
+                </div>
+                <div class="edit-field-group">
+                    <label class="edit-field-label">النبذة</label>
+                    <textarea id="editBio" class="edit-field-textarea" placeholder="اكتب نبذة عنك..." maxlength="160" rows="3"></textarea>
+                </div>
+                <div class="edit-field-group">
+                    <label class="edit-field-label">الموقع</label>
+                    <input type="text" id="editLocation" class="edit-field-input" placeholder="اليمن - صنعاء" maxlength="30">
+                </div>
+                <div class="edit-field-group">
+                    <label class="edit-field-label">الرابط</label>
+                    <input type="url" id="editWebsite" class="edit-field-input" placeholder="https://example.com" dir="ltr" maxlength="100">
+                </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- SCRIPTS -->
-    <script type="module" src="js/app.js"></script>
-    <script>
-        // Global helpers
-        function openMobileMenu() {
-            const isLoggedIn = window.__app?.store?.get('isLoggedIn');
-            const guestArea = document.getElementById('drawerGuestArea');
-            const userArea = document.getElementById('drawerUserArea');
-            if (guestArea) guestArea.style.display = isLoggedIn ? 'none' : '';
-            if (userArea) userArea.style.display = isLoggedIn ? '' : 'none';
-            document.getElementById('mobileMenuOverlay').classList.add('open');
-            document.body.style.overflow = 'hidden';
-        }
-        function closeMobileMenu() {
-            document.getElementById('mobileMenuOverlay').classList.remove('open');
-            document.body.style.overflow = '';
-        }
-        function toggleNotifDropdown(e) {
-            e?.stopPropagation();
-            document.getElementById('notifDropdown').classList.toggle('open');
-        }
-        function showPostModal() {
-            if (!window.__app?.store?.get('isLoggedIn')) {
-                import('./js/utils/ui.js').then(({ showAuthPrompt }) => showAuthPrompt('النشر'));
-                return;
-            }
-            document.getElementById('postModal').classList.add('active');
-            document.body.style.overflow = 'hidden';
-            setTimeout(() => document.getElementById('modalPostText')?.focus(), 200);
-        }
-        function doSearch() {
-            if (!window.__app?.store?.get('isLoggedIn')) {
-                import('./js/utils/ui.js').then(({ showAuthPrompt }) => showAuthPrompt('البحث'));
-                return;
-            }
-            const q = document.getElementById('searchInput')?.value?.trim();
-            if (q) window.__app?.showToast('بحث: ' + q);
-        }
-        function showAuthPrompt(action) {
-            import('./js/utils/ui.js').then(({ showAuthPrompt: sap }) => sap(action));
-        }
-        function openEditProfile() { window.__app?.showToast('قريباً: تعديل الملف الشخصي'); }
+<!-- ============================================================ -->
+<!-- IMAGE VIEWER MODAL                                           -->
+<!-- ============================================================ -->
+<div id="imageViewer" class="image-viewer" onclick="closeImageViewer()">
+    <button class="viewer-close" onclick="closeImageViewer()">
+        <span class="iconify" data-icon="ph:x-bold"></span>
+    </button>
+    <img id="viewerImg" class="viewer-img" src="" alt="">
+</div>
 
-        // Bottom nav active state
-        document.addEventListener('click', (e) => {
-            const navItem = e.target.closest('.bottom-nav-item');
-            if (navItem) {
-                document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.remove('active'));
-                navItem.classList.add('active');
-            }
-        });
-
-        // Close dropdowns on outside click
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('#notifDropdown') && !e.target.closest('#mobileNotifBtn')) {
-                document.getElementById('notifDropdown')?.classList.remove('open');
-            }
-        });
-
-        // Update desktop auth area based on login state
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                const isLoggedIn = window.__app?.store?.get('isLoggedIn');
-                const guestBtns = document.getElementById('desktopGuestBtns');
-                const userBtn = document.getElementById('desktopUserBtn');
-                if (isLoggedIn) {
-                    guestBtns && (guestBtns.style.display = 'none');
-                    userBtn && userBtn.classList.remove('hidden');
-                }
-            }, 1500);
-        });
-    </script>
+<script type="module" src="js/app.js"></script>
 </body>
 </html>
