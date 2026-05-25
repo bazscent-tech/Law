@@ -73,13 +73,11 @@ export function showAuthPrompt(action = '') {
         position: 'fixed', inset: '0', zIndex: '99998',
         background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-        padding: '0 0 24px',
+        padding: '0 0 calc(56px + env(safe-area-inset-bottom, 0px) + 12px)',
     });
     prompt.onclick = e => { if (e.target === prompt) prompt.remove(); };
-
     const msg = action ? `لـ ${action}، يجب` : 'يجب';
     prompt.innerHTML = `
-    <style>@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}</style>
     <div style="background:#111;border:1px solid #2a2a2a;border-radius:20px;padding:28px 24px;width:100%;max-width:440px;margin:0 16px;text-align:center;animation:slideUp .25s ease;">
         <div style="width:52px;height:52px;background:rgba(249,115,22,0.15);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px;">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -100,84 +98,98 @@ export function showAuthPrompt(action = '') {
     document.body.appendChild(prompt);
 }
 
-// ===== SWIPE GESTURE for Drawer =====
+// ===== SWIPE GESTURE — smooth, no layout impact =====
 export function initSwipeGesture(onOpen, onClose) {
-    let startX = 0, startY = 0, isDragging = false, drawerEl = null;
-    const EDGE_THRESHOLD = 30; // px from left edge to trigger open
-    const OPEN_THRESHOLD = 0.35; // 35% of drawer width
-    
-    drawerEl = document.getElementById('mainDrawer');
-    if (!drawerEl) return;
+    const drawer = document.getElementById('mainDrawer');
+    const overlay = document.getElementById('drawerOverlay');
+    if (!drawer) return;
 
-    const drawerW = drawerEl.offsetWidth || 280;
+    let startX = 0, startY = 0;
+    let phase = null; // 'opening' | 'closing' | null
+    let dragging = false;
+    let drawerW = 0;
 
-    document.addEventListener('touchstart', (e) => {
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-        isDragging = false;
+    const EDGE = 28;      // px from left edge to start open swipe
+    const SNAP_DIST = 60; // px drag distance to commit open/close
 
-        // Open: swipe from left edge (first 30px)
-        if (startX < EDGE_THRESHOLD && !drawerEl.classList.contains('open')) {
-            isDragging = 'opening';
+    function getDrawerW() {
+        return drawer.offsetWidth || 290;
+    }
+
+    function setProgress(ratio) {
+        // ratio: 0 = fully closed, 1 = fully open
+        const x = -drawerW * (1 - ratio);
+        drawer.style.transition = 'none';
+        drawer.style.transform = `translateX(${x}px)`;
+        if (overlay) {
+            overlay.style.transition = 'none';
+            overlay.style.opacity = String(ratio * 0.55);
+            overlay.style.visibility = 'visible';
+            overlay.style.pointerEvents = ratio > 0 ? 'auto' : 'none';
         }
-        // Close: drawer is open, swipe starts anywhere
-        if (drawerEl.classList.contains('open')) {
-            isDragging = 'closing';
+    }
+
+    function resetStyles() {
+        drawer.style.transition = '';
+        drawer.style.transform = '';
+        if (overlay) {
+            overlay.style.transition = '';
+            overlay.style.opacity = '';
+            overlay.style.visibility = '';
+            overlay.style.pointerEvents = '';
+        }
+    }
+
+    document.addEventListener('touchstart', e => {
+        const x = e.touches[0].clientX;
+        const y = e.touches[0].clientY;
+        const isOpen = drawer.classList.contains('open');
+        startX = x; startY = y;
+        phase = null; dragging = false;
+        drawerW = getDrawerW();
+
+        if (!isOpen && x < EDGE) {
+            phase = 'opening';
+        } else if (isOpen) {
+            phase = 'closing';
         }
     }, { passive: true });
 
-    document.addEventListener('touchmove', (e) => {
-        if (!isDragging) return;
+    document.addEventListener('touchmove', e => {
+        if (!phase) return;
+
         const dx = e.touches[0].clientX - startX;
-        const dy = e.touches[0].clientY - startY;
-        
-        // If more vertical than horizontal, cancel
-        if (Math.abs(dy) > Math.abs(dx) && Math.abs(dx) < 10) {
-            isDragging = false;
-            return;
+        const dy = Math.abs(e.touches[0].clientY - startY);
+
+        // Cancel if vertical swipe is dominant early on
+        if (!dragging && dy > Math.abs(dx) + 5) {
+            phase = null; return;
         }
 
-        if (isDragging === 'opening') {
-            const progress = Math.min(dx / drawerEl.offsetWidth, 1);
-            if (progress >= 0) {
-                drawerEl.style.transition = 'none';
-                drawerEl.style.transform = `translateX(${-100 + progress * 100}%)`;
-                const overlay = document.getElementById('drawerOverlay');
-                if (overlay) {
-                    overlay.style.transition = 'none';
-                    overlay.style.opacity = progress * 0.6;
-                    overlay.style.visibility = 'visible';
-                }
-            }
-        } else if (isDragging === 'closing') {
-            const progress = Math.max(0, -dx / drawerEl.offsetWidth);
-            if (dx <= 0) {
-                drawerEl.style.transition = 'none';
-                drawerEl.style.transform = `translateX(${-progress * 100}%)`;
-                const overlay = document.getElementById('drawerOverlay');
-                if (overlay) {
-                    overlay.style.transition = 'none';
-                    overlay.style.opacity = (1 - progress) * 0.6;
-                }
-            }
+        dragging = true;
+
+        if (phase === 'opening') {
+            const ratio = Math.max(0, Math.min(1, dx / drawerW));
+            setProgress(ratio);
+        } else if (phase === 'closing') {
+            const ratio = Math.max(0, Math.min(1, 1 + dx / drawerW));
+            setProgress(ratio);
         }
     }, { passive: true });
 
-    document.addEventListener('touchend', (e) => {
-        if (!isDragging) return;
-        const dx = e.changedTouches[0].clientX - startX;
-        
-        // Reset styles
-        drawerEl.style.transition = '';
-        drawerEl.style.transform = '';
-        const overlay = document.getElementById('drawerOverlay');
-        if (overlay) { overlay.style.transition = ''; overlay.style.opacity = ''; }
+    document.addEventListener('touchend', e => {
+        if (!phase || !dragging) { phase = null; dragging = false; return; }
 
-        if (isDragging === 'opening' && dx > 60) {
+        const dx = e.changedTouches[0].clientX - startX;
+        resetStyles();
+
+        if (phase === 'opening' && dx > SNAP_DIST) {
             onOpen();
-        } else if (isDragging === 'closing' && dx < -60) {
+        } else if (phase === 'closing' && dx < -SNAP_DIST) {
             onClose();
         }
-        isDragging = false;
+        // else: snap back (CSS transition handles it from current class state)
+
+        phase = null; dragging = false;
     }, { passive: true });
 }

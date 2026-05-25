@@ -73,7 +73,6 @@ let currentPostImageFile = null;
 let editProfileData = {};
 let viewingUserId = null;
 let lastScrollY = 0;
-let scrollDir = 'up';
 let feedTab = 'latest';
 
 // ===== BOOTSTRAP =====
@@ -81,8 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Init swipe gesture for drawer
     initSwipeGesture(openDrawer, closeDrawer);
     
-    // Init scroll-based header/nav hide
-    initScrollBehavior();
+    
 
     const connected = await initAPI();
     const hasSession = connected ? await tryRestoreSession() : false;
@@ -94,45 +92,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// ===== SCROLL BEHAVIOR (X-like hide header/nav on scroll) =====
-function initScrollBehavior() {
-    let ticking = false;
-    window.addEventListener('scroll', () => {
-        if (!ticking) {
-            requestAnimationFrame(() => {
-                const y = window.scrollY;
-                const dir = y > lastScrollY ? 'down' : 'up';
-                
-                if (dir !== scrollDir && Math.abs(y - lastScrollY) > 10) {
-                    scrollDir = dir;
-                    const header = document.getElementById('mainHeader');
-                    const nav = document.getElementById('bottomNav');
-                    if (dir === 'down' && y > 80) {
-                        header?.classList.add('hide');
-                        nav?.classList.add('hide');
-                    } else {
-                        header?.classList.remove('hide');
-                        nav?.classList.remove('hide');
-                    }
-                }
-                lastScrollY = y;
-                ticking = false;
-            });
-            ticking = true;
-        }
-    }, { passive: true });
-}
 
 // ===== DRAWER =====
 function openDrawer() {
     document.getElementById('mainDrawer')?.classList.add('open');
     document.getElementById('drawerOverlay')?.classList.add('open');
-    document.body.style.overflow = 'hidden';
 }
 function closeDrawer() {
     document.getElementById('mainDrawer')?.classList.remove('open');
     document.getElementById('drawerOverlay')?.classList.remove('open');
-    document.body.style.overflow = '';
 }
 
 // ===== NAVIGATION =====
