@@ -32,6 +32,8 @@ window.__app = {
     showToast,
 };
 window.showToast = showToast;
+window.navigateTo = navigateTo;
+window.showAuthPrompt = showAuthPrompt;
 
 // ===== GLOBAL PAGE FUNCTIONS =====
 window.openDrawer = openDrawer;
@@ -72,9 +74,23 @@ window.deletePost = deletePost;
 let currentPostImageFile = null;
 let editProfileData = {};
 let viewingUserId = null;
-let lastScrollY = 0;
 let feedTab = 'latest';
 
+
+  function showFeedSkeleton(containerId = 'feedList') {
+      const c = document.getElementById(containerId);
+      if (!c) return;
+      c.innerHTML = Array(5).fill('').map(() => `
+      <div style="display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid #1f1f1f;">
+          <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(90deg,#1a1a1a 25%,#252525 50%,#1a1a1a 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;flex-shrink:0;"></div>
+          <div style="flex:1;">
+              <div style="height:14px;width:55%;border-radius:6px;background:linear-gradient(90deg,#1a1a1a 25%,#252525 50%,#1a1a1a 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;margin-bottom:10px;"></div>
+              <div style="height:12px;width:100%;border-radius:6px;background:linear-gradient(90deg,#1a1a1a 25%,#252525 50%,#1a1a1a 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;margin-bottom:8px;"></div>
+              <div style="height:12px;width:80%;border-radius:6px;background:linear-gradient(90deg,#1a1a1a 25%,#252525 50%,#1a1a1a 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;"></div>
+          </div>
+      </div>`).join('');
+  }
+  
 // ===== BOOTSTRAP =====
 document.addEventListener('DOMContentLoaded', async () => {
     // Init swipe gesture for drawer
@@ -236,12 +252,14 @@ function updateAllProfileUI(profile) {
 
 // ===== FEED =====
 async function loadGuestFeed() {
+      showFeedSkeleton('feedList');
     const { data } = await Posts.getPopular(20);
     store.set('posts', data || []);
     renderFeed(true);
 }
 
 async function loadFeedPosts() {
+      showFeedSkeleton('feedList');
     const { data } = feedTab === 'latest'
         ? await Posts.getAll(50)
         : await Posts.getPopular(50);
@@ -971,6 +989,7 @@ async function renderFollowing() {
 
 // ===== SEARCH =====
 let searchTimer = null;
+let _lastQuery = '';
 function handleSearch(query) {
     const clearBtn = document.getElementById('searchClear');
     if (clearBtn) clearBtn.style.display = query ? 'flex' : 'none';

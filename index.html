@@ -9,13 +9,16 @@
     <title>Lawbook</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/styles.css">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>tailwind.config={corePlugins:{preflight:false}}</script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://code.iconify.design/3/3.1.0/iconify.min.js" defer></script>
-</head>
+  <meta name="theme-color" content="#0a0a0a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Lawbook">
+  </head>
 <body>
 
 <!-- Toast -->
@@ -517,7 +520,7 @@
 <!-- ============================================================ -->
 <!-- POST MODAL                                                   -->
 <!-- ============================================================ -->
-<div id="postModal" class="lb-modal-overlay" onclick="if(e.target===this)closePostModal()">
+<div id="postModal" class="lb-modal-overlay" onclick="if(event.target===this)closePostModal()">
     <div class="lb-modal-sheet" id="postModalSheet" onclick="event.stopPropagation()">
         <div class="post-modal-header">
             <button class="icon-btn" onclick="closePostModal()">
