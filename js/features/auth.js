@@ -185,7 +185,7 @@ function signupFormHTML() {
         <label style="display:block;color:#a3a3a3;font-size:12px;font-weight:600;margin-bottom:6px;font-family:'Noto Kufi Arabic',sans-serif;">رقم الهاتف اليمني</label>
         <div style="position:relative;display:flex;align-items:center;background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:12px;overflow:hidden;transition:border-color 0.2s;" id="phoneWrapper">
             <span style="padding:13px 12px;color:#a3a3a3;font-size:13px;font-family:monospace;border-left:1px solid #2a2a2a;white-space:nowrap;background:#141414;">🇾🇪 +967</span>
-            <input type="tel" id="authPhone" placeholder="771234567" dir="ltr" maxlength="9"
+            <input type="tel" id="authPhone" placeholder="777123456" dir="ltr" maxlength="9" pattern="[0-9]{9}"
                 style="flex:1;background:transparent;border:none;padding:13px 12px;color:white;font-size:14px;outline:none;font-family:monospace;letter-spacing:0.5px;"
                 onfocus="document.getElementById('phoneWrapper').style.borderColor='#f97316'"
                 onblur="document.getElementById('phoneWrapper').style.borderColor='#2a2a2a'"
@@ -290,13 +290,13 @@ export function autoFillUsername(name) {
 export async function handleLogin() {
     const email = document.getElementById('authEmail')?.value?.trim();
     const password = document.getElementById('authPassword')?.value;
-    if (!email) { showAuthAlert('أدخل البريد الإلكتروني', 'error'); return; }
+    if (!emailOrPhone) { showAuthAlert('أدخل البريد الإلكتروني أو رقم الهاتف', 'error'); return; }
     if (!password) { showAuthAlert('أدخل كلمة المرور', 'error'); return; }
 
     const btn = document.getElementById('authSubmitBtn');
     setLoading(btn, true, 'جاري تسجيل الدخول...');
 
-    const { data, error } = await Auth.signIn(email, password);
+    const { data, error } = await Auth.signIn(emailOrPhone, password);
     if (error) { showAuthAlert(error, 'error'); setLoading(btn, false, 'تسجيل الدخول'); return; }
 
     showAuthAlert('تم تسجيل الدخول ✓', 'success');

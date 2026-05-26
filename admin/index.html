@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+  <html lang="ar" dir="rtl">
+  <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>لوحة تحكم Lawbook</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--bg:#000;--bg2:#0d0d0d;--bg3:#111;--bg4:#1a1a1a;--border:#2a2a2a;--text:#e7e7e7;--text2:#a3a3a3;--accent:#f97316;--accent2:#ea580c;--red:#ef4444;--green:#22c55e;--yellow:#eab308;--blue:#3b82f6;--font:'IBM Plex Sans Arabic',sans-serif}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;line-height:1.5}
+
+  /* ===== AUTH SCREEN ===== */
+  #authScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px}
+  .auth-card{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:32px 28px;width:100%;max-width:400px;box-shadow:0 24px 80px rgba(0,0,0,0.6)}
+  .auth-logo{text-align:center;margin-bottom:28px}
+  .auth-logo-icon{width:64px;height:64px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:16px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 8px 24px rgba(249,115,22,0.3)}
+  .auth-title{font-size:22px;font-weight:800;margin-bottom:4px}
+  .auth-title span{color:var(--accent)}
+  .auth-sub{color:var(--text2);font-size:13px}
+  .auth-badge{display:inline-block;background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;margin-bottom:20px}
+  .field{margin-bottom:16px}
+  .field label{display:block;color:var(--text2);font-size:12px;font-weight:600;margin-bottom:6px}
+  .field input{width:100%;background:var(--bg4);border:1.5px solid var(--border);border-radius:12px;padding:13px 16px;color:var(--text);font-size:14px;outline:none;font-family:var(--font);transition:border-color .2s}
+  .field input:focus{border-color:var(--accent)}
+  .auth-btn{width:100%;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:700;font-size:15px;padding:14px;border:none;border-radius:14px;cursor:pointer;font-family:var(--font);transition:opacity .15s}
+  .auth-btn:hover{opacity:.9}
+  .auth-btn:active{opacity:.8}
+  .auth-alert{padding:11px 14px;border-radius:10px;font-size:13px;margin-bottom:14px;display:none}
+  .auth-alert.error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#fca5a5}
+
+  /* ===== MAIN LAYOUT ===== */
+  #adminApp{display:none}
+  .admin-header{position:fixed;top:0;left:0;right:0;height:56px;background:rgba(0,0,0,0.95);border-bottom:1px solid var(--border);backdrop-filter:blur(20px);display:flex;align-items:center;padding:0 20px;gap:12px;z-index:100}
+  .admin-header-logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px}
+  .admin-header-logo .dot{color:var(--accent)}
+  .admin-badge{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700}
+  .admin-header-right{margin-right:auto;display:flex;align-items:center;gap:10px}
+  .admin-signout{background:var(--bg4);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:var(--font)}
+  .admin-body{padding-top:56px;max-width:1200px;margin:0 auto;padding-right:20px;padding-left:20px}
+  .section-title{font-size:18px;font-weight:700;margin:24px 0 16px;display:flex;align-items:center;gap:8px}
+
+  /* ===== STATS ===== */
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px}
+  .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:default}
+  .stat-num{font-size:32px;font-weight:800;margin-bottom:4px}
+  .stat-label{color:var(--text2);font-size:12px;font-weight:500}
+  .stat-card.accent .stat-num{color:var(--accent)}
+  .stat-card.red .stat-num{color:var(--red)}
+  .stat-card.green .stat-num{color:var(--green)}
+  .stat-card.blue .stat-num{color:var(--blue)}
+
+  /* ===== SEARCH + FILTERS ===== */
+  .toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .search-input{flex:1;min-width:200px;background:var(--bg4);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;outline:none;font-family:var(--font)}
+  .search-input:focus{border-color:var(--accent)}
+  .filter-btn{background:var(--bg4);border:1px solid var(--border);color:var(--text2);border-radius:10px;padding:10px 14px;font-size:13px;cursor:pointer;font-family:var(--font)}
+  .filter-btn.active{background:rgba(249,115,22,0.15);border-color:var(--accent);color:var(--accent)}
+
+  /* ===== USERS TABLE ===== */
+  .users-table{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+  .table-header{display:grid;grid-template-columns:2fr 1.5fr 1.5fr 1fr 1fr 140px;gap:12px;padding:12px 16px;background:var(--bg3);color:var(--text2);font-size:12px;font-weight:600;border-bottom:1px solid var(--border)}
+  .user-row{display:grid;grid-template-columns:2fr 1.5fr 1.5fr 1fr 1fr 140px;gap:12px;padding:13px 16px;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;transition:background .1s}
+  .user-row:hover{background:rgba(255,255,255,0.02)}
+  .user-row:last-child{border-bottom:none}
+  .user-info{display:flex;align-items:center;gap:10px}
+  .user-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;background:var(--bg4);flex-shrink:0}
+  .user-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .user-handle{color:var(--text2);font-size:12px}
+  .user-email{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:ltr}
+  .user-phone{font-size:12px;color:var(--text2);direction:ltr}
+  .user-date{font-size:11px;color:var(--text2)}
+  .status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600}
+  .status-badge.active{background:rgba(34,197,94,0.1);color:var(--green)}
+  .status-badge.banned{background:rgba(239,68,68,0.1);color:var(--red)}
+  .status-badge.suspended{background:rgba(234,179,8,0.1);color:var(--yellow)}
+  .actions-cell{display:flex;gap:4px;flex-wrap:wrap}
+  .action-btn{padding:4px 8px;border-radius:7px;border:1px solid;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);transition:opacity .1s}
+  .action-btn:hover{opacity:.8}
+  .action-btn.ban-btn{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:var(--red)}
+  .action-btn.unban-btn{background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.3);color:var(--green)}
+  .action-btn.delete-btn{background:rgba(239,68,68,0.05);border-color:rgba(239,68,68,0.2);color:#f87171}
+  .action-btn.edit-btn{background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.3);color:var(--blue)}
+
+  /* ===== ACTIVITY LOG ===== */
+  .activity-list{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+  .activity-item{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;gap:12px;align-items:flex-start}
+  .activity-item:last-child{border-bottom:none}
+  .activity-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+  .activity-icon.ban{background:rgba(239,68,68,0.1)}
+  .activity-icon.unban{background:rgba(34,197,94,0.1)}
+  .activity-icon.delete{background:rgba(239,68,68,0.15)}
+  .activity-text{font-size:13px;flex:1}
+  .activity-time{color:var(--text2);font-size:11px;margin-top:2px}
+
+  /* ===== MODAL ===== */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+  .modal-overlay.open{display:flex}
+  .modal-card{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:24px;width:100%;max-width:400px}
+  .modal-title{font-size:16px;font-weight:700;margin-bottom:16px}
+  .modal-btn{width:100%;padding:12px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);margin-top:8px}
+  .modal-btn.danger{background:var(--red);color:#fff}
+  .modal-btn.cancel{background:var(--bg4);color:var(--text);border:1px solid var(--border)}
+
+  /* ===== CHANGE PASSWORD SECTION ===== */
+  .change-pw-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px;max-width:400px}
+
+  /* ===== LOADING ===== */
+  .loading-row{padding:32px;text-align:center;color:var(--text2);font-size:14px}
+  .spinner{width:24px;height:24px;border:2px solid var(--border);border-top:2px solid var(--accent);border-radius:50%;animation:spin .8s linear infinite;display:inline-block;margin-left:8px;vertical-align:middle}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ===== EMPTY ===== */
+  .empty-state{padding:48px 20px;text-align:center;color:var(--text2)}
+
+  /* ===== TABS ===== */
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:20px}
+  .tab{padding:10px 16px;font-size:14px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:var(--text2);transition:color .15s,border-color .15s;background:none;border-left:none;border-right:none;border-top:none;font-family:var(--font)}
+  .tab.active{color:var(--text);border-bottom-color:var(--accent)}
+
+  @media(max-width:768px){
+    .table-header,.user-row{grid-template-columns:1fr 1fr;gap:8px}
+    .table-header .col-email,.table-header .col-phone,.table-header .col-date,
+    .user-row .user-email,.user-row .user-phone,.user-row .user-date{display:none}
+    .admin-body{padding-right:12px;padding-left:12px}
+  }
+  </style>
+  </head>
+  <body>
+
+  <!-- Auth Screen -->
+  <div id="authScreen">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <div class="auth-logo-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
+            <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
+            <path d="M7 21h10"/><path d="M12 3v18"/>
+            <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>
+          </svg>
+        </div>
+        <div class="auth-title">Law<span>book</span></div>
+        <div class="auth-sub">لوحة التحكم</div>
+      </div>
+      <div class="auth-badge">🔐 منطقة مقيّدة — أدمن فقط</div>
+      <div class="auth-alert error" id="loginAlert"></div>
+      <div class="field">
+        <label>اسم المستخدم</label>
+        <input type="text" id="adminUser" placeholder="Lawbook" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('adminPass').focus()">
+      </div>
+      <div class="field">
+        <label>كلمة المرور</label>
+        <input type="password" id="adminPass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="auth-btn" id="loginBtn" onclick="doLogin()">دخول لوحة التحكم</button>
+    </div>
+  </div>
+
+  <!-- Admin App -->
+  <div id="adminApp">
+    <header class="admin-header">
+      <div class="admin-header-logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
+          <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
+          <path d="M7 21h10"/><path d="M12 3v18"/>
+          <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>
+        </svg>
+        Law<span class="dot">book</span>
+        <span class="admin-badge">ADMIN</span>
+      </div>
+      <div class="admin-header-right">
+        <span id="adminName" style="font-size:13px;color:#a3a3a3"></span>
+        <button class="admin-signout" onclick="doSignout()">خروج</button>
+      </div>
+    </header>
+
+    <div class="admin-body">
+      <!-- Stats -->
+      <div class="section-title">📊 إحصائيات سريعة</div>
+      <div class="stats-grid">
+        <div class="stat-card accent"><div class="stat-num" id="statTotal">—</div><div class="stat-label">إجمالي المستخدمين</div></div>
+        <div class="stat-card green"><div class="stat-num" id="statActive">—</div><div class="stat-label">مستخدمون نشطون</div></div>
+        <div class="stat-card red"><div class="stat-num" id="statBanned">—</div><div class="stat-label">محظورون</div></div>
+        <div class="stat-card blue"><div class="stat-num" id="statToday">—</div><div class="stat-label">انضموا اليوم</div></div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('users',this)">👥 المستخدمون</button>
+        <button class="tab" onclick="switchTab('activity',this)">📋 سجل النشاطات</button>
+        <button class="tab" onclick="switchTab('settings',this)">⚙️ الإعدادات</button>
+      </div>
+
+      <!-- Users Tab -->
+      <div id="tabUsers">
+        <div class="toolbar">
+          <input type="text" class="search-input" id="searchInput" placeholder="🔍 ابحث بالاسم أو المعرف أو الهاتف..." oninput="filterUsers(this.value)">
+          <button class="filter-btn active" id="filterAll" onclick="setFilter('all',this)">الكل</button>
+          <button class="filter-btn" id="filterActive" onclick="setFilter('active',this)">نشط</button>
+          <button class="filter-btn" id="filterBanned" onclick="setFilter('banned',this)">محظور</button>
+        </div>
+        <div class="users-table">
+          <div class="table-header">
+            <div>المستخدم</div>
+            <div class="col-email">البريد الإلكتروني</div>
+            <div class="col-phone">رقم الهاتف</div>
+            <div class="col-date">تاريخ الانضمام</div>
+            <div>الحالة</div>
+            <div>الإجراءات</div>
+          </div>
+          <div id="usersList"><div class="loading-row"><span class="spinner"></span> جاري تحميل المستخدمين...</div></div>
+        </div>
+      </div>
+
+      <!-- Activity Tab -->
+      <div id="tabActivity" style="display:none">
+        <div class="activity-list" id="activityList">
+          <div class="loading-row">لا توجد نشاطات مسجّلة بعد</div>
+        </div>
+      </div>
+
+      <!-- Settings Tab -->
+      <div id="tabSettings" style="display:none">
+        <div class="section-title">🔑 تغيير كلمة مرور الأدمن</div>
+        <div class="change-pw-card">
+          <div class="field"><label>كلمة المرور الحالية</label><input type="password" id="pwCurrent" placeholder="••••••••"></div>
+          <div class="field"><label>كلمة المرور الجديدة</label><input type="password" id="pwNew" placeholder="6 أحرف على الأقل"></div>
+          <div class="field"><label>تأكيد كلمة المرور الجديدة</label><input type="password" id="pwConfirm" placeholder="••••••••"></div>
+          <button class="auth-btn" onclick="changeAdminPassword()">حفظ كلمة المرور الجديدة</button>
+          <div id="pwAlert" style="margin-top:10px;font-size:13px;display:none"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal-card">
+      <div class="modal-title" id="confirmTitle">تأكيد الإجراء</div>
+      <div id="confirmBody" style="color:#a3a3a3;font-size:13px;margin-bottom:8px"></div>
+      <button class="modal-btn danger" id="confirmYes">تأكيد</button>
+      <button class="modal-btn cancel" onclick="closeModal()">إلغاء</button>
+    </div>
+  </div>
+
+  <script>
+  // ===== CONFIG =====
+  const SB_URL = 'https://wxokmokxehssnchtmjke.supabase.co';
+  const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4b2ttb2t4ZWhzc25jaHRtamtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMTg4MjQsImV4cCI6MjA5Mzg5NDgyNH0.6RRUCXnX7IdExnirAr4Uz3Y-PmJbMMB00JVDr1BbDkU';
+  const SB_SERVICE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4b2ttb2t4ZWhzc25jaHRtamtlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODMxODgyNCwiZXhwIjoyMDkzODk0ODI0fQ.AN5SkazpJVm4R-6Pdh2ZqvzqhNIM-Mu2XHCbrCmqs3g';
+  const ADMIN_USER = 'Lawbook';
+  let ADMIN_PASS = '777492635'; // changeable
+  let isLoggedIn = false;
+  let allUsers = [];
+  let currentFilter = 'all';
+  let activityLog = JSON.parse(localStorage.getItem('lb_admin_log') || '[]');
+
+  // ===== SB HELPER =====
+  async function sbFetch(path, opts = {}) {
+    const res = await fetch(SB_URL + path, {
+      headers: { 'apikey': SB_SERVICE, 'Authorization': 'Bearer ' + SB_SERVICE, 'Content-Type': 'application/json', ...opts.headers },
+      ...opts
+    });
+    return res.json();
+  }
+
+  async function sbPatch(path, body) {
+    return sbFetch(path, { method: 'PATCH', body: JSON.stringify(body) });
+  }
+
+  async function sbDelete(path) {
+    return fetch(SB_URL + path, { method: 'DELETE', headers: { 'apikey': SB_SERVICE, 'Authorization': 'Bearer ' + SB_SERVICE } });
+  }
+
+  // ===== AUTH =====
+  function doLogin() {
+    const u = document.getElementById('adminUser').value.trim();
+    const p = document.getElementById('adminPass').value;
+    const alert = document.getElementById('loginAlert');
+    const btn = document.getElementById('loginBtn');
+    
+    if (u !== ADMIN_USER) { showLoginAlert('اسم المستخدم غير صحيح'); return; }
+    if (p !== ADMIN_PASS) { showLoginAlert('كلمة المرور غير صحيحة'); return; }
+    
+    btn.textContent = 'جاري الدخول...';
+    btn.disabled = true;
+    
+    setTimeout(() => {
+      isLoggedIn = true;
+      document.getElementById('authScreen').style.display = 'none';
+      document.getElementById('adminApp').style.display = 'block';
+      document.getElementById('adminName').textContent = 'مرحباً، ' + ADMIN_USER;
+      loadUsers();
+    }, 400);
+  }
+
+  function doSignout() {
+    if (!confirm('تأكيد تسجيل الخروج؟')) return;
+    isLoggedIn = false;
+    document.getElementById('authScreen').style.display = 'flex';
+    document.getElementById('adminApp').style.display = 'none';
+    document.getElementById('adminPass').value = '';
+  }
+
+  function showLoginAlert(msg) {
+    const el = document.getElementById('loginAlert');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  // ===== TABS =====
+  function switchTab(name, btn) {
+    ['Users','Activity','Settings'].forEach(t => { document.getElementById('tab'+t).style.display = 'none'; });
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1)).style.display = 'block';
+    btn.classList.add('active');
+    if (name === 'activity') renderActivity();
+  }
+
+  // ===== LOAD USERS =====
+  async function loadUsers() {
+    document.getElementById('usersList').innerHTML = '<div class="loading-row"><span class="spinner"></span> جاري تحميل المستخدمين...</div>';
+    try {
+      // Get profiles from DB
+      const profiles = await sbFetch('/rest/v1/profiles?select=*&order=created_at.desc&limit=500');
+      
+      if (!Array.isArray(profiles)) {
+        document.getElementById('usersList').innerHTML = '<div class="loading-row">تعذّر تحميل المستخدمين — تحقق من الاتصال</div>';
+        return;
+      }
+      
+      allUsers = profiles;
+      updateStats();
+      renderUsers(allUsers);
+    } catch(e) {
+      document.getElementById('usersList').innerHTML = '<div class="loading-row">خطأ: ' + e.message + '</div>';
+    }
+  }
+
+  function updateStats() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('statTotal').textContent = allUsers.length;
+    document.getElementById('statActive').textContent = allUsers.filter(u => !u.is_banned && !u.is_suspended).length;
+    document.getElementById('statBanned').textContent = allUsers.filter(u => u.is_banned).length;
+    document.getElementById('statToday').textContent = allUsers.filter(u => u.created_at?.startsWith(today)).length;
+  }
+
+  function renderUsers(users) {
+    if (!users.length) {
+      document.getElementById('usersList').innerHTML = '<div class="empty-state">لا يوجد مستخدمون</div>';
+      return;
+    }
+    document.getElementById('usersList').innerHTML = users.map(u => {
+      const status = u.is_banned ? 'banned' : (u.is_suspended ? 'suspended' : 'active');
+      const statusLabel = u.is_banned ? '🚫 محظور' : (u.is_suspended ? '⏸ موقوف' : '✅ نشط');
+      const date = u.created_at ? new Date(u.created_at).toLocaleDateString('ar-YE', {day:'numeric',month:'short',year:'2-digit'}) : '—';
+      const avatar = u.avatar_url || ('https://api.dicebear.com/7.x/shapes/svg?seed=' + (u.username||'x') + '&backgroundColor=1a1a1a');
+      const role = u.role || 'user';
+      const isSelf = u.username === 'lawbook' || u.username === 'Lawbook';
+      return `
+      <div class="user-row" id="row_${u.id}">
+        <div class="user-info">
+          <img class="user-avatar" src="${avatar}" alt="" onerror="this.src='https://api.dicebear.com/7.x/shapes/svg?seed=x'">
+          <div>
+            <div class="user-name">${escHtml(u.display_name||u.username||'—')}</div>
+            <div class="user-handle">@${escHtml(u.username||'—')} ${role==='admin'?'<span style="color:#f97316;font-size:10px">أدمن</span>':''}</div>
+          </div>
+        </div>
+        <div class="user-email col-email">${escHtml(u.email||'—')}</div>
+        <div class="user-phone col-phone">${escHtml(u.phone||'—')}</div>
+        <div class="user-date col-date">${date}</div>
+        <div><span class="status-badge ${status}">${statusLabel}</span></div>
+        <div class="actions-cell">
+          ${!isSelf ? (u.is_banned
+            ? `<button class="action-btn unban-btn" onclick="unbanUser('${u.id}','${escHtml(u.username||'')}')">رفع الحظر</button>`
+            : `<button class="action-btn ban-btn" onclick="banUser('${u.id}','${escHtml(u.username||'')}')">حظر</button>`
+          ) : ''}
+          ${!isSelf ? `<button class="action-btn delete-btn" onclick="deleteUser('${u.id}','${escHtml(u.username||'')}')">حذف</button>` : ''}
+          <button class="action-btn edit-btn" onclick="editRole('${u.id}','${escHtml(u.username||'')}','${role}')">دور</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function filterUsers(q) {
+    const query = q.toLowerCase().trim();
+    let filtered = currentFilter === 'all' ? allUsers :
+      currentFilter === 'banned' ? allUsers.filter(u => u.is_banned) :
+      allUsers.filter(u => !u.is_banned && !u.is_suspended);
+    if (query) filtered = filtered.filter(u =>
+      (u.display_name||'').toLowerCase().includes(query) ||
+      (u.username||'').toLowerCase().includes(query) ||
+      (u.phone||'').includes(query) ||
+      (u.email||'').toLowerCase().includes(query)
+    );
+    renderUsers(filtered);
+  }
+
+  function setFilter(f, btn) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filterUsers(document.getElementById('searchInput').value);
+  }
+
+  // ===== ACTIONS =====
+  async function banUser(id, username) {
+    if (!confirm('حظر @' + username + '؟ سيُمنع من تسجيل الدخول.')) return;
+    await sbPatch('/rest/v1/profiles?id=eq.' + id, { is_banned: true, banned_at: new Date().toISOString() });
+    logActivity('ban', '🚫 تم حظر @' + username);
+    await loadUsers();
+    showToast('تم حظر @' + username);
+  }
+
+  async function unbanUser(id, username) {
+    if (!confirm('رفع الحظر عن @' + username + '؟')) return;
+    await sbPatch('/rest/v1/profiles?id=eq.' + id, { is_banned: false, banned_at: null });
+    logActivity('unban', '✅ تم رفع الحظر عن @' + username);
+    await loadUsers();
+    showToast('تم رفع الحظر عن @' + username);
+  }
+
+  async function deleteUser(id, username) {
+    if (!confirm('⚠️ حذف @' + username + ' نهائياً؟\nسيتم حذف جميع بياناته ومنشوراته.')) return;
+    // Delete profile first
+    await sbDelete('/rest/v1/profiles?id=eq.' + id);
+    // Delete from auth via admin API
+    try {
+      await fetch(SB_URL + '/auth/v1/admin/users/' + id, {
+        method: 'DELETE',
+        headers: { 'apikey': SB_SERVICE, 'Authorization': 'Bearer ' + SB_SERVICE }
+      });
+    } catch(e) {}
+    logActivity('delete', '🗑 تم حذف @' + username);
+    allUsers = allUsers.filter(u => u.id !== id);
+    updateStats();
+    renderUsers(allUsers);
+    showToast('تم حذف @' + username + ' نهائياً');
+  }
+
+  async function editRole(id, username, currentRole) {
+    const newRole = prompt('دور @' + username + ':\n(user / admin / moderator)\nالحالي: ' + currentRole);
+    if (!newRole || newRole === currentRole) return;
+    await sbPatch('/rest/v1/profiles?id=eq.' + id, { role: newRole });
+    logActivity('edit', '✏️ تغيير دور @' + username + ' إلى ' + newRole);
+    await loadUsers();
+    showToast('تم تحديث دور @' + username);
+  }
+
+  // ===== ACTIVITY LOG =====
+  function logActivity(type, text) {
+    activityLog.unshift({ type, text, time: new Date().toISOString() });
+    if (activityLog.length > 100) activityLog = activityLog.slice(0, 100);
+    localStorage.setItem('lb_admin_log', JSON.stringify(activityLog));
+  }
+
+  function renderActivity() {
+    const el = document.getElementById('activityList');
+    if (!activityLog.length) { el.innerHTML = '<div class="loading-row">لا توجد نشاطات مسجّلة</div>'; return; }
+    el.innerHTML = activityLog.map(a => {
+      const time = new Date(a.time).toLocaleString('ar-YE', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+      return `<div class="activity-item">
+        <div class="activity-icon ${a.type}">${a.text.charAt(0)}</div>
+        <div><div class="activity-text">${escHtml(a.text)}</div><div class="activity-time">${time}</div></div>
+      </div>`;
+    }).join('');
+  }
+
+  // ===== CHANGE PASSWORD =====
+  function changeAdminPassword() {
+    const current = document.getElementById('pwCurrent').value;
+    const newPw = document.getElementById('pwNew').value;
+    const confirm2 = document.getElementById('pwConfirm').value;
+    const alert = document.getElementById('pwAlert');
+    
+    if (current !== ADMIN_PASS) { showPwAlert('كلمة المرور الحالية غير صحيحة', 'error'); return; }
+    if (newPw.length < 6) { showPwAlert('كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل', 'error'); return; }
+    if (newPw !== confirm2) { showPwAlert('كلمات المرور الجديدة غير متطابقة', 'error'); return; }
+    
+    ADMIN_PASS = newPw;
+    // Store encrypted in localStorage (simple base64 for MVP)
+    localStorage.setItem('lb_admin_pw', btoa(newPw));
+    showPwAlert('✅ تم تغيير كلمة المرور بنجاح', 'success');
+    document.getElementById('pwCurrent').value = '';
+    document.getElementById('pwNew').value = '';
+    document.getElementById('pwConfirm').value = '';
+  }
+
+  function showPwAlert(msg, type) {
+    const el = document.getElementById('pwAlert');
+    el.textContent = msg;
+    el.style.display = 'block';
+    el.style.color = type === 'success' ? '#22c55e' : '#f87171';
+  }
+
+  // ===== MODAL =====
+  function closeModal() { document.getElementById('confirmModal').classList.remove('open'); }
+
+  // ===== TOAST =====
+  function showToast(msg) {
+    let t = document.getElementById('adminToast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'adminToast';
+      t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;border:1px solid #2a2a2a;color:#e7e7e7;padding:10px 20px;border-radius:10px;font-size:13px;z-index:999;transition:opacity .3s;font-family:var(--font)';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = '1';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2500);
+  }
+
+  // ===== HELPERS =====
+  function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  // Load saved admin password
+  const savedPw = localStorage.getItem('lb_admin_pw');
+  if (savedPw) { try { ADMIN_PASS = atob(savedPw); } catch(e){} }
+  </script>
+  </body>
+  </html>

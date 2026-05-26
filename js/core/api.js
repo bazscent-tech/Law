@@ -58,14 +58,35 @@ export const Auth = {
         return null;
     },
 
-    async signIn(email, password) {
-        if (!sb) return { error: 'الخدمة غير متاحة حالياً' };
-        const { data, error } = await sb.auth.signInWithPassword({ email, password });
-        if (error) return { error: translateError(error.message) };
-        store.set('user', data.user);
-        store.set('isLoggedIn', true);
-        return { data };
-    },
+    async signIn(emailOrPhone, password) {
+          if (!sb) {
+              try {
+                  sb = supabase.createClient(SB_URL, SB_ANON, { auth: { persistSession: true, storageKey: 'lb_session' } });
+              } catch(e) { return { error: 'الخدمة غير متاحة — تحقق من الاتصال بالإنترنت' }; }
+          }
+          let email = (emailOrPhone || '').trim();
+          // Detect phone number: all digits or starts with 7/+967
+          const cleaned = email.replace(/[^0-9]/g, '');
+          if (/^[0-9]/.test(email) && cleaned.length >= 9) {
+              const phoneVariants = [
+                  '+967' + cleaned.replace(/^967/, '').replace(/^0/, ''),
+                  cleaned.slice(-9)
+              ];
+              let found = false;
+              for (const pv of phoneVariants) {
+                  const { data: pr } = await sb.from('profiles').select('email').or(`phone.eq.${pv},phone.ilike.%${cleaned.slice(-9)}%`).limit(1);
+                  if (pr && pr[0]?.email) { email = pr[0].email; found = true; break; }
+              }
+              if (!found) return { error: 'رقم الهاتف أو كلمة المرور غير صحيحة' };
+          }
+          const { data, error } = await sb.auth.signInWithPassword({ email, password });
+          if (error) return { error: translateError(error.message) };
+          const profile = store.get('profile');
+          if (profile?.is_banned) { await sb.auth.signOut(); return { error: 'هذا الحساب محظور من المنصة' }; }
+          store.set('user', data.user);
+          store.set('isLoggedIn', true);
+          return { data };
+      },
 
     async signUp(email, password, name, username, phone) {
         if (!sb) return { error: 'الخدمة غير متاحة حالياً' };
@@ -110,7 +131,7 @@ export const Auth = {
     },
 
     async checkUsernameAvailable(username) {
-        if (!sb || !username) return false;
+        if (!sb || !username) return true; // assume available when offline
         try {
             const { data } = await sb.from('profiles').select('username').eq('username', username.toLowerCase()).maybeSingle();
             return !data;
@@ -151,7 +172,14 @@ export const Profiles = {
         return { data, error };
     },
 
-    async search(query) {
+    async getByPhone(phone) {
+          if (!sb) return { data: null };
+          const clean = phone.replace(/\D/g, '').replace(/^967/, '');
+          const { data, error } = await sb.from('profiles').select('*,email').ilike('phone', `%${clean.slice(-9)}`).limit(1);
+          return { data: data?.[0] || null, error };
+      },
+
+      async search(query) {
         if (!sb) return { data: [] };
         const { data } = await sb.from('profiles')
             .select('*').or(`name.ilike.%${query}%,username.ilike.%${query}%`).limit(15);
@@ -293,17 +321,19 @@ function generateUsername(name) {
 }
 
 function translateError(msg) {
-    const map = {
-        'Invalid login credentials': 'البريد أو كلمة المرور غير صحيحة',
-        'User already registered': 'هذا البريد الإلكتروني مسجل بالفعل',
-        'Email not confirmed': 'يرجى تأكيد البريد الإلكتروني',
-        'Password should be at least 6 characters': 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
-        'Unable to validate email address': 'البريد الإلكتروني غير صالح',
-        'signup is disabled': 'التسجيل معطل حالياً',
-        'Email rate limit exceeded': 'حاول مرة أخرى لاحقاً',
-    };
-    for (const [en, ar] of Object.entries(map)) if (msg.includes(en)) return ar;
-    return msg;
-}
+      if (!msg) return 'حدث خطأ غير متوقع';
+      const m = msg.toLowerCase();
+      if (m.includes('invalid login')) return 'رقم الهاتف أو البريد أو كلمة المرور غير صحيحة';
+      if (m.includes('user already registered')) return 'هذا البريد الإلكتروني مسجل بالفعل';
+      if (m.includes('email not confirmed')) return 'تم الإنشاء — تحقق من بريدك الإلكتروني لتفعيل الحساب';
+      if (m.includes('password should be')) return 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+      if (m.includes('unable to validate email')) return 'صيغة البريد الإلكتروني غير صحيحة';
+      if (m.includes('signup is disabled')) return 'التسجيل معطل مؤقتاً';
+      if (m.includes('rate limit')) return 'حاول مرة أخرى بعد دقيقة';
+      if (m.includes('fetch') || m.includes('network')) return 'تعذر الاتصال — تحقق من الإنترنت';
+      if (m.includes('banned')) return 'هذا الحساب محظور من المنصة';
+      if (m.includes('database error')) return 'خطأ مؤقت — حاول مرة أخرى';
+      return msg;
+  }
 
 export function isConnected() { return store.get('isOnline') && !!sb; }
