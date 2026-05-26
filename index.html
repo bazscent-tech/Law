@@ -10,7 +10,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/base.css?v=3">
+    <link rel="stylesheet" href="assets/css/layout.css?v=3">
+    <link rel="stylesheet" href="assets/css/components.css?v=3">
+    <link rel="stylesheet" href="assets/css/pages.css?v=3">
+    <link rel="stylesheet" href="assets/css/stories.css?v=3">
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://code.iconify.design/3/3.1.0/iconify.min.js" defer></script>
   <meta name="theme-color" content="#0a0a0a">
@@ -27,10 +31,10 @@
 <!-- ============================================================ -->
 <!-- DRAWER OVERLAY — completely separate from page layout       -->
 <!-- ============================================================ -->
-<div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer()"></div>
+<div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer()" style="opacity:0;visibility:hidden;pointer-events:none;position:fixed;inset:0;z-index:900;"></div>
 
 <!-- DRAWER — position:fixed, NEVER affects page layout -->
-<aside id="mainDrawer" class="main-drawer" role="navigation" aria-label="القائمة الرئيسية">
+<aside id="mainDrawer" class="main-drawer" role="navigation" aria-label="القائمة الرئيسية" style="position:fixed;top:0;bottom:0;left:0;width:min(80vw,290px);transform:translateX(-100%);z-index:901;">
     <!-- Drawer Header -->
     <div class="drawer-header">
         <!-- Guest state -->
@@ -49,7 +53,7 @@
         </div>
         <!-- Logged-in state -->
         <div id="drawerUser" class="drawer-user" style="display:none">
-            <div class="drawer-user-top" onclick="closeDrawer(); window.__app.navigate('profile')" style="cursor:pointer">
+            <div class="drawer-user-top" onclick="closeDrawer(); navigateTo('profile')" style="cursor:pointer">
                 <img id="drawerAvatar" class="drawer-avatar" src="" alt="الصورة الشخصية">
                 <div class="drawer-user-info">
                     <h3 id="drawerName" class="drawer-name">مستخدم</h3>
@@ -65,31 +69,31 @@
 
     <!-- Drawer Nav -->
     <nav class="drawer-nav">
-        <button class="drawer-link" onclick="closeDrawer();window.__app.navigate('profile')" data-page="profile">
+        <button class="drawer-link" onclick="closeDrawer();navigateTo('profile')" data-page="profile">
             <span class="iconify" data-icon="ph:user-bold"></span>
             <span>الملف الشخصي</span>
         </button>
-        <button class="drawer-link" onclick="closeDrawer();window.__app.navigate('feed')" data-page="feed">
+        <button class="drawer-link" onclick="closeDrawer();navigateTo('feed')" data-page="feed">
             <span class="iconify" data-icon="ph:house-bold"></span>
             <span>الرئيسية</span>
         </button>
-        <button class="drawer-link" onclick="closeDrawer();window.__app.navigate('following')" data-page="following">
+        <button class="drawer-link" onclick="closeDrawer();navigateTo('following')" data-page="following">
             <span class="iconify" data-icon="ph:users-bold"></span>
             <span>أتابع</span>
         </button>
-        <button class="drawer-link" onclick="closeDrawer();window.__app.navigate('messages')" data-page="messages">
+        <button class="drawer-link" onclick="closeDrawer();navigateTo('messages')" data-page="messages">
             <span class="iconify" data-icon="ph:envelope-simple-bold"></span>
             <span>الرسائل</span>
         </button>
-        <button class="drawer-link" onclick="closeDrawer();window.__app.navigate('notifications')" data-page="notifications">
+        <button class="drawer-link" onclick="closeDrawer();navigateTo('notifications')" data-page="notifications">
             <span class="iconify" data-icon="ph:bell-bold"></span>
             <span>الإشعارات</span>
         </button>
-        <button class="drawer-link" onclick="closeDrawer();window.__app.navigate('bookmarks')" data-page="bookmarks">
+        <button class="drawer-link" onclick="closeDrawer();navigateTo('bookmarks')" data-page="bookmarks">
             <span class="iconify" data-icon="ph:bookmark-simple-bold"></span>
             <span>المحفوظات</span>
         </button>
-        <button class="drawer-link" onclick="closeDrawer();window.__app.navigate('settings')" data-page="settings">
+        <button class="drawer-link" onclick="closeDrawer();navigateTo('settings')" data-page="settings">
             <span class="iconify" data-icon="ph:gear-bold"></span>
             <span>الإعدادات</span>
         </button>
@@ -113,7 +117,7 @@
     </button>
 
     <!-- Center: Logo or Page Title -->
-    <div class="header-center" onclick="window.__app.navigate('feed')" style="cursor:pointer">
+    <div class="header-center" onclick="navigateTo('feed')" style="cursor:pointer">
         <div class="lb-icon-sm header-logo-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
         </div>
@@ -129,7 +133,7 @@
         </div>
         <!-- Desktop user actions -->
         <div id="headerUserBtns" class="header-user-btns" style="display:none">
-            <button class="icon-btn" onclick="window.__app.navigate('messages')" title="الرسائل">
+            <button class="icon-btn" onclick="navigateTo('messages')" title="الرسائل">
                 <span class="iconify" data-icon="ph:envelope-simple-bold"></span>
             </button>
         </div>
@@ -142,8 +146,8 @@
 <div id="appLayout" class="app-layout">
 
     <!-- Desktop Left Sidebar -->
-    <aside class="desktop-sidebar">
-        <div class="desktop-logo" onclick="window.__app.navigate('feed')" style="cursor:pointer">
+    <aside class="desktop-sidebar" style="display:none;">
+        <div class="desktop-logo" onclick="navigateTo('feed')" style="cursor:pointer">
             <div class="lb-icon-sm">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
             </div>
@@ -151,7 +155,7 @@
         </div>
 
         <nav class="desktop-nav">
-            <button class="desktop-nav-link active" data-page="feed" onclick="window.__app.navigate('feed')">
+            <button class="desktop-nav-link active" data-page="feed" onclick="navigateTo('feed')">
                 <span class="iconify" data-icon="ph:house-bold"></span>
                 <span>الرئيسية</span>
             </button>
@@ -159,23 +163,23 @@
                 <span class="iconify" data-icon="ph:magnifying-glass-bold"></span>
                 <span>بحث</span>
             </button>
-            <button class="desktop-nav-link" data-page="notifications" onclick="window.__app.navigate('notifications')">
+            <button class="desktop-nav-link" data-page="notifications" onclick="navigateTo('notifications')">
                 <span class="iconify" data-icon="ph:bell-bold"></span>
                 <span>الإشعارات</span>
             </button>
-            <button class="desktop-nav-link" data-page="messages" onclick="window.__app.navigate('messages')">
+            <button class="desktop-nav-link" data-page="messages" onclick="navigateTo('messages')">
                 <span class="iconify" data-icon="ph:envelope-simple-bold"></span>
                 <span>الرسائل</span>
             </button>
-            <button class="desktop-nav-link" data-page="bookmarks" onclick="window.__app.navigate('bookmarks')">
+            <button class="desktop-nav-link" data-page="bookmarks" onclick="navigateTo('bookmarks')">
                 <span class="iconify" data-icon="ph:bookmark-simple-bold"></span>
                 <span>المحفوظات</span>
             </button>
-            <button class="desktop-nav-link" data-page="profile" onclick="window.__app.navigate('profile')">
+            <button class="desktop-nav-link" data-page="profile" onclick="navigateTo('profile')">
                 <span class="iconify" data-icon="ph:user-bold"></span>
                 <span>الملف الشخصي</span>
             </button>
-            <button class="desktop-nav-link" data-page="settings" onclick="window.__app.navigate('settings')">
+            <button class="desktop-nav-link" data-page="settings" onclick="navigateTo('settings')">
                 <span class="iconify" data-icon="ph:gear-bold"></span>
                 <span>الإعدادات</span>
             </button>
@@ -187,7 +191,7 @@
         </button>
 
         <!-- Desktop User Card -->
-        <div id="desktopUserCard" class="desktop-user-card" style="display:none" onclick="window.__app.navigate('profile')" style="cursor:pointer">
+        <div id="desktopUserCard" class="desktop-user-card" style="display:none" onclick="navigateTo('profile')" style="cursor:pointer">
             <img id="desktopCardAvatar" class="du-avatar" src="" alt="">
             <div class="du-info">
                 <p id="desktopCardName" class="du-name">مستخدم</p>
@@ -498,21 +502,21 @@
 <!-- MOBILE BOTTOM NAV                                            -->
 <!-- ============================================================ -->
 <nav id="bottomNav" class="bottom-nav" role="navigation" aria-label="التنقل السفلي">
-    <button class="bn-item active" id="bn-feed" onclick="window.__app.navigate('feed')" data-page="feed">
+    <button class="bn-item active" id="bn-feed" onclick="navigateTo('feed')" data-page="feed">
         <span class="iconify bn-icon" data-icon="ph:house-fill"></span>
     </button>
-    <button class="bn-item" id="bn-search" onclick="window.__app.navigate('search')" data-page="search">
+    <button class="bn-item" id="bn-search" onclick="navigateTo('search')" data-page="search">
         <span class="iconify bn-icon" data-icon="ph:magnifying-glass-bold"></span>
     </button>
     <!-- Compose FAB -->
     <button class="bn-compose" onclick="openPostModal()" aria-label="منشور جديد">
         <span class="iconify" data-icon="ph:pencil-bold"></span>
     </button>
-    <button class="bn-item" id="bn-notifications" onclick="window.__app.navigate('notifications')" data-page="notifications">
+    <button class="bn-item" id="bn-notifications" onclick="navigateTo('notifications')" data-page="notifications">
         <span class="iconify bn-icon" data-icon="ph:bell-bold"></span>
         <span class="bn-badge" id="notifBadge" style="display:none">3</span>
     </button>
-    <button class="bn-item" id="bn-messages" onclick="window.__app.navigate('messages')" data-page="messages">
+    <button class="bn-item" id="bn-messages" onclick="navigateTo('messages')" data-page="messages">
         <span class="iconify bn-icon" data-icon="ph:envelope-simple-bold"></span>
     </button>
 </nav>
@@ -651,6 +655,6 @@
     <img id="viewerImg" class="viewer-img" src="" alt="">
 </div>
 
-<script type="module" src="js/app.js"></script>
+<script type="module" src="js/app.js?v=3"></script>
 </body>
 </html>

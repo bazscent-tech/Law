@@ -18,6 +18,7 @@ import {
 
 // ===== GLOBAL INTERFACE =====
 window.__app = {
+      navigate: (page) => navigateTo(page),
     store, router,
     initApp, initGuestMode,
     navigate: (page) => navigateTo(page),
